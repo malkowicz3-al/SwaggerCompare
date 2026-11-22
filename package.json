@@ -1,0 +1,39 @@
+{
+  "name": "swagger-compare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder --win portable && powershell -NoProfile -Command \"Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip\""
+  },
+  "build": {
+    "appId": "com.swaggercompare.app",
+    "productName": "SwaggerCompare",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "files": [
+      "main.js",
+      "src/**/*",
+      "!node_modules/monaco-editor/{esm,dev,min-maps}/**"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "SwaggerCompare.exe"
+    }
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "monaco-editor": "0.52.2",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  }
+}
