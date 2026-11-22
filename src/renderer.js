@@ -1,17 +1,21 @@
 import { compare } from './compare.js';
 
-const base = location.origin + '/node_modules/monaco-editor/min/';
+const base = new URL('../node_modules/monaco-editor/min/', location.href).href;
+// under file:// (SwaggerCompare.bat) a worker can't load file URLs; throwing here makes Monaco
+// quietly run its diff in the main thread instead of failing a worker first
 self.MonacoEnvironment = {
-  getWorkerUrl: () =>
-    URL.createObjectURL(
+  getWorkerUrl: () => {
+    if (location.protocol === 'file:') throw new Error('no workers under file://');
+    return URL.createObjectURL(
       new Blob([`self.MonacoEnvironment={baseUrl:'${base}'};importScripts('${base}vs/base/worker/workerMain.js');`], {
         type: 'text/javascript',
       }),
-    ),
+    );
+  },
 };
 
-require.config({ paths: { vs: '/node_modules/monaco-editor/min/vs' } });
-require(['vs/editor/editor.main'], init);
+window.require.config({ paths: { vs: base + 'vs' } });
+window.require(['vs/editor/editor.main'], init);
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -115,7 +119,7 @@ function init() {
   const list = $('list');
   const state = $('state');
   let result = null; // last successful compare, for filtering
-  let compared = false; // any compare shown, so edits mark it stale
+  let liveTimer;
   let hidden = new Set();
 
   // Pane header: file name + detected spec version
@@ -174,9 +178,9 @@ function init() {
       hint.hidden = models[side].getValueLength() > 0;
       if (!models[side].getValueLength()) files[side] = null;
       refreshHead(side);
-      if (compared) $('stale').hidden = false;
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(run, 300); // live compare, debounced while typing
     });
-    editors[side].addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run);
   }
   document.addEventListener('dragover', (e) => e.preventDefault());
   document.addEventListener('drop', (e) => e.preventDefault());
@@ -214,6 +218,7 @@ function init() {
     state.className = `state ${kind}`;
     state.hidden = false;
     const icon = {
+      idle: '<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2M12 8v8M8 12h8"/>',
       ok: '<path d="M5 12.5 10 17l9-10"/>',
       err: '<path d="M12 8v5M12 16.5v.01"/><path d="M10.3 4.2 2.8 17.5A2 2 0 0 0 4.5 20.5h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/>',
     }[kind];
@@ -247,22 +252,35 @@ function init() {
     }
   };
 
+  // the reader's place in the list; survives re-runs that end in a parse error or empty side
+  const keyOf = (c) => `${c.kind}|${c.text}|${c.path.join('/')}`;
+  let selected = null;
+  let selKey = null;
+  let lastScroll = 0;
+
   function run() {
-    const res = compare(models.left.getValue(), models.right.getValue());
-    $('stale').hidden = true;
-    compared = true;
+    clearTimeout(liveTimer);
+    if (result) lastScroll = list.scrollTop;
+    selected = null;
     list.replaceChildren();
     result = null;
     $('filters').hidden = $('search-wrap').hidden = true;
     $('total').textContent = '';
 
+    const [l, r] = [models.left.getValue(), models.right.getValue()];
+    if (!l.trim() || !r.trim()) {
+      const missing = !l.trim() && !r.trim() ? 'both specs' : !l.trim() ? 'the original spec' : 'the modified spec';
+      showState('idle', 'Two specs, one list of changes', [`Paste or drop ${missing}. Changes appear here as you type.`]);
+      return;
+    }
+    const res = compare(l, r);
     if (res.error) {
       const { side, line, message } = res.error;
+      // no auto-jump: the user may be mid-typing
       showState('err', `The ${SIDE[side].toLowerCase()} spec can't be parsed`, [`Line ${line}: `, el('code', null, message.replace(/ at line \d+, column \d+:?$/, ''))], {
         label: 'Show line',
         run: () => jump(side, line),
       });
-      jump(side, line);
       return;
     }
     if (!res.changes.length) {
@@ -290,12 +308,17 @@ function init() {
     $('total').textContent = res.changes.length;
     $('filters').hidden = $('search-wrap').hidden = false;
     applyFilters();
+    if (selKey) {
+      const again = [...list.querySelectorAll('li:not([hidden]) .item')].find((b) => keyOf(b.parentElement._change) === selKey);
+      if (again) (selected = again).classList.add('sel');
+    }
+    list.scrollTop = lastScroll;
   }
 
-  let selected = null;
   const select = (b, focusEditor) => {
     selected?.classList.remove('sel');
     selected = b;
+    selKey = keyOf(b.parentElement._change);
     b.classList.add('sel');
     b.scrollIntoView({ block: 'nearest' });
     const c = b.parentElement._change;
@@ -327,9 +350,4 @@ function init() {
     }),
   );
   $('search').addEventListener('input', applyFilters);
-  $('compare').addEventListener('click', run);
-  $('recompare').addEventListener('click', run);
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') run();
-  });
 }

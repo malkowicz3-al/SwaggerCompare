@@ -63,27 +63,6 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .mark path:first-child { stroke: var(--removed); }
 .mark path:last-child { stroke: var(--added); }
 
-.primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 8px 0 14px;
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--ink);
-  font-weight: 600;
-  transition: background-color .15s;
-}
-.primary:hover { background: #fff; }
-.primary:active { transform: translateY(1px); }
-kbd {
-  font: 500 10.5px/1 var(--mono);
-  padding: 3px 5px;
-  border-radius: 4px;
-  background: rgba(14, 21, 37, .1);
-  color: #47536b;
-}
 
 /* Workspace */
 .workspace {
@@ -246,22 +225,6 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 #search::placeholder { color: var(--faint); }
 #search:focus-visible { outline-offset: 0; }
 
-.stale {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 8px 12px 0;
-  padding: 8px 8px 8px 12px;
-  border-radius: 8px;
-  background: rgba(141, 180, 255, .08);
-  border: 1px solid rgba(141, 180, 255, .25);
-  font-size: 12px;
-}
-.stale[hidden] { display: none; }
-.stale button { padding: 4px 10px; border-radius: 6px; background: var(--raised); font-weight: 500; }
-.stale button:hover { background: var(--line); }
-.stale:not([hidden]) ~ .list { opacity: .45; }
 
 .state {
   flex: 1;

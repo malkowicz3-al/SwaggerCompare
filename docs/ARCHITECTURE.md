@@ -1,15 +1,18 @@
 # SwaggerCompare: architecture
 
-Windows desktop app. Electron, Monaco diff editor, `yaml` parser. No bundler, no UI framework, no preload.
+Windows desktop app. Electron, Monaco diff editor, `yaml` parser. esbuild bundles the renderer into one classic script (ADR 0003); no UI framework, no preload. The same static files also run from file:// in an Edge app window (`SwaggerCompare.bat`).
 
 ## Files
 
 ```
 package.json            "type": "module", scripts, electron-builder config ("build" key)
 main.js                 app:// protocol handler, BrowserWindow + security settings, blocks navigation
-src/index.html          CSP, import map, Monaco AMD loader, layout (editor + Compare button + change list)
+src/index.html          CSP, Monaco AMD loader, bundled renderer, layout (title bar, pane headers, editor, change list); relative paths only
 src/style.css
-src/renderer.js         ES module: Monaco setup, drag&drop, Compare click, list rendering, jump-to-line
+src/renderer.js         Monaco setup, drag&drop/open/clear/swap, live compare (300 ms debounce), list, filters, jump-to-line
+src/gen/renderer.js     esbuild output (gitignored): renderer + compare + yaml as one IIFE
+scripts/build-web.mjs   builds dist/SwaggerCompare-web.zip (static files + SwaggerCompare.bat)
+scripts/SwaggerCompare.bat  opens app/src/index.html in `msedge --app`, falls back to the default browser
 src/compare.js          ES module, pure, no DOM: compare(leftText, rightText) -> result (see below)
 test/compare.test.js    node:test + node:assert
 test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml, openapi3-new.json
@@ -25,7 +28,7 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
 
 1. The user pastes text or drops a file onto a pane. A capture-phase `drop` handler on each pane reads it with `file.text()` and calls `model.setValue()`. The document also gets `dragover`/`drop` `preventDefault`, so a drop outside a pane never navigates the window.
 2. Monaco `createDiffEditor` with `originalEditable: true` and `renderSideBySide: true`. Monaco computes the text diff and colors it live. The text is never reformatted.
-3. Compare: `compare(original.getValue(), modified.getValue())`.
+3. Live compare: 300 ms after any edit, `compare(original.getValue(), modified.getValue())` runs (no button). Parse errors never move the cursor; list scroll and selection survive re-runs.
    - If either side fails to parse: `{ error: { side: 'left'|'right', line, message } }`. The UI shows the message and no list.
    - Otherwise: `{ changes: [{ kind: 'added'|'removed'|'changed', text, path: string[], side: 'left'|'right', line }] }`.
 4. The list renders `kind`, `text` and `path.join(' › ')`. A click on an item calls `revealLineInCenter(line)` and `setPosition` on the original editor (side `left`, for removals) or the modified editor (side `right`, for added/changed items).
@@ -51,18 +54,20 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
 
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no preload. The renderer needs no Node or IPC.
 - `will-navigate` and `setWindowOpenHandler` deny all navigation and new windows.
-- CSP meta: `default-src 'self'; script-src 'self' 'sha256-…'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' data:; img-src 'self' data:`. The sha256 hash allows exactly the inline import map; recompute it if the import map changes. Monaco needs inline styles and data: images.
+- CSP meta: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' data:; img-src 'self' data:; object-src 'none'; base-uri 'none'`. No inline scripts. Monaco needs inline styles and data: images.
 - The window loads `app://local/src/index.html`. main.js registers the privileged `app` scheme (standard, secure, supportFetchAPI) and serves files from the app root (works inside asar via `net.fetch` of a file URL). Only `src/` and `node_modules/` are served; anything else returns 403. Everything is local and nothing comes from a CDN.
 
-## Loading Monaco and yaml without a bundler
+## Loading Monaco and yaml
 
-- `index.html` contains `<script src="/node_modules/monaco-editor/min/vs/loader.js">`. `renderer.js` calls `require.config({ paths: { vs: '/node_modules/monaco-editor/min/vs' } })`, sets `MonacoEnvironment.getWorkerUrl` to a blob that `importScripts` `workerMain.js`, then calls `require(['vs/editor/editor.main'], init)`.
-- Import map: `{"imports":{"yaml":"/node_modules/yaml/browser/index.js"}}`. `compare.js` does `import { parseDocument, LineCounter } from 'yaml'`, and the same file runs unchanged in `node --test` and in the renderer.
+- `index.html` loads `../node_modules/monaco-editor/min/vs/loader.js`, then `gen/renderer.js`. The renderer calls `window.require.config({ paths: { vs } })` with a URL relative to the page, so it resolves under both `app://local/` and `file:///`.
+- Workers: under app:// a blob worker `importScripts` `workerMain.js`. Under file:// `getWorkerUrl` throws, and Monaco runs the diff on the main thread.
+- `compare.js` stays a plain ES module importing `yaml`; Node runs it directly in tests, esbuild inlines it (and `yaml`) into the bundle.
 
 ## Build and distribution
 
-- `npm start` runs `electron .`
+- `npm run bundle` runs esbuild; `npm start` bundles, then runs `electron .`
 - `npm test` runs `node --test`
-- `npm run dist` runs `electron-builder --win portable && powershell -NoProfile -Command "Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip"`
+- `npm run web` bundles and builds `dist/SwaggerCompare-web.zip` (~4 MB): `SwaggerCompare.bat` + `app/` with the page, Monaco `min/vs` and the used font weights.
+- `npm run dist` bundles, builds the portable exe, zips it as `SwaggerCompare-win.zip`, then builds the web zip.
 - electron-builder config: `win.target: portable`, `artifactName: "SwaggerCompare.exe"`. `files` excludes `node_modules/monaco-editor/{esm,dev,min-maps}/**` to keep the exe small. asar is on.
 - No code signing, no CI, no Linux.

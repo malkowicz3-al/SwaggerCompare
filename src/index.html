@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-pU3tbynNXLHuiyItnFAipKz/DrqwWaORMSFHw1cUf/0='; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' data:; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' data:; img-src 'self' data:; object-src 'none'; base-uri 'none'">
 <title>SwaggerCompare</title>
-<link rel="stylesheet" href="/node_modules/@fontsource/ibm-plex-sans/400.css">
-<link rel="stylesheet" href="/node_modules/@fontsource/ibm-plex-sans/500.css">
-<link rel="stylesheet" href="/node_modules/@fontsource/ibm-plex-sans/600.css">
-<link rel="stylesheet" href="/node_modules/@fontsource/jetbrains-mono/400.css">
-<link rel="stylesheet" href="/node_modules/@fontsource/jetbrains-mono/500.css">
-<link rel="stylesheet" href="/src/style.css">
-<script type="importmap">{"imports":{"yaml":"/node_modules/yaml/browser/index.js"}}</script>
+<!-- relative paths: same files run from app:// (Electron) and file:// (SwaggerCompare.bat) -->
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-sans/400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-sans/500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-sans/600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/jetbrains-mono/400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/jetbrains-mono/500.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="titlebar">
@@ -18,9 +18,6 @@
     <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h7M4 12h5M4 18h7" /><path d="M13 6h7M15 12h5M13 18h7" /></svg>
     <span>SwaggerCompare</span>
   </div>
-  <button id="compare" class="primary" title="Compare (Ctrl+Enter)">
-    Compare <kbd>Ctrl</kbd><kbd>Enter</kbd>
-  </button>
 </header>
 
 <main class="workspace">
@@ -67,20 +64,16 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
       <input id="search" type="search" placeholder="Filter by endpoint, schema or field" spellcheck="false">
     </div>
-    <div class="stale" id="stale" hidden>
-      <span>Specs edited since the last compare.</span>
-      <button id="recompare">Compare again</button>
-    </div>
-    <div class="state" id="state">
+    <div class="state" id="state" aria-live="polite">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2M12 8v8M8 12h8"/></svg>
       <p class="state-title">Two specs, one list of changes</p>
-      <p class="state-text">Paste or drop a Swagger or OpenAPI file into each editor, then press Compare.</p>
+      <p class="state-text">Paste or drop a Swagger or OpenAPI file into each editor. Changes appear here as you type.</p>
     </div>
     <ol class="list" id="list"></ol>
   </aside>
 </main>
 
-<script src="/node_modules/monaco-editor/min/vs/loader.js"></script>
-<script type="module" src="/src/renderer.js"></script>
+<script src="../node_modules/monaco-editor/min/vs/loader.js"></script>
+<script src="gen/renderer.js"></script>
 </body>
 </html>

@@ -1,13 +1,15 @@
 {
   "name": "swagger-compare",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "bundle": "esbuild src/renderer.js --bundle --format=iife --target=chrome120 --outfile=src/gen/renderer.js",
+    "start": "npm run bundle && electron .",
     "test": "node --test",
-    "dist": "electron-builder --win portable && powershell -NoProfile -Command \"Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip\""
+    "web": "npm run bundle && node scripts/build-web.mjs",
+    "dist": "npm run bundle && electron-builder --win portable && powershell -NoProfile -Command \"Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip\" && node scripts/build-web.mjs"
   },
   "build": {
     "appId": "com.swaggercompare.app",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "electron": "45.4.1",
-    "electron-builder": "26.18.0"
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2"
   }
 }
