@@ -8,7 +8,7 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(() => {
   const root = app.getAppPath();
-  const allowed = [path.join(root, 'src') + path.sep, path.join(root, 'node_modules') + path.sep];
+  const allowed = [path.join(root, 'src') + path.sep, path.join(root, 'vendor') + path.sep];
   protocol.handle('app', (req) => {
     const file = path.join(root, decodeURIComponent(new URL(req.url).pathname));
     if (!allowed.some((dir) => file.startsWith(dir))) return new Response('forbidden', { status: 403 });

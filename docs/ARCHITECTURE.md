@@ -10,9 +10,10 @@ main.js                 app:// protocol handler, BrowserWindow + security settin
 src/index.html          CSP, Monaco AMD loader, bundled renderer, layout (title bar, pane headers, editor, change list); relative paths only
 src/style.css
 src/renderer.js         Monaco setup, drag&drop/open/clear/swap, live compare (300 ms debounce), list, filters, jump-to-line
-src/gen/renderer.js     esbuild output (gitignored): renderer + compare + yaml as one IIFE
-scripts/build-web.mjs   builds dist/SwaggerCompare-web.zip (static files + SwaggerCompare.bat)
-scripts/SwaggerCompare.bat  opens app/src/index.html in `msedge --app`, falls back to the default browser
+src/gen/renderer.js     esbuild output (committed): renderer + compare + yaml as one IIFE
+vendor/                 Monaco core + YAML highlighting and used font weights, copied from node_modules by scripts/vendor.mjs (committed)
+scripts/build-web.mjs   builds dist/SwaggerCompare-web.zip with the repo-root layout (bat, src/, vendor/)
+SwaggerCompare.bat      opens src/index.html in `msedge --app`, falls back to the default browser; CRLF, `-text` in .gitattributes
 src/compare.js          ES module, pure, no DOM: compare(leftText, rightText) -> result (see below)
 test/compare.test.js    node:test + node:assert
 test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml, openapi3-new.json
@@ -55,19 +56,19 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no preload. The renderer needs no Node or IPC.
 - `will-navigate` and `setWindowOpenHandler` deny all navigation and new windows.
 - CSP meta: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' data:; img-src 'self' data:; object-src 'none'; base-uri 'none'`. No inline scripts. Monaco needs inline styles and data: images.
-- The window loads `app://local/src/index.html`. main.js registers the privileged `app` scheme (standard, secure, supportFetchAPI) and serves files from the app root (works inside asar via `net.fetch` of a file URL). Only `src/` and `node_modules/` are served; anything else returns 403. Everything is local and nothing comes from a CDN.
+- The window loads `app://local/src/index.html`. main.js registers the privileged `app` scheme (standard, secure, supportFetchAPI) and serves files from the app root (works inside asar via `net.fetch` of a file URL). Only `src/` and `vendor/` are served; anything else returns 403. Everything is local and nothing comes from a CDN.
 
 ## Loading Monaco and yaml
 
-- `index.html` loads `../node_modules/monaco-editor/min/vs/loader.js`, then `gen/renderer.js`. The renderer calls `window.require.config({ paths: { vs } })` with a URL relative to the page, so it resolves under both `app://local/` and `file:///`.
+- `index.html` loads `../vendor/monaco/vs/loader.js`, then `gen/renderer.js`. The renderer calls `window.require.config({ paths: { vs } })` with a URL relative to the page, so it resolves under both `app://local/` and `file:///`.
 - Workers: under app:// a blob worker `importScripts` `workerMain.js`. Under file:// `getWorkerUrl` throws, and Monaco runs the diff on the main thread.
 - `compare.js` stays a plain ES module importing `yaml`; Node runs it directly in tests, esbuild inlines it (and `yaml`) into the bundle.
 
 ## Build and distribution
 
-- `npm run bundle` runs esbuild; `npm start` bundles, then runs `electron .`
+- `npm run build` runs esbuild and scripts/vendor.mjs; `npm start` builds, then runs `electron .`. All npm packages are devDependencies, since nothing ships from node_modules.
 - `npm test` runs `node --test`
-- `npm run web` bundles and builds `dist/SwaggerCompare-web.zip` (~4 MB): `SwaggerCompare.bat` + `app/` with the page, Monaco `min/vs` and the used font weights.
-- `npm run dist` bundles, builds the portable exe, zips it as `SwaggerCompare-win.zip`, then builds the web zip.
-- electron-builder config: `win.target: portable`, `artifactName: "SwaggerCompare.exe"`. `files` excludes `node_modules/monaco-editor/{esm,dev,min-maps}/**` to keep the exe small. asar is on.
+- `npm run web` builds and zips `dist/SwaggerCompare-web.zip` (~2 MB), the same layout as the repo root.
+- `npm run dist` builds, builds the portable exe, zips it as `SwaggerCompare-win.zip`, then builds the web zip.
+- electron-builder config: `win.target: portable`, `artifactName: "SwaggerCompare.exe"`. `files` is `main.js`, `src/**`, `vendor/**`. asar is on.
 - No code signing, no CI, no Linux.

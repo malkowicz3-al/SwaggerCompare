@@ -1,15 +1,15 @@
 {
   "name": "swagger-compare",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "bundle": "esbuild src/renderer.js --bundle --format=iife --target=chrome120 --outfile=src/gen/renderer.js",
-    "start": "npm run bundle && electron .",
+    "build": "esbuild src/renderer.js --bundle --format=iife --target=chrome120 --outfile=src/gen/renderer.js && node scripts/vendor.mjs",
+    "start": "npm run build && electron .",
     "test": "node --test",
-    "web": "npm run bundle && node scripts/build-web.mjs",
-    "dist": "npm run bundle && electron-builder --win portable && powershell -NoProfile -Command \"Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip\" && node scripts/build-web.mjs"
+    "web": "npm run build && node scripts/build-web.mjs",
+    "dist": "npm run build && electron-builder --win portable && powershell -NoProfile -Command \"Compress-Archive -Force dist/SwaggerCompare.exe dist/SwaggerCompare-win.zip\" && node scripts/build-web.mjs"
   },
   "build": {
     "appId": "com.swaggercompare.app",
@@ -21,22 +21,20 @@
     "files": [
       "main.js",
       "src/**/*",
-      "!node_modules/monaco-editor/{esm,dev,min-maps}/**"
+      "vendor/**/*"
     ],
     "win": {
       "target": "portable",
       "artifactName": "SwaggerCompare.exe"
     }
   },
-  "dependencies": {
+  "devDependencies": {
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fontsource/jetbrains-mono": "5.3.0",
-    "monaco-editor": "0.52.2",
-    "yaml": "2.9.1"
-  },
-  "devDependencies": {
     "electron": "45.4.1",
     "electron-builder": "26.18.0",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "monaco-editor": "0.52.2",
+    "yaml": "2.9.1"
   }
 }

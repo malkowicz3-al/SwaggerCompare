@@ -1,6 +1,6 @@
 import { compare } from './compare.js';
 
-const base = new URL('../node_modules/monaco-editor/min/', location.href).href;
+const base = new URL('../vendor/monaco/', location.href).href;
 // under file:// (SwaggerCompare.bat) a worker can't load file URLs; throwing here makes Monaco
 // quietly run its diff in the main thread instead of failing a worker first
 self.MonacoEnvironment = {

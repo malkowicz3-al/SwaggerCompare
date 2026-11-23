@@ -15,5 +15,7 @@ Some Windows machines block unsigned .exe files. A page opened from file:// can'
 
 ## Consequences
 
-- `npm start`, `web` and `dist` run the bundle step first; `src/gen/` is gitignored.
+- Update (1.1.1): `src/gen/` and `vendor/` are committed and `SwaggerCompare.bat` lives in the repo root, so "Download ZIP" of the source runs as is. Run `npm run build` and commit after changing `src/`.
+
+- `npm start`, `web` and `dist` run the build step first.
 - The exe build stays as a second download.
