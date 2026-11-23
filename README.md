@@ -1,3 +1,4 @@
+<p align="center"><img src="src/icon.svg" width="72" alt=""></p>
 <h1 align="center">SwaggerCompare</h1>
 
 <p align="center">
@@ -20,10 +21,10 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 ## What you get
 
 - **A side-by-side diff** of the two files, as you pasted them. Nothing is reformatted.
-- **A change list that updates as you type**, one short line per change, labelled with the endpoint or schema it belongs to.
+- **A change list that updates as you type**, one short line per change with a small tag (endpoint, property, required, pattern…), labelled with the endpoint or schema it belongs to.
 - **Changes, not noise.** Reordered keys, YAML vs JSON formatting and reordered parameters don't show up in the change list.
-- **Refactors read as one change.** When a field's inline definition is moved into a `$ref`, you see one entry, *"requestId: extracted to schema RequestId"*, with only the real differences listed under it.
-- **Filters and search.** Toggle added, removed or changed entries, or filter by endpoint, schema or field.
+- **Refactors read as one change.** When a field's inline definition is moved into a `$ref`, you see one entry, *"requestId: extracted to schema RequestId"*, with the real differences folded under a "Details" toggle.
+- **Filters and search.** Toggle added, removed or changed entries, or search by endpoint, schema, field or tag.
 - **Private by design.** Everything runs on your machine. Your specs are never uploaded anywhere.
 
 <p align="center">

@@ -21,6 +21,7 @@ app.whenReady().then(() => {
     minWidth: 960,
     minHeight: 600,
     backgroundColor: '#0E1525',
+    icon: path.join(root, 'src', 'icon.png'),
     // custom title bar; native window buttons drawn by the OS over the top-right corner
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#0E1525', symbolColor: '#8A96AE', height: 48 },

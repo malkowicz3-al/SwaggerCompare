@@ -285,3 +285,17 @@ test('unresolved ref target is not suppressed', () => {
   const { res } = run(s2doc({ a: rid }), s2doc({ a: { $ref: '#/definitions/A' } }, { A: 'oops' }));
   assert.ok(texts(res).includes('schemas | Added schema A'));
 });
+
+test('tags', () => {
+  const tag = (l, r, text) => compare(json(l), json(r)).changes.find((c) => c.text.includes(text))?.tag;
+  const user = (props, required) => ({ swagger: '2.0', definitions: { User: { required, properties: props } } });
+  assert.equal(tag({ paths: {} }, { paths: { '/x': { get: {} } } }, 'Added endpoint'), 'endpoint');
+  assert.equal(tag(user({}), user({ a: { type: 'string' } }), 'Added property'), 'property');
+  assert.equal(tag(user({ a: {} }, []), user({ a: {} }, ['a']), 'now required'), 'required');
+  assert.equal(tag(user({ a: { type: 'string' } }), user({ a: { type: 'integer' } }), 'type'), 'type');
+  assert.equal(tag(s2doc({ a: rid }), s2doc({ a: { $ref: '#/definitions/Id' } }, { Id: rid }), 'extracted'), 'refactor');
+  assert.equal(tag(user({ a: { pattern: 'x' } }), user({ a: { pattern: 'y' } }), 'pattern'), 'pattern');
+  assert.equal(tag(user({ a: { enum: ['a', 'b'] } }), user({ a: { enum: ['a', 'b', 'c'] } }), 'added'), 'enum');
+  assert.equal(tag({ info: { version: '1' } }, { info: { version: '2' } }, 'version'), 'version');
+  for (const c of [...s2.changes, ...o3.changes]) assert.ok(typeof c.tag === 'string' && c.tag !== '');
+});

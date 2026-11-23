@@ -256,6 +256,7 @@ function init() {
   const keyOf = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join('/')}`;
   let selected = null;
   let selKey = null;
+  const expanded = new Set(); // keyOf of entries whose details are open
   let lastScroll = 0;
 
   function run() {
@@ -295,20 +296,33 @@ function init() {
       counts[c.kind]++;
       const li = el('li');
       li._change = c;
-      li._haystack = [c.text, c.where, c.path.join(' '), ...(c.details ?? [])].join(' ').toLowerCase();
+      li._haystack = [c.tag, c.text, c.where, c.path.join(' '), ...(c.details ?? [])].join(' ').toLowerCase();
       const b = el('button', `item ${c.kind}`);
       b.title = `${c.path.join(' › ')}\n${SIDE[c.side]}, line ${c.line}`;
       b.dataset.i = i;
       const body = el('div');
-      body.append(el('span', 'text', c.text), richText(c.where, 'where'));
-      if (c.details) {
-        const d = el('div', 'details');
-        d.append(...c.details.map((t) => el('div', 'detail', t)));
-        body.append(d);
-      }
+      body.append(el('span', c.tag === 'refactor' ? 'tag tag-refactor' : 'tag', c.tag), el('span', 'text', c.text), richText(c.where, 'where'));
       b.append(el('span', 'glyph', GLYPH[c.kind]), body);
       b.addEventListener('click', () => select(b, true));
       li.append(b);
+      if (c.details) {
+        const open = expanded.has(keyOf(c));
+        const tog = el('button', 'tog');
+        tog.type = 'button';
+        tog.setAttribute('aria-expanded', String(open));
+        tog.setAttribute('aria-controls', `det-${i}`);
+        tog.append(el('span', 'chev'), `Details (${c.details.length})`);
+        const d = el('div', 'details');
+        d.id = `det-${i}`;
+        d.hidden = !open;
+        d.append(...c.details.map((t) => el('div', 'detail', t)));
+        tog.addEventListener('click', () => {
+          d.hidden = !d.hidden;
+          tog.setAttribute('aria-expanded', String(!d.hidden));
+          expanded[d.hidden ? 'delete' : 'add'](keyOf(c));
+        });
+        li.append(tog, d);
+      }
       list.append(li);
     });
     for (const k in counts) $(`n-${k}`).textContent = counts[k];
@@ -340,7 +354,8 @@ function init() {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     e.preventDefault();
     const items = [...list.querySelectorAll('li:not([hidden]) .item')];
-    const i = items.indexOf(document.activeElement);
+    // from a Details toggle, count from its own entry
+    const i = items.indexOf(document.activeElement.closest('li')?.querySelector('.item'));
     const next = items[Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
     if (next) {
       next.focus();

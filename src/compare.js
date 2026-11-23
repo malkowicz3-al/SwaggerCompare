@@ -153,10 +153,13 @@ function locate(ctx, asObject = false) {
   return { where: parts.slice(0, cut).join('.'), rest: parts.slice(cut) };
 }
 
-function emit(kind, text, ctx, where = locate(ctx).where) {
+// default tag = last non-numeric path segment: enum.2 → 'enum', servers.0.url → 'url'
+const tagOf = (p) => [...p].map(String).reverse().find((s) => !/^\d+$/.test(s)) ?? 'other';
+
+function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where) {
   const side = kind === 'removed' ? 'left' : 'right';
   const line = lineOf(ctx.st[side], side === 'left' ? ctx.pl : ctx.pr);
-  const ch = { kind, text, where, path: ctx.path.map(String), side, line };
+  const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line };
   ctx.st.changes.push(ch);
   return ch;
 }
@@ -199,15 +202,15 @@ function walkObject(l, r, ctx) {
       const item = lv ?? rv;
       const methods = isPlain(item) ? METHODS.filter((m) => has(item, m)) : [];
       if (!methods.length) walk(lv, rv, c);
-      for (const m of methods) emit(kind, `${verb} endpoint`, child(c, m));
+      for (const m of methods) emit(kind, `${verb} endpoint`, child(c, m), 'endpoint');
     } else if (isPathItem && oneSided && METHODS.includes(k)) {
-      emit(kind, `${verb} endpoint`, c);
+      emit(kind, `${verb} endpoint`, c, 'endpoint');
     } else if ((isPathItem || isOp) && k === 'parameters' && [lv, rv].every((v) => v === undefined || Array.isArray(v))) {
       walkParams(lv ?? [], rv ?? [], ctx);
     } else if (isResponses && oneSided) {
-      emit(kind, `${verb} response ${k}`, c);
+      emit(kind, `${verb} response ${k}`, c, 'response');
     } else if (isSchemas && oneSided) {
-      emit(kind, `${verb} schema ${k}`, c);
+      emit(kind, `${verb} schema ${k}`, c, 'schema');
     } else if (isSchemas) {
       walk(lv, rv, c);
     } else if (k === 'properties' && [lv, rv].every((v) => v === undefined || isPlain(v))) {
@@ -266,7 +269,7 @@ function extract(l, r, ctx, label) {
     details = sink.length ? sink.map((c) => c.text) : ['definition unchanged'];
   }
   const text = `${label ?? restOf(ctx)}: ${ext ? 'extracted to' : 'inlined from'} ${(segs && compLabel(segs)) ?? ref}`;
-  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx).details = details;
+  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx, 'refactor').details = details;
   // only a resolved, whole component is covered by this entry; a ref into a sub-path (W/properties/id) covers nothing
   if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
   return true;
@@ -341,14 +344,14 @@ function walkParams(lArr, rArr, ctx) {
     const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n ?? rm.get(lab).n);
     const c = child(pc, shown, { l: il, r: ir });
     const nm = p.name ?? lab;
-    if (il === undefined) emit('added', `Added parameter ${lab}`, c);
-    else if (ir === undefined) emit('removed', `Removed parameter ${lab}`, c);
+    if (il === undefined) emit('added', `Added parameter ${lab}`, c, 'parameter');
+    else if (ir === undefined) emit('removed', `Removed parameter ${lab}`, c, 'parameter');
     else {
       if (extract(lp, rp, c, nm)) continue;
       let [ls, rs] = [lp, rp];
       if (extract(lp.schema, rp.schema, child(c, 'schema'), p.name)) [ls, rs] = [omit(lp, 'schema'), omit(rp, 'schema')];
-      if (!!lp.required !== !!rp.required) emit('changed', `${nm}: ${rp.required ? 'now required' : 'no longer required'}`, c);
-      if (!eq(ptype(ls), ptype(rs))) emit('changed', `${nm}: type ${tfmt(ptype(ls))} → ${tfmt(ptype(rs))}`, c);
+      if (!!lp.required !== !!rp.required) emit('changed', `${nm}: ${rp.required ? 'now required' : 'no longer required'}`, c, 'required');
+      if (!eq(ptype(ls), ptype(rs))) emit('changed', `${nm}: type ${tfmt(ptype(ls))} → ${tfmt(ptype(rs))}`, c, 'type');
       walk(stripParam(ls), stripParam(rs), c);
     }
   }
@@ -377,10 +380,10 @@ function walkProps(lProps, rProps, ctx) {
     const p = restOf(c);
     const t = stype(lv ?? rv);
     const suffix = t === undefined ? '' : ` (${tfmt(t)})`;
-    if (lv === undefined) emit('added', `Added property ${p}${suffix}`, c);
-    else if (rv === undefined) emit('removed', `Removed property ${p}${suffix}`, c);
+    if (lv === undefined) emit('added', `Added property ${p}${suffix}`, c, 'property');
+    else if (rv === undefined) emit('removed', `Removed property ${p}${suffix}`, c, 'property');
     else if (!extract(lv, rv, c)) {
-      if (!eq(stype(lv), stype(rv))) emit('changed', `${p}: type ${tfmt(stype(lv))} → ${tfmt(stype(rv))}`, c);
+      if (!eq(stype(lv), stype(rv))) emit('changed', `${p}: type ${tfmt(stype(lv))} → ${tfmt(stype(rv))}`, c, 'type');
       walk(stripSchema(lv), stripSchema(rv), c);
     }
   }
@@ -397,12 +400,12 @@ function walkRequired(lArr, rArr, ctx, lObj, rObj) {
   const at = (n, pr) => ({ ...ctx, path: [...ctx.path, 'required', String(n)], pr });
 
   rArr.forEach((n, i) => {
-    if (!ls.has(n) && rArr.indexOf(n) === i) emit('changed', `${nm(n)}: now required`, at(n, [...ctx.pr, 'required', i]), where);
+    if (!ls.has(n) && rArr.indexOf(n) === i) emit('changed', `${nm(n)}: now required`, at(n, [...ctx.pr, 'required', i]), 'required', where);
   });
   for (const n of ls) {
     // a name dropped together with its property is already reported as "Removed property"
     if (rs.has(n) || (has(lProps, n) && !has(rProps, n))) continue;
     const pr = has(rProps, n) ? [...ctx.pr, 'properties', n] : [...ctx.pr, 'required'];
-    emit('changed', `${nm(n)}: no longer required`, at(n, pr), where);
+    emit('changed', `${nm(n)}: no longer required`, at(n, pr), 'required', where);
   }
 }

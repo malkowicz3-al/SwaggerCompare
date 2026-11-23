@@ -9,6 +9,7 @@ package.json            "type": "module", scripts, electron-builder config ("bui
 main.js                 app:// protocol handler, BrowserWindow + security settings, blocks navigation
 src/index.html          CSP, Monaco AMD loader, bundled renderer, layout (title bar, pane headers, editor, change list); relative paths only
 src/style.css
+src/icon.svg            app logo (favicon, README); src/icon.png (256 px, window icon), build/icon.ico (exe icon)
 src/renderer.js         Monaco setup, drag&drop/open/clear/swap, live compare (300 ms debounce), list, filters, jump-to-line
 src/gen/renderer.js     esbuild output (committed): renderer + compare + yaml as one IIFE
 vendor/                 Monaco core + YAML highlighting and used font weights, copied from node_modules by scripts/vendor.mjs (committed)
@@ -31,8 +32,8 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
 2. Monaco `createDiffEditor` with `originalEditable: true` and `renderSideBySide: true`. Monaco computes the text diff and colors it live. The text is never reformatted.
 3. Live compare: 300 ms after any edit, `compare(original.getValue(), modified.getValue())` runs (no button). Parse errors never move the cursor; list scroll and selection survive re-runs.
    - If either side fails to parse: `{ error: { side: 'left'|'right', line, message } }`. The UI shows the message and no list.
-   - Otherwise: `{ changes: [{ kind: 'added'|'removed'|'changed', text, where, path: string[], side: 'left'|'right', line, details?: string[] }] }`. `text` is short ("Added property phone (string)"), `where` names the object it belongs to ("GET /users", "User", "User.address", "schemas", "parameter Limit"), `path` is the full path.
-4. The list renders `kind`, `text`, `where` (a leading HTTP method as a pill) and `details` as an indented sub-list. The tooltip shows `path.join(' › ')` and side/line; the search also matches `where`, `path` and `details`. A click on an item calls `revealLineInCenter(line)` and `setPosition` on the original editor (side `left`, for removals) or the modified editor (side `right`, for added/changed items).
+   - Otherwise: `{ changes: [{ kind: 'added'|'removed'|'changed', tag, text, where, path: string[], side: 'left'|'right', line, details?: string[] }] }`. `text` is short ("Added property phone (string)"), `where` names the object it belongs to ("GET /users", "User", "User.address", "schemas", "parameter Limit"), `path` is the full path. `tag` is a one-word category: explicit for structural entries (`endpoint`, `response`, `schema`, `parameter`, `property`, `required`, `type`, `refactor` for $ref extraction/inlining), otherwise the last non-numeric path segment (`enum.2` -> `enum`, `info.version` -> `version`).
+4. The list renders `kind`, `tag` (a small chip), `text`, `where` (a leading HTTP method as a pill) and `details` as an indented sub-list behind a collapsed "Details (n)" toggle (a sibling button; it only toggles, open state survives live re-runs). The tooltip shows `path.join(' › ')` and side/line; the search also matches `tag`, `where`, `path` and `details`. A click on an item calls `revealLineInCenter(line)` and `setPosition` on the original editor (side `left`, for removals) or the modified editor (side `right`, for added/changed items).
 
 ## compare.js internals
 
@@ -72,5 +73,5 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
 - `npm test` runs `node --test`
 - `npm run web` builds and zips `dist/SwaggerCompare-web.zip` (~2 MB), the same layout as the repo root.
 - `npm run dist` builds, builds the portable exe, zips it as `SwaggerCompare-win.zip`, then builds the web zip.
-- electron-builder config: `win.target: portable`, `artifactName: "SwaggerCompare.exe"`. `files` is `main.js`, `src/**`, `vendor/**`. asar is on.
+- electron-builder config: `win.target: portable`, `artifactName: "SwaggerCompare.exe"`, `win.icon: build/icon.ico`; the BrowserWindow uses `src/icon.png`. `files` is `main.js`, `src/**`, `vendor/**`. asar is on.
 - No code signing, no CI, no Linux.
