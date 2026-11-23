@@ -121,6 +121,10 @@ function init() {
   let result = null; // last successful compare, for filtering
   let liveTimer;
   let hidden = new Set();
+  const openGroups = new Set(); // where of expanded groups; survives re-runs
+  const tagsOn = new Set();
+  let rows = []; // {li, btn, c, g, show}, in list order
+  let groups = []; // {where, li, head, ol, rows}
 
   // Pane header: file name + detected spec version
   const refreshHead = (side) => {
@@ -235,21 +239,70 @@ function init() {
     }
   };
 
+  const filtering = () => !!(hidden.size || tagsOn.size || $('search').value.trim());
+
+  // header shows counts and tags of the group's visible items only
+  const renderHead = (g, vis) => {
+    const n = { added: 0, removed: 0, changed: 0 };
+    const tags = [];
+    for (const r of vis) {
+      n[r.c.kind]++;
+      if (!tags.includes(r.c.tag)) tags.push(r.c.tag);
+    }
+    const mini = el('span', 'gmini');
+    for (const k in n) if (n[k]) mini.append(el('span', k, GLYPH[k] + n[k]));
+    const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
+    g.head.setAttribute('aria-label', `${g.where}, ${vis.length} change${vis.length === 1 ? '' : 's'}: ${said.join(', ')}`);
+    g.head.replaceChildren(el('span', 'chev'), richText(g.where, 'gwhere'), el('span', 'gcount', vis.length), mini, el('span', 'gtags', tags.join(' · ')));
+  };
+
   const applyFilters = () => {
     const q = $('search').value.trim().toLowerCase();
-    let visible = 0;
     $('list-none')?.remove();
-    for (const li of list.children) {
-      const c = li._change;
-      const show = !hidden.has(c.kind) && (!q || li._haystack.includes(q));
-      li.hidden = !show;
-      visible += show;
+    for (const r of rows) {
+      r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!q || r.li._haystack.includes(q));
+      r.li.hidden = !r.show;
     }
-    if (result?.changes.length && !visible) {
+    // with a filter on, every matching group is expanded
+    const filtered = filtering();
+    for (const g of groups) {
+      const vis = g.rows.filter((r) => r.show);
+      renderHead(g, vis);
+      g.li.hidden = !vis.length;
+      const open = filtered || openGroups.has(g.where);
+      g.ol.hidden = !open;
+      g.head.setAttribute('aria-expanded', String(open));
+    }
+    if (result?.changes.length && !rows.some((r) => r.show)) {
       const none = el('li', 'none', 'No changes match the filter.');
       none.id = 'list-none';
       list.append(none);
     }
+    updatePos();
+  };
+
+  const updatePos = () => {
+    const vis = rows.filter((r) => r.show);
+    const i = vis.findIndex((r) => r.btn === selected);
+    $('pos').textContent = `${i < 0 ? '–' : i + 1} / ${vis.length}`;
+    $('prev').disabled = $('next').disabled = !vis.length;
+  };
+
+  const toggleGroup = (g) => {
+    if (!filtering()) openGroups[openGroups.has(g.where) ? 'delete' : 'add'](g.where);
+    applyFilters();
+    const first = g.rows.find((r) => r.show);
+    if (!g.ol.hidden && first) select(first.btn, false);
+  };
+
+  const nav = (dir) => {
+    const vis = rows.filter((r) => r.show);
+    if (!vis.length) return;
+    const i = vis.findIndex((r) => r.btn === selected);
+    const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
+    openGroups.add(t.g.where);
+    applyFilters();
+    select(t.btn, false);
   };
 
   // the reader's place in the list; survives re-runs that end in a parse error or empty side
@@ -264,8 +317,10 @@ function init() {
     if (result) lastScroll = list.scrollTop;
     selected = null;
     list.replaceChildren();
+    rows = [];
+    groups = [];
     result = null;
-    $('filters').hidden = $('search-wrap').hidden = true;
+    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = true;
     $('total').textContent = '';
 
     const [l, r] = [models.left.getValue(), models.right.getValue()];
@@ -292,8 +347,21 @@ function init() {
     result = res;
     state.hidden = true;
     const counts = { added: 0, removed: 0, changed: 0 };
+    const byWhere = new Map();
     res.changes.forEach((c, i) => {
       counts[c.kind]++;
+      let g = byWhere.get(c.where);
+      if (!g) {
+        g = { where: c.where, li: el('li', 'group'), head: el('button', 'ghead'), ol: el('ol', 'gitems'), rows: [] };
+        g.head.type = 'button';
+        g.ol.id = `grp-${groups.length}`;
+        g.head.setAttribute('aria-controls', g.ol.id);
+        g.head.addEventListener('click', () => toggleGroup(g));
+        g.li.append(g.head, g.ol);
+        byWhere.set(c.where, g);
+        groups.push(g);
+        list.append(g.li);
+      }
       const li = el('li');
       li._change = c;
       li._haystack = [c.tag, c.text, c.where, c.path.join(' '), ...(c.details ?? [])].join(' ').toLowerCase();
@@ -301,7 +369,7 @@ function init() {
       b.title = `${c.path.join(' › ')}\n${SIDE[c.side]}, line ${c.line}`;
       b.dataset.i = i;
       const body = el('div');
-      body.append(el('span', c.tag === 'refactor' ? 'tag tag-refactor' : 'tag', c.tag), el('span', 'text', c.text), richText(c.where, 'where'));
+      body.append(el('span', c.tag === 'refactor' ? 'tag tag-refactor' : 'tag', c.tag), el('span', 'text', c.text));
       b.append(el('span', 'glyph', GLYPH[c.kind]), body);
       b.addEventListener('click', () => select(b, true));
       li.append(b);
@@ -323,15 +391,36 @@ function init() {
         });
         li.append(tog, d);
       }
-      list.append(li);
+      g.ol.append(li);
+      const row = { li, btn: b, c, g, show: true };
+      rows.push(row);
+      g.rows.push(row);
     });
     for (const k in counts) $(`n-${k}`).textContent = counts[k];
     $('total').textContent = res.changes.length;
-    $('filters').hidden = $('search-wrap').hidden = false;
+
+    const tagCount = new Map();
+    for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
+    // a selected tag missing from this run keeps a 0 chip, so a transient state while typing doesn't drop it
+    for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
+    $('tagbar').replaceChildren(
+      ...[...tagCount]
+        .sort((a, b) => b[1] - a[1])
+        .map(([t, n]) => {
+          const chip = el('button', 'tchip', `${t} `);
+          chip.type = 'button';
+          chip.dataset.tag = t;
+          chip.setAttribute('aria-pressed', String(tagsOn.has(t)));
+          chip.append(el('b', null, n));
+          return chip;
+        }),
+    );
+    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = false;
     applyFilters();
     if (selKey) {
-      const again = [...list.querySelectorAll('li:not([hidden]) .item')].find((b) => keyOf(b.parentElement._change) === selKey);
-      if (again) (selected = again).classList.add('sel');
+      const again = rows.find((r) => r.show && keyOf(r.c) === selKey);
+      if (again) (selected = again.btn).classList.add('sel');
+      updatePos();
     }
     list.scrollTop = lastScroll;
   }
@@ -347,20 +436,45 @@ function init() {
     ed.revealLineInCenter(c.line);
     ed.setPosition({ lineNumber: c.line, column: 1 });
     if (focusEditor) ed.focus();
+    updatePos();
   };
 
-  // ↑/↓ walk the visible items without leaving the list
+  // ↑/↓ walk the visible group headers and items without leaving the list
   list.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     e.preventDefault();
-    const items = [...list.querySelectorAll('li:not([hidden]) .item')];
+    const btns = [...list.querySelectorAll('.ghead, .item')].filter((b) => b.offsetParent);
+    const a = document.activeElement;
     // from a Details toggle, count from its own entry
-    const i = items.indexOf(document.activeElement.closest('li')?.querySelector('.item'));
-    const next = items[Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
-    if (next) {
-      next.focus();
-      select(next, false);
-    }
+    const i = btns.indexOf(a.closest('.ghead') ?? a.closest('li')?.querySelector('.item'));
+    const next = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+    if (!next) return;
+    next.focus();
+    if (next.classList.contains('item')) select(next, false);
+  });
+
+  $('prev').addEventListener('click', () => nav(-1));
+  $('next').addEventListener('click', () => nav(1));
+  // capture on document runs before Monaco's own F8 (next marker) handler on its editor node
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'F8' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        nav(e.shiftKey ? -1 : 1);
+      }
+    },
+    true,
+  );
+
+  $('tagbar').addEventListener('click', (e) => {
+    const chip = e.target.closest('.tchip');
+    if (!chip) return;
+    const t = chip.dataset.tag;
+    tagsOn[tagsOn.has(t) ? 'delete' : 'add'](t);
+    chip.setAttribute('aria-pressed', String(tagsOn.has(t)));
+    applyFilters();
   });
 
   document.querySelectorAll('.chip').forEach((chip) =>

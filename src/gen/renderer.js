@@ -2802,11 +2802,11 @@ ${cn.comment}` : item.comment;
   // node_modules/yaml/browser/dist/schema/Schema.js
   var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
   var Schema = class _Schema {
-    constructor({ compat, customTags, merge: merge2, resolveKnownTags, schema: schema4, sortMapEntries, toStringDefaults }) {
+    constructor({ compat, customTags, merge: merge3, resolveKnownTags, schema: schema4, sortMapEntries, toStringDefaults }) {
       this.compat = Array.isArray(compat) ? getTags(compat, "compat") : compat ? getTags(null, compat) : null;
       this.name = typeof schema4 === "string" && schema4 || "core";
       this.knownTags = resolveKnownTags ? coreKnownTags : {};
-      this.tags = getTags(customTags, this.name, merge2);
+      this.tags = getTags(customTags, this.name, merge3);
       this.toStringOptions = toStringDefaults ?? null;
       Object.defineProperty(this, MAP, { value: map });
       Object.defineProperty(this, SCALAR, { value: string });
@@ -6393,11 +6393,13 @@ ${end.comment}` : end.comment;
     return ch;
   }
   var restOf = (ctx) => locate(ctx).rest.join(".");
+  var ownWhere = (ctx) => compLabel(ctx.path.map(String)) ? locate(ctx, true).where : void 0;
   function walk(l, r, ctx) {
     if (eq(l, r)) return;
     if (l === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx);
     if (r === void 0) return emit("removed", restOf(ctx) ? `${restOf(ctx)} removed` : "Removed", ctx);
     if (extract(l, r, ctx)) return;
+    if (compose(l, r, ctx)) return;
     if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
     if (Array.isArray(l) && Array.isArray(r)) {
       for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ctx, i));
@@ -6483,8 +6485,82 @@ ${end.comment}` : end.comment;
       details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
     }
     const text = `${label2 ?? restOf(ctx)}: ${ext ? "extracted to" : "inlined from"} ${(segs && compLabel(segs)) ?? ref}`;
-    emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx, "refactor").details = details;
+    emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx, "refactor", ownWhere(ctx)).details = details;
     if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
+    return true;
+  }
+  var KW = ["allOf", "oneOf", "anyOf"];
+  var compOf = (s) => KW.find((k) => Array.isArray(s[k]));
+  var refsOf = (arr) => [...new Set(arr.filter(pureRef).map((m) => m.$ref))].sort();
+  var refName = (ref) => {
+    const segs = pointer(ref);
+    return (segs && compLabel(segs)) ?? ref;
+  };
+  var isUnion = (s, k) => k !== void 0 && k !== "allOf" && s[k].length > 1;
+  function merge2(a, b) {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b)) {
+      if (k === "properties" && isPlain(v) && isPlain(out.properties)) {
+        out.properties = { ...out.properties };
+        for (const [n, p] of Object.entries(v)) {
+          const q = out.properties[n];
+          out.properties[n] = has(out.properties, n) && isPlain(q) && isPlain(p) ? merge2(q, p) : p;
+        }
+      } else if (k === "required" && Array.isArray(v) && Array.isArray(out.required)) {
+        out.required = [.../* @__PURE__ */ new Set([...out.required, ...v])];
+      } else out[k] = v;
+    }
+    return out;
+  }
+  function flat(s, doc, seen = /* @__PURE__ */ new Set()) {
+    if (!isPlain(s)) return {};
+    if (pureRef(s)) {
+      const segs = pointer(s.$ref);
+      const key = JSON.stringify(segs);
+      if (!segs || seen.has(key) || seen.size >= 32) return {};
+      return flat(resolve(doc, segs), doc, /* @__PURE__ */ new Set([...seen, key]));
+    }
+    const k = compOf(s);
+    if (!k || k !== "allOf" && s[k].length !== 1) return s;
+    return merge2(s[k].reduce((acc, m) => merge2(acc, flat(m, doc, seen)), {}), omit(s, k));
+  }
+  function compose(l, r, ctx, label2) {
+    const st = ctx.st;
+    if (st.detail || !isPlain(l) || !isPlain(r)) return false;
+    const cl = compOf(l);
+    const cr = compOf(r);
+    if (!cl && !cr) return false;
+    if (cl === cr && eq(refsOf(l[cl]), refsOf(r[cr]))) return false;
+    const sink = [];
+    const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } };
+    const union = isUnion(l, cl) || isUnion(r, cr);
+    if (union) walk(l, r, dctx);
+    else walk(flat(l, st.lData), flat(r, st.rData), dctx);
+    const details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
+    const desc = (m) => pureRef(m) ? refName(m.$ref) : "inline";
+    let what;
+    if (!cr) what = `${cl} flattened`;
+    else if (cl === cr) {
+      const [lr, rr] = [refsOf(l[cl]), refsOf(r[cr])];
+      const ch2 = [...rr.filter((x) => !lr.includes(x)).map((x) => `+ ${refName(x)}`), ...lr.filter((x) => !rr.includes(x)).map((x) => `\u2212 ${refName(x)}`)];
+      what = `${cr} members changed: ${ch2.join(", ")}`;
+    } else what = `now ${cr} [${r[cr].map(desc).join(cr === "allOf" ? " + " : ", ")}]`;
+    const ch = emit("changed", `${label2 ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, "refactor", ownWhere(ctx));
+    ch.details = details;
+    if (!cr) {
+      ch.side = "left";
+      ch.line = lineOf(st.left, [...ctx.pl, cl]);
+    }
+    if (union) return true;
+    for (const [s, k, doc, other, set2] of [
+      [l, cl, st.lData, st.rData, st.inlined],
+      [r, cr, st.rData, st.lData, st.extracted]
+    ]) {
+      for (const ref of k ? refsOf(s[k]) : []) {
+        const segs = pointer(ref);
+        if (segs && compLabel(segs) && resolve(doc, segs) && !resolve(other, segs)) set2.add(JSON.stringify(segs));
+      }
+    }
     return true;
   }
   var label = (p) => !isPlain(p) ? void 0 : p.$ref ? `$ref ${p.$ref}` : p.in != null && p.name != null ? `${p.in} '${p.name}'` : void 0;
@@ -6550,7 +6626,8 @@ ${end.comment}` : end.comment;
       else {
         if (extract(lp, rp, c, nm)) continue;
         let [ls, rs] = [lp, rp];
-        if (extract(lp.schema, rp.schema, child(c, "schema"), p.name)) [ls, rs] = [omit(lp, "schema"), omit(rp, "schema")];
+        const sc = child(c, "schema");
+        if (extract(lp.schema, rp.schema, sc, p.name) || compose(lp.schema, rp.schema, sc, p.name)) [ls, rs] = [omit(lp, "schema"), omit(rp, "schema")];
         if (!!lp.required !== !!rp.required) emit("changed", `${nm}: ${rp.required ? "now required" : "no longer required"}`, c, "required");
         if (!eq(ptype(ls), ptype(rs))) emit("changed", `${nm}: type ${tfmt(ptype(ls))} \u2192 ${tfmt(ptype(rs))}`, c, "type");
         walk(stripParam(ls), stripParam(rs), c);
@@ -6578,7 +6655,7 @@ ${end.comment}` : end.comment;
       const suffix = t === void 0 ? "" : ` (${tfmt(t)})`;
       if (lv === void 0) emit("added", `Added property ${p}${suffix}`, c, "property");
       else if (rv === void 0) emit("removed", `Removed property ${p}${suffix}`, c, "property");
-      else if (!extract(lv, rv, c)) {
+      else if (!extract(lv, rv, c) && !compose(lv, rv, c)) {
         if (!eq(stype(lv), stype(rv))) emit("changed", `${p}: type ${tfmt(stype(lv))} \u2192 ${tfmt(stype(rv))}`, c, "type");
         walk(stripSchema(lv), stripSchema(rv), c);
       }
@@ -6717,6 +6794,10 @@ ${end.comment}` : end.comment;
     let result = null;
     let liveTimer;
     let hidden = /* @__PURE__ */ new Set();
+    const openGroups = /* @__PURE__ */ new Set();
+    const tagsOn = /* @__PURE__ */ new Set();
+    let rows = [];
+    let groups = [];
     const refreshHead = (side) => {
       const text = models[side].getValue();
       $(`file-${side}`).textContent = files[side] ?? (text.trim() ? "Pasted text" : "Empty");
@@ -6818,21 +6899,63 @@ ${end.comment}` : end.comment;
         state.append(b);
       }
     };
+    const filtering = () => !!(hidden.size || tagsOn.size || $("search").value.trim());
+    const renderHead = (g, vis) => {
+      const n = { added: 0, removed: 0, changed: 0 };
+      const tags = [];
+      for (const r of vis) {
+        n[r.c.kind]++;
+        if (!tags.includes(r.c.tag)) tags.push(r.c.tag);
+      }
+      const mini = el("span", "gmini");
+      for (const k in n) if (n[k]) mini.append(el("span", k, GLYPH[k] + n[k]));
+      const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
+      g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}`);
+      g.head.replaceChildren(el("span", "chev"), richText(g.where, "gwhere"), el("span", "gcount", vis.length), mini, el("span", "gtags", tags.join(" \xB7 ")));
+    };
     const applyFilters = () => {
       const q = $("search").value.trim().toLowerCase();
-      let visible = 0;
       $("list-none")?.remove();
-      for (const li of list.children) {
-        const c = li._change;
-        const show = !hidden.has(c.kind) && (!q || li._haystack.includes(q));
-        li.hidden = !show;
-        visible += show;
+      for (const r of rows) {
+        r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!q || r.li._haystack.includes(q));
+        r.li.hidden = !r.show;
       }
-      if (result?.changes.length && !visible) {
+      const filtered = filtering();
+      for (const g of groups) {
+        const vis = g.rows.filter((r) => r.show);
+        renderHead(g, vis);
+        g.li.hidden = !vis.length;
+        const open = filtered || openGroups.has(g.where);
+        g.ol.hidden = !open;
+        g.head.setAttribute("aria-expanded", String(open));
+      }
+      if (result?.changes.length && !rows.some((r) => r.show)) {
         const none = el("li", "none", "No changes match the filter.");
         none.id = "list-none";
         list.append(none);
       }
+      updatePos();
+    };
+    const updatePos = () => {
+      const vis = rows.filter((r) => r.show);
+      const i = vis.findIndex((r) => r.btn === selected);
+      $("pos").textContent = `${i < 0 ? "\u2013" : i + 1} / ${vis.length}`;
+      $("prev").disabled = $("next").disabled = !vis.length;
+    };
+    const toggleGroup = (g) => {
+      if (!filtering()) openGroups[openGroups.has(g.where) ? "delete" : "add"](g.where);
+      applyFilters();
+      const first = g.rows.find((r) => r.show);
+      if (!g.ol.hidden && first) select(first.btn, false);
+    };
+    const nav = (dir) => {
+      const vis = rows.filter((r) => r.show);
+      if (!vis.length) return;
+      const i = vis.findIndex((r) => r.btn === selected);
+      const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
+      openGroups.add(t.g.where);
+      applyFilters();
+      select(t.btn, false);
     };
     const keyOf = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join("/")}`;
     let selected = null;
@@ -6844,8 +6967,10 @@ ${end.comment}` : end.comment;
       if (result) lastScroll = list.scrollTop;
       selected = null;
       list.replaceChildren();
+      rows = [];
+      groups = [];
       result = null;
-      $("filters").hidden = $("search-wrap").hidden = true;
+      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = true;
       $("total").textContent = "";
       const [l, r] = [models.left.getValue(), models.right.getValue()];
       if (!l.trim() || !r.trim()) {
@@ -6869,8 +6994,21 @@ ${end.comment}` : end.comment;
       result = res;
       state.hidden = true;
       const counts = { added: 0, removed: 0, changed: 0 };
+      const byWhere = /* @__PURE__ */ new Map();
       res.changes.forEach((c, i) => {
         counts[c.kind]++;
+        let g = byWhere.get(c.where);
+        if (!g) {
+          g = { where: c.where, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [] };
+          g.head.type = "button";
+          g.ol.id = `grp-${groups.length}`;
+          g.head.setAttribute("aria-controls", g.ol.id);
+          g.head.addEventListener("click", () => toggleGroup(g));
+          g.li.append(g.head, g.ol);
+          byWhere.set(c.where, g);
+          groups.push(g);
+          list.append(g.li);
+        }
         const li = el("li");
         li._change = c;
         li._haystack = [c.tag, c.text, c.where, c.path.join(" "), ...c.details ?? []].join(" ").toLowerCase();
@@ -6879,7 +7017,7 @@ ${end.comment}` : end.comment;
 ${SIDE[c.side]}, line ${c.line}`;
         b.dataset.i = i;
         const body = el("div");
-        body.append(el("span", c.tag === "refactor" ? "tag tag-refactor" : "tag", c.tag), el("span", "text", c.text), richText(c.where, "where"));
+        body.append(el("span", c.tag === "refactor" ? "tag tag-refactor" : "tag", c.tag), el("span", "text", c.text));
         b.append(el("span", "glyph", GLYPH[c.kind]), body);
         b.addEventListener("click", () => select(b, true));
         li.append(b);
@@ -6901,15 +7039,32 @@ ${SIDE[c.side]}, line ${c.line}`;
           });
           li.append(tog, d);
         }
-        list.append(li);
+        g.ol.append(li);
+        const row = { li, btn: b, c, g, show: true };
+        rows.push(row);
+        g.rows.push(row);
       });
       for (const k in counts) $(`n-${k}`).textContent = counts[k];
       $("total").textContent = res.changes.length;
-      $("filters").hidden = $("search-wrap").hidden = false;
+      const tagCount = /* @__PURE__ */ new Map();
+      for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
+      for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
+      $("tagbar").replaceChildren(
+        ...[...tagCount].sort((a, b) => b[1] - a[1]).map(([t, n]) => {
+          const chip = el("button", "tchip", `${t} `);
+          chip.type = "button";
+          chip.dataset.tag = t;
+          chip.setAttribute("aria-pressed", String(tagsOn.has(t)));
+          chip.append(el("b", null, n));
+          return chip;
+        })
+      );
+      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = false;
       applyFilters();
       if (selKey) {
-        const again = [...list.querySelectorAll("li:not([hidden]) .item")].find((b) => keyOf(b.parentElement._change) === selKey);
-        if (again) (selected = again).classList.add("sel");
+        const again = rows.find((r2) => r2.show && keyOf(r2.c) === selKey);
+        if (again) (selected = again.btn).classList.add("sel");
+        updatePos();
       }
       list.scrollTop = lastScroll;
     }
@@ -6924,17 +7079,39 @@ ${SIDE[c.side]}, line ${c.line}`;
       ed.revealLineInCenter(c.line);
       ed.setPosition({ lineNumber: c.line, column: 1 });
       if (focusEditor) ed.focus();
+      updatePos();
     };
     list.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       e.preventDefault();
-      const items = [...list.querySelectorAll("li:not([hidden]) .item")];
-      const i = items.indexOf(document.activeElement.closest("li")?.querySelector(".item"));
-      const next = items[Math.max(0, Math.min(items.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
-      if (next) {
-        next.focus();
-        select(next, false);
-      }
+      const btns = [...list.querySelectorAll(".ghead, .item")].filter((b) => b.offsetParent);
+      const a = document.activeElement;
+      const i = btns.indexOf(a.closest(".ghead") ?? a.closest("li")?.querySelector(".item"));
+      const next = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
+      if (!next) return;
+      next.focus();
+      if (next.classList.contains("item")) select(next, false);
+    });
+    $("prev").addEventListener("click", () => nav(-1));
+    $("next").addEventListener("click", () => nav(1));
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "F8" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          nav(e.shiftKey ? -1 : 1);
+        }
+      },
+      true
+    );
+    $("tagbar").addEventListener("click", (e) => {
+      const chip = e.target.closest(".tchip");
+      if (!chip) return;
+      const t = chip.dataset.tag;
+      tagsOn[tagsOn.has(t) ? "delete" : "add"](t);
+      chip.setAttribute("aria-pressed", String(tagsOn.has(t)));
+      applyFilters();
     });
     document.querySelectorAll(".chip").forEach(
       (chip) => chip.addEventListener("click", () => {

@@ -24,7 +24,10 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 - **A change list that updates as you type**, one short line per change with a small tag (endpoint, property, required, pattern…), labelled with the endpoint or schema it belongs to.
 - **Changes, not noise.** Reordered keys, YAML vs JSON formatting and reordered parameters don't show up in the change list.
 - **Refactors read as one change.** When a field's inline definition is moved into a `$ref`, you see one entry, *"requestId: extracted to schema RequestId"*, with the real differences folded under a "Details" toggle.
-- **Filters and search.** Toggle added, removed or changed entries, or search by endpoint, schema, field or tag.
+- **Grouped by object.** Changes are grouped per endpoint or schema, each group showing how many changes it has (+ added, − removed, ~ changed) and which tags (property, required, type…), so you can see at a glance where the big changes are.
+- **Composition refactors read as one change too.** Moving shared fields into `allOf: [$ref Entity, …]`, flattening it back or turning a schema into a `oneOf` gives one entry, with the effective differences under "Details".
+- **Filters and search.** Toggle added, removed or changed entries, pick tags in the tag bar (property **5**, required **2**…), or search by endpoint, schema, field or tag.
+- **Jump from change to change.** F8 / Shift+F8 or the arrow buttons step through the changes in both editors, with a "3 / 17" counter.
 - **Private by design.** Everything runs on your machine. Your specs are never uploaded anywhere.
 
 <p align="center">
@@ -41,6 +44,7 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 | Schemas | `Added schema Order` · `Added property currency (string)` · `Removed property note (string)` |
 | Required fields | `currency: now required` · `email: no longer required` |
 | `$ref` refactors | `requestId: extracted to schema RequestId` · `requestId: inlined from schema RequestId` |
+| `allOf` / `oneOf` refactors | `Order: now allOf [schema Entity + inline]` · `Pet: now oneOf [schema Dog, schema Cat]` · `Order: allOf flattened` |
 | Everything else | `version: "1.4.0" → "2.0.0"` · `request body (application/xml) added` |
 
 Nothing is dropped: anything that doesn't match a pattern above still appears as a plain added, removed or changed entry.

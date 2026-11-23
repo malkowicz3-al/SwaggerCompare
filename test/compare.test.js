@@ -299,3 +299,101 @@ test('tags', () => {
   assert.equal(tag({ info: { version: '1' } }, { info: { version: '2' } }, 'version'), 'version');
   for (const c of [...s2.changes, ...o3.changes]) assert.ok(typeof c.tag === 'string' && c.tag !== '');
 });
+
+// allOf / oneOf / anyOf refactors
+const str = { type: 'string' };
+const orderFlat = { type: 'object', required: ['id', 'total'], properties: { id: str, createdAt: { type: 'string', format: 'date-time' }, total: { type: 'number' } } };
+const entity = { type: 'object', required: ['id'], properties: { id: str, createdAt: { type: 'string', format: 'date-time' } } };
+const orderAll = { allOf: [{ $ref: '#/definitions/Entity' }, { type: 'object', required: ['total'], properties: { total: { type: 'number' }, currency: str } }] };
+const sdefs = (definitions) => ({ swagger: '2.0', definitions });
+
+test('schema becomes allOf of a new schema + inline', () => {
+  const { res, rt } = run(sdefs({ Order: orderFlat }), sdefs({ Order: orderAll, Entity: entity }));
+  assert.deepEqual(texts(res), ['Order | Order: now allOf [schema Entity + inline]']);
+  const c = only(res);
+  assert.deepEqual([c.tag, c.side, c.line, c.details], ['refactor', 'right', ln(rt, /"allOf"/), ['Added property currency (string)']]);
+});
+
+test('allOf flattened back', () => {
+  const { res, lt } = run(sdefs({ Order: orderAll, Entity: entity }), sdefs({ Order: orderFlat }));
+  assert.deepEqual(texts(res), ['Order | Order: allOf flattened']);
+  const c = only(res);
+  assert.deepEqual([c.side, c.line, c.details], ['left', ln(lt, /"allOf"/), ['Removed property currency (string)']]);
+});
+
+test('single-member oneOf is the member itself', () => {
+  const { res } = run(sdefs({ Order: orderFlat }), sdefs({ Order: { oneOf: [{ $ref: '#/definitions/O' }] }, O: orderFlat }));
+  assert.deepEqual(texts(res), ['Order | Order: now oneOf [schema O]']);
+  assert.deepEqual(only(res).details, ['definition unchanged']);
+});
+
+test('inline schema becomes a 2-member oneOf', () => {
+  const dc = (n) => ({ $ref: `#/definitions/${n}` });
+  const { res } = run(sdefs({ Pet: entity }), sdefs({ Pet: { oneOf: [dc('Dog'), dc('Cat')] }, Dog: entity, Cat: entity }));
+  // a union's raw details don't show the members, so the new schemas keep their own entries
+  assert.deepEqual(texts(res), ['Pet | Pet: now oneOf [schema Dog, schema Cat]', 'schemas | Added schema Cat', 'schemas | Added schema Dog']);
+  assert.ok(only(res).details.length > 0);
+});
+
+test('allOf → oneOf and anyOf switches are one refactor entry', () => {
+  for (const kw of ['oneOf', 'anyOf']) {
+    const { res } = run(sdefs({ Order: orderAll, Entity: entity }), sdefs({ Order: { [kw]: orderAll.allOf }, Entity: entity }));
+    assert.deepEqual(texts(res), [`Order | Order: now ${kw} [schema Entity, inline]`]);
+    assert.equal(only(res).tag, 'refactor');
+  }
+});
+
+test('narrowing inline allOf member keeps its change when the refs change', () => {
+  const status = (e) => ({ properties: { status: { type: 'string', ...(e && { enum: e }) } } });
+  const base = { A: status(), B: status() };
+  const ord = (ref, e) => ({ allOf: [{ $ref: `#/definitions/${ref}` }, status(e)] });
+  const { res } = run(sdefs({ Order: ord('A', ['a', 'b']), ...base }), sdefs({ Order: ord('B', ['a', 'b', 'c']), ...base }));
+  assert.deepEqual(texts(res), ['Order | Order: allOf members changed: + schema B, − schema A']);
+  assert.deepEqual(only(res).details, ['status.enum.2 added']);
+});
+
+test('deep allOf chain flattens fully', () => {
+  const chain = { L0: { properties: { root: str } } };
+  for (let i = 1; i <= 6; i++) chain[`L${i}`] = { allOf: [{ $ref: `#/definitions/L${i - 1}` }, { properties: { [`p${i}`]: str } }] };
+  const props = Object.fromEntries(['root', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'].map((n) => [n, str]));
+  const { res } = run(sdefs({ Order: { properties: props }, ...chain }), sdefs({ Order: { allOf: [{ $ref: '#/definitions/L6' }] }, ...chain }));
+  assert.deepEqual(texts(res), ['Order | Order: now allOf [schema L6]']);
+  assert.deepEqual(only(res).details, ['definition unchanged']);
+});
+
+test('a member schema present on both sides keeps its own changes', () => {
+  const { res } = run(sdefs({ Order: orderFlat, Entity: entity }), sdefs({ Order: orderAll, Entity: { ...entity, description: 'base' } }));
+  assert.deepEqual(texts(res), ['Entity | description added', 'Order | Order: now allOf [schema Entity + inline]']);
+});
+
+test('property schema becomes allOf', () => {
+  const { res } = run(s2doc({ a: rid }), s2doc({ a: { allOf: [{ $ref: '#/definitions/Id' }] } }, { Id: rid }));
+  assert.deepEqual(texts(res), ['User | a: now allOf [schema Id]']);
+  assert.deepEqual(only(res).details, ['definition unchanged']);
+});
+
+test('parameter schema becomes allOf', () => {
+  const op = (schema, schemas) => ({ openapi: '3.0.3', paths: { '/x': { get: { parameters: [{ in: 'query', name: 'id', schema }] } } }, components: { schemas } });
+  const { res } = run(op(rid, {}), op({ allOf: [{ $ref: '#/components/schemas/Id' }] }, { Id: rid }));
+  assert.deepEqual(texts(res), ['GET /x | id: now allOf [schema Id]']);
+});
+
+test('allOf members changed', () => {
+  const all = (n) => ({ allOf: [{ $ref: `#/definitions/${n}` }, { properties: { x: str } }] });
+  const { res } = run(sdefs({ Order: all('A'), A: entity, B: entity }), sdefs({ Order: all('B'), A: entity, B: entity }));
+  assert.deepEqual(texts(res), ['Order | Order: allOf members changed: + schema B, − schema A']);
+  assert.deepEqual(only(res).details, ['definition unchanged']);
+});
+
+test('allOf with the same refs walks members as before', () => {
+  const all = (p) => ({ allOf: [{ $ref: '#/definitions/A' }, { properties: p }] });
+  const { res } = run(sdefs({ Order: all({ x: str }), A: entity }), sdefs({ Order: all({ x: str, y: str }), A: entity }));
+  assert.deepEqual(texts(res), ['Order.allOf.1 | Added property y (string)']);
+  assert.ok(res.changes.every((c) => c.tag !== 'refactor'));
+});
+
+test('$ref cycle in allOf terminates', () => {
+  const cyc = { allOf: [{ $ref: '#/definitions/Order' }, { properties: { x: str } }] };
+  const { res } = run(sdefs({ Order: orderFlat }), sdefs({ Order: cyc }));
+  assert.equal(only(res).text, 'Order: now allOf [schema Order + inline]');
+});

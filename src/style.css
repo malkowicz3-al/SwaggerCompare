@@ -187,7 +187,23 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 h2 { margin: 0; font-size: 13px; font-weight: 600; }
 #total { margin-left: 4px; color: var(--faint); font-weight: 500; }
 .filters { display: flex; gap: 4px; }
-.filters[hidden] { display: none; }
+.filters[hidden], .nav[hidden], .tagbar[hidden] { display: none; }
+.nav { display: flex; align-items: center; gap: 2px; margin-left: auto; margin-right: 8px; }
+#pos { min-width: 44px; text-align: center; font: 500 11px/1 var(--mono); color: var(--muted); }
+.icon:disabled { opacity: .35; cursor: default; background: none; color: var(--muted); }
+.tagbar { display: flex; flex-wrap: wrap; gap: 4px; flex: none; margin: 10px 12px 0; }
+.tchip {
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  font: 500 10px/1.4 var(--mono);
+  color: var(--muted);
+}
+.tchip b { font-weight: 500; color: var(--faint); }
+.tchip:hover { color: var(--text); }
+.tchip[aria-pressed="true"] { color: var(--focus); border-color: var(--focus); background: rgba(141, 180, 255, .1); }
+.tchip[aria-pressed="true"] b { color: var(--focus); }
 .chip {
   display: inline-flex;
   align-items: center;
@@ -278,8 +294,30 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .removed .glyph { color: var(--removed); background: rgba(255, 107, 122, .12); }
 .changed .glyph { color: var(--changed); background: rgba(242, 184, 75, .12); }
 .text { color: var(--text); overflow-wrap: anywhere; }
-.where { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
-.where .method { min-width: 38px; font-size: 9.5px; margin-right: 5px; }
+/* Group of changes per object: chevron | where | count | +a −r ~c, tags below */
+.group[hidden], .gitems[hidden] { display: none; }
+.ghead {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+}
+.ghead:hover { background: var(--raised); }
+.ghead .chev { color: var(--muted); font-size: 11px; }
+.ghead[aria-expanded="true"] .chev::before { transform: rotate(90deg); }
+.gwhere { font-weight: 500; overflow-wrap: anywhere; }
+.gwhere .method { min-width: 38px; font-size: 9.5px; margin-right: 5px; }
+.gcount { font: 500 11px/1 var(--mono); color: var(--faint); }
+.gmini { display: flex; gap: 6px; font: 500 11px/1 var(--mono); }
+.gmini .added { color: var(--added); }
+.gmini .removed { color: var(--removed); }
+.gmini .changed { color: var(--changed); }
+.gtags { grid-column: 2 / -1; margin-top: 2px; font: 400 10.5px/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.gitems { margin: 0 0 4px; padding: 0 0 0 10px; list-style: none; }
 /* tog and details line up with .text: item padding 10px + glyph 22px + gap 10px */
 .tog {
   display: inline-flex;

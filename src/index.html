@@ -55,12 +55,18 @@
   <aside class="changes" aria-label="Changes">
     <div class="changes-head">
       <h2>Changes <span id="total"></span></h2>
+      <div class="nav" id="nav" hidden>
+        <button id="prev" class="icon" aria-label="Previous change (Shift+F8)" title="Previous change (Shift+F8)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
+        <span id="pos" aria-live="polite">– / 0</span>
+        <button id="next" class="icon" aria-label="Next change (F8)" title="Next change (F8)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      </div>
       <div class="filters" id="filters" hidden>
         <button class="chip added" data-kind="added" aria-pressed="true" title="Show added"><span>+</span><b id="n-added">0</b></button>
         <button class="chip removed" data-kind="removed" aria-pressed="true" title="Show removed"><span>−</span><b id="n-removed">0</b></button>
         <button class="chip changed" data-kind="changed" aria-pressed="true" title="Show changed"><span>~</span><b id="n-changed">0</b></button>
       </div>
     </div>
+    <div class="tagbar" id="tagbar" role="group" aria-label="Filter by tag" hidden></div>
     <div class="search" id="search-wrap" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
       <input id="search" type="search" placeholder="Filter by endpoint, schema or field" spellcheck="false">

@@ -165,12 +165,15 @@ function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where)
 }
 
 const restOf = (ctx) => locate(ctx).rest.join('.');
+// a refactor of a whole component belongs to that component's group ("Order"), not to "schemas"
+const ownWhere = (ctx) => (compLabel(ctx.path.map(String)) ? locate(ctx, true).where : undefined);
 
 function walk(l, r, ctx) {
   if (eq(l, r)) return;
   if (l === undefined) return emit('added', restOf(ctx) ? `${restOf(ctx)} added` : 'Added', ctx);
   if (r === undefined) return emit('removed', restOf(ctx) ? `${restOf(ctx)} removed` : 'Removed', ctx);
   if (extract(l, r, ctx)) return;
+  if (compose(l, r, ctx)) return;
   if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
   if (Array.isArray(l) && Array.isArray(r)) {
     for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ctx, i));
@@ -269,9 +272,93 @@ function extract(l, r, ctx, label) {
     details = sink.length ? sink.map((c) => c.text) : ['definition unchanged'];
   }
   const text = `${label ?? restOf(ctx)}: ${ext ? 'extracted to' : 'inlined from'} ${(segs && compLabel(segs)) ?? ref}`;
-  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx, 'refactor').details = details;
+  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx, 'refactor', ownWhere(ctx)).details = details;
   // only a resolved, whole component is covered by this entry; a ref into a sub-path (W/properties/id) covers nothing
   if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
+  return true;
+}
+
+const KW = ['allOf', 'oneOf', 'anyOf'];
+const compOf = (s) => KW.find((k) => Array.isArray(s[k]));
+const refsOf = (arr) => [...new Set(arr.filter(pureRef).map((m) => m.$ref))].sort();
+const refName = (ref) => {
+  const segs = pointer(ref);
+  return (segs && compLabel(segs)) ?? ref;
+};
+const isUnion = (s, k) => k !== undefined && k !== 'allOf' && s[k].length > 1;
+
+// b refines a: properties merged recursively, required unioned, otherwise b wins, so a narrowing change can't vanish
+function merge(a, b) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) {
+    if (k === 'properties' && isPlain(v) && isPlain(out.properties)) {
+      out.properties = { ...out.properties };
+      for (const [n, p] of Object.entries(v)) {
+        const q = out.properties[n];
+        out.properties[n] = has(out.properties, n) && isPlain(q) && isPlain(p) ? merge(q, p) : p;
+      }
+    } else if (k === 'required' && Array.isArray(v) && Array.isArray(out.required)) {
+      out.required = [...new Set([...out.required, ...v])];
+    } else out[k] = v;
+  }
+  return out;
+}
+
+// Effective schema: $refs resolved, allOf (or a 1-member oneOf/anyOf) merged in order, own keys last; a real union stays as-is.
+function flat(s, doc, seen = new Set()) {
+  if (!isPlain(s)) return {};
+  if (pureRef(s)) {
+    const segs = pointer(s.$ref);
+    const key = JSON.stringify(segs);
+    // seen catches cycles; the hop limit only bounds absurdly deep chains
+    if (!segs || seen.has(key) || seen.size >= 32) return {};
+    return flat(resolve(doc, segs), doc, new Set([...seen, key]));
+  }
+  const k = compOf(s);
+  if (!k || (k !== 'allOf' && s[k].length !== 1)) return s;
+  return merge(s[k].reduce((acc, m) => merge(acc, flat(m, doc, seen)), {}), omit(s, k));
+}
+
+// Schema gaining/losing allOf/oneOf/anyOf (or changing its member $refs): one entry, the effective differences as details.
+function compose(l, r, ctx, label) {
+  const st = ctx.st;
+  if (st.detail || !isPlain(l) || !isPlain(r)) return false;
+  const cl = compOf(l);
+  const cr = compOf(r);
+  if (!cl && !cr) return false;
+  if (cl === cr && eq(refsOf(l[cl]), refsOf(r[cr]))) return false;
+  const sink = [];
+  const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } };
+  const union = isUnion(l, cl) || isUnion(r, cr);
+  if (union) walk(l, r, dctx);
+  else walk(flat(l, st.lData), flat(r, st.rData), dctx);
+  const details = sink.length ? sink.map((c) => c.text) : ['definition unchanged'];
+  const desc = (m) => (pureRef(m) ? refName(m.$ref) : 'inline');
+  let what;
+  if (!cr) what = `${cl} flattened`;
+  else if (cl === cr) {
+    const [lr, rr] = [refsOf(l[cl]), refsOf(r[cr])];
+    const ch = [...rr.filter((x) => !lr.includes(x)).map((x) => `+ ${refName(x)}`), ...lr.filter((x) => !rr.includes(x)).map((x) => `− ${refName(x)}`)];
+    what = `${cr} members changed: ${ch.join(', ')}`;
+  } else what = `now ${cr} [${r[cr].map(desc).join(cr === 'allOf' ? ' + ' : ', ')}]`;
+  const ch = emit('changed', `${label ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, 'refactor', ownWhere(ctx));
+  ch.details = details;
+  if (!cr) {
+    ch.side = 'left';
+    ch.line = lineOf(st.left, [...ctx.pl, cl]);
+  }
+  // a component that exists only on the side using it as a member is covered by the flattened details;
+  // a union's raw details don't contain its members, so those keep their own entries
+  if (union) return true;
+  for (const [s, k, doc, other, set] of [
+    [l, cl, st.lData, st.rData, st.inlined],
+    [r, cr, st.rData, st.lData, st.extracted],
+  ]) {
+    for (const ref of k ? refsOf(s[k]) : []) {
+      const segs = pointer(ref);
+      if (segs && compLabel(segs) && resolve(doc, segs) && !resolve(other, segs)) set.add(JSON.stringify(segs));
+    }
+  }
   return true;
 }
 
@@ -349,7 +436,8 @@ function walkParams(lArr, rArr, ctx) {
     else {
       if (extract(lp, rp, c, nm)) continue;
       let [ls, rs] = [lp, rp];
-      if (extract(lp.schema, rp.schema, child(c, 'schema'), p.name)) [ls, rs] = [omit(lp, 'schema'), omit(rp, 'schema')];
+      const sc = child(c, 'schema');
+      if (extract(lp.schema, rp.schema, sc, p.name) || compose(lp.schema, rp.schema, sc, p.name)) [ls, rs] = [omit(lp, 'schema'), omit(rp, 'schema')];
       if (!!lp.required !== !!rp.required) emit('changed', `${nm}: ${rp.required ? 'now required' : 'no longer required'}`, c, 'required');
       if (!eq(ptype(ls), ptype(rs))) emit('changed', `${nm}: type ${tfmt(ptype(ls))} → ${tfmt(ptype(rs))}`, c, 'type');
       walk(stripParam(ls), stripParam(rs), c);
@@ -382,7 +470,7 @@ function walkProps(lProps, rProps, ctx) {
     const suffix = t === undefined ? '' : ` (${tfmt(t)})`;
     if (lv === undefined) emit('added', `Added property ${p}${suffix}`, c, 'property');
     else if (rv === undefined) emit('removed', `Removed property ${p}${suffix}`, c, 'property');
-    else if (!extract(lv, rv, c)) {
+    else if (!extract(lv, rv, c) && !compose(lv, rv, c)) {
       if (!eq(stype(lv), stype(rv))) emit('changed', `${p}: type ${tfmt(stype(lv))} → ${tfmt(stype(rv))}`, c, 'type');
       walk(stripSchema(lv), stripSchema(rv), c);
     }
