@@ -16,7 +16,7 @@
   <img src="docs/images/demo.gif" alt="Dropping two versions of an Orders API spec into SwaggerCompare: a side-by-side diff appears with a list of changes such as 'Added endpoint PATCH /orders/{id}' and 'requestId: extracted to schema RequestId'" width="900">
 </p>
 
-A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare parses both specs and tells you what that means for the API: an endpoint was removed, a query parameter became required, a field was moved into its own schema. Click any change to jump to its line.
+A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare parses both specs and tells you what that means for the API: an endpoint was removed, a query parameter became required, a field was moved into its own schema. Click any change to highlight the affected fragment in both specs, the original on the left and the modified on the right.
 
 ## What you get
 
@@ -24,7 +24,7 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 - **A change list that updates as you type**, one short line per change with a small tag (endpoint, property, required, pattern…), labelled with the endpoint or schema it belongs to.
 - **Changes, not noise.** Reordered keys, YAML vs JSON formatting and reordered parameters don't show up in the change list.
 - **Refactors read as one change.** When a field's inline definition is moved into a `$ref`, you see one entry, *"requestId: extracted to schema RequestId"*, with the real differences folded under a "Details" toggle.
-- **Grouped by object.** Changes are grouped per endpoint or schema, each group showing how many changes it has (+ added, − removed, ~ changed) and which tags (property, required, type…), so you can see at a glance where the big changes are.
+- **Grouped by object.** Changes are grouped per endpoint or schema, each group showing how many changes it has (+ added, − removed, ~ changed) and which tags (property, required, type…), so you can see at a glance where the big changes are. Groups start expanded; one button collapses or expands them all.
 - **Composition refactors read as one change too.** Moving shared fields into `allOf: [$ref Entity, …]`, flattening it back or turning a schema into a `oneOf` gives one entry, with the effective differences under "Details".
 - **Filters and search.** Toggle added, removed or changed entries, pick tags in the tag bar (property **5**, required **2**…), or search by endpoint, schema, field or tag.
 - **Jump from change to change.** F8 / Shift+F8 or the arrow buttons step through the changes in both editors, with a "3 / 17" counter.

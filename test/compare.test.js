@@ -397,3 +397,65 @@ test('$ref cycle in allOf terminates', () => {
   const { res } = run(sdefs({ Order: orderFlat }), sdefs({ Order: cyc }));
   assert.equal(only(res).text, 'Order: now allOf [schema Order + inline]');
 });
+
+// highlight ranges: left/right = {start, end, exact} lines of the affected fragment
+const pick = (l, r, text) => compare(l, r).changes.find((c) => c.text.includes(text));
+
+test('ranges cover the whole fragment', () => {
+  const user = (t, more = '') => `definitions:\n  User:\n    properties:\n      a:\n        type: ${t}\n        format: x\n${more}`;
+  // a is last in the file (trailing newline) and followed by another key
+  for (const more of ['', '      b:\n        type: string\n']) {
+    const c = pick(user('string', more), user('integer', more), 'type string');
+    assert.deepEqual(c.left, { start: 4, end: 6, exact: true });
+    assert.deepEqual(c.right, { start: 4, end: 6, exact: true });
+  }
+  const v = pick('info:\n  version: "1"\n  title: X\n', 'info:\n  version: "2"\n  title: X\n', 'version');
+  assert.deepEqual([v.left, v.right], [{ start: 2, end: 2, exact: true }, { start: 2, end: 2, exact: true }]);
+  const d = pick('info:\n  description: |\n    a\n    b\n\n  title: X\n', 'info:\n  description: |\n    a\n    c\n\n  title: X\n', 'description');
+  assert.deepEqual(d.right, { start: 2, end: 4, exact: true });
+});
+
+test('ranges of an added endpoint', () => {
+  const l = 'paths:\n  /x:\n    get:\n      summary: s\n';
+  const r = 'paths:\n  /x:\n    get:\n      summary: s\n    post:\n      responses:\n        200:\n          description: ok\n';
+  const c = pick(l, r, 'Added endpoint');
+  assert.deepEqual(c.right, { start: 5, end: 8, exact: true });
+  assert.deepEqual(c.left, { start: 2, end: 2, exact: false });
+});
+
+test('ranges of refactors and required', () => {
+  const props = (a) => `definitions:\n  User:\n    properties:\n      a:\n${a}`;
+  const ext = pick(props('        type: string\n        format: uuid\n'), props("        $ref: '#/definitions/Id'\n  Id:\n    type: string\n    format: uuid\n"), 'extracted');
+  assert.deepEqual(ext.right, { start: 5, end: 5, exact: true });
+  assert.deepEqual(ext.left, { start: 4, end: 6, exact: true });
+
+  const flatL = "definitions:\n  E:\n    properties: {id: {type: string}}\n  O:\n    allOf:\n      - $ref: '#/definitions/E'\n";
+  const fl = pick(flatL, 'definitions:\n  O:\n    properties: {id: {type: string}}\n', 'flattened');
+  assert.equal(fl.left.start, 5);
+
+  const req = (r) => `definitions:\n  User:\n    required:\n${r}    properties:\n      a: {}\n      b: {}\n`;
+  const nr = pick(req('      - a\n      - b\n'), req('      - a\n'), 'no longer required');
+  assert.deepEqual(nr.left, { start: 5, end: 5, exact: true });
+});
+
+test('ranges in JSON, CRLF, parameters and a missing required', () => {
+  const { res, lt } = run(s2doc({ a: { type: 'string', format: 'x' } }), s2doc({ a: { type: 'integer', format: 'x' } }));
+  const a = res.changes.find((c) => c.text.includes('type string'));
+  const start = ln(lt, /"a": \{/);
+  assert.deepEqual(a.left, { start, end: start + 3, exact: true }); // through the closing }
+
+  const user = (t) => `definitions:\n  User:\n    properties:\n      a:\n        type: ${t}\n        format: x\n      b:\n        type: string\n`;
+  const crlf = (s) => s.replace(/\n/g, '\r\n');
+  const lf = pick(user('string'), user('integer'), 'type string');
+  const cr = pick(crlf(user('string')), crlf(user('integer')), 'type string');
+  assert.deepEqual([cr.left, cr.right], [lf.left, lf.right]);
+
+  const op = (ps) => `paths:\n  /x:\n    get:\n      parameters:\n${ps.map((p) => `        - {${p}}\n`).join('')}`;
+  const b = pick(op(['in: query, name: a', 'in: query, name: b, description: x']), op(['in: query, name: b, description: y']), 'description');
+  assert.deepEqual([b.left.start, b.right.start], [6, 5]);
+
+  const req = (r) => `definitions:\n  User:\n${r}    properties:\n      a: {}\n`;
+  const now = pick(req(''), req('    required: [a]\n'), 'now required');
+  assert.equal(now.left.exact, false);
+  assert.equal(now.right.exact, true);
+});

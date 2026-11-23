@@ -26,26 +26,33 @@ function parse(text, side) {
   if (doc.contents == null) return fail(1, 'Empty document');
   if (!isMap(doc.contents)) return fail(1, 'Document root must be a mapping');
   try {
-    return { data: doc.toJS(), index: buildIndex(doc, lc) };
+    return { data: doc.toJS(), index: buildIndex(doc, lc, text) };
   } catch (e) {
     return fail(1, e.message.split('\n')[0]); // e.g. alias count limit
   }
 }
 
-function buildIndex(doc, lc) {
-  const index = new Map([[JSON.stringify([]), 1]]);
+// pathKey → {start, end} lines of the whole fragment (key through the last content line of its value)
+function buildIndex(doc, lc, text) {
+  const index = new Map([[JSON.stringify([]), { start: 1, end: 1 }]]);
+  const span = (from, to, min) => {
+    let off = Math.max(to - 1, min - 1);
+    // a block's range runs past trailing newlines/blank lines; stop at its last non-blank char
+    while (off > from && /\s/.test(text[off])) off--;
+    return { start: lc.linePos(from).line, end: lc.linePos(off).line };
+  };
   const visit = (node, path) => {
     if (isMap(node)) {
       for (const p of node.items) {
         if (!isScalar(p.key)) continue; // complex/null keys fall back to the parent's line
         const sub = [...path, String(p.key.value)];
-        index.set(JSON.stringify(sub), lc.linePos(p.key.range[0]).line);
+        index.set(JSON.stringify(sub), span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]));
         visit(p.value, sub);
       }
     } else if (isSeq(node)) {
       node.items.forEach((item, i) => {
         const sub = [...path, i];
-        if (item?.range) index.set(JSON.stringify(sub), lc.linePos(item.range[0]).line);
+        if (item?.range) index.set(JSON.stringify(sub), span(item.range[0], item.range[1], item.range[1]));
         visit(item, sub);
       });
     }
@@ -54,12 +61,20 @@ function buildIndex(doc, lc) {
   return index;
 }
 
-function lineOf(index, path) {
+function nearest(index, path) {
   for (let i = path.length; i >= 0; i--) {
-    const line = index.get(JSON.stringify(path.slice(0, i)));
-    if (line) return line;
+    const r = index.get(JSON.stringify(path.slice(0, i)));
+    if (r) return { r, exact: i === path.length };
   }
-  return 1;
+  return { r: { start: 1, end: 1 }, exact: false };
+}
+
+const lineOf = (index, path) => nearest(index, path).r.start;
+
+// the fragment at path, or just the first line of its nearest existing ancestor
+function rangeOf(index, path) {
+  const { r, exact } = nearest(index, path);
+  return exact ? { start: r.start, end: r.end, exact } : { start: r.start, end: r.start, exact };
 }
 
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -159,7 +174,7 @@ const tagOf = (p) => [...p].map(String).reverse().find((s) => !/^\d+$/.test(s)) 
 function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where) {
   const side = kind === 'removed' ? 'left' : 'right';
   const line = lineOf(ctx.st[side], side === 'left' ? ctx.pl : ctx.pr);
-  const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line };
+  const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(ctx.st.left, ctx.pl), right: rangeOf(ctx.st.right, ctx.pr) };
   ctx.st.changes.push(ch);
   return ch;
 }
@@ -346,6 +361,7 @@ function compose(l, r, ctx, label) {
   if (!cr) {
     ch.side = 'left';
     ch.line = lineOf(st.left, [...ctx.pl, cl]);
+    ch.left = rangeOf(st.left, [...ctx.pl, cl]);
   }
   // a component that exists only on the side using it as a member is covered by the flattened details;
   // a union's raw details don't contain its members, so those keep their own entries
@@ -485,15 +501,15 @@ function walkRequired(lArr, rArr, ctx, lObj, rObj) {
   const props = (obj) => (isPlain(obj.properties) ? obj.properties : {});
   const lProps = props(lObj);
   const rProps = props(rObj);
-  const at = (n, pr) => ({ ...ctx, path: [...ctx.path, 'required', String(n)], pr });
+  const at = (n, pl, pr) => ({ ...ctx, path: [...ctx.path, 'required', String(n)], pl, pr });
 
   rArr.forEach((n, i) => {
-    if (!ls.has(n) && rArr.indexOf(n) === i) emit('changed', `${nm(n)}: now required`, at(n, [...ctx.pr, 'required', i]), 'required', where);
+    if (!ls.has(n) && rArr.indexOf(n) === i) emit('changed', `${nm(n)}: now required`, at(n, [...ctx.pl, 'required'], [...ctx.pr, 'required', i]), 'required', where);
   });
   for (const n of ls) {
     // a name dropped together with its property is already reported as "Removed property"
     if (rs.has(n) || (has(lProps, n) && !has(rProps, n))) continue;
     const pr = has(rProps, n) ? [...ctx.pr, 'properties', n] : [...ctx.pr, 'required'];
-    emit('changed', `${nm(n)}: no longer required`, at(n, pr), 'required', where);
+    emit('changed', `${nm(n)}: no longer required`, at(n, [...ctx.pl, 'required', lArr.indexOf(n)], pr), 'required', where);
   }
 }

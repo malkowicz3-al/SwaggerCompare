@@ -66,7 +66,9 @@
         <button class="chip changed" data-kind="changed" aria-pressed="true" title="Show changed"><span>~</span><b id="n-changed">0</b></button>
       </div>
     </div>
-    <div class="tagbar" id="tagbar" role="group" aria-label="Filter by tag" hidden></div>
+    <div class="tagbar" id="tagbar" role="group" aria-label="Filter by tag" hidden>
+      <button id="toggle-all" class="icon" type="button" title="Collapse all" aria-label="Collapse all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 11 5-5 5 5M7 18l5-5 5 5"/></svg></button>
+    </div>
     <div class="search" id="search-wrap" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
       <input id="search" type="search" placeholder="Filter by endpoint, schema or field" spellcheck="false">

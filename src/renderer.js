@@ -121,7 +121,7 @@ function init() {
   let result = null; // last successful compare, for filtering
   let liveTimer;
   let hidden = new Set();
-  const openGroups = new Set(); // where of expanded groups; survives re-runs
+  const collapsed = new Set(); // where of collapsed groups; survives re-runs
   const tagsOn = new Set();
   let rows = []; // {li, btn, c, g, show}, in list order
   let groups = []; // {where, li, head, ol, rows}
@@ -211,6 +211,26 @@ function init() {
     load('right', l, fl);
   });
 
+  // the selected change's fragment in both editors; an inexact side only marks the nearest ancestor's line
+  const hl = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+  const clearHl = () => {
+    hl.left.clear();
+    hl.right.clear();
+  };
+  const showHl = (c, reveal) => {
+    for (const side of ['left', 'right']) {
+      const r = c[side];
+      const ed = editors[side];
+      const options = r.exact ? { isWholeLine: true, className: 'hl', linesDecorationsClassName: 'hl-bar' } : { isWholeLine: true, className: 'hl-anchor' };
+      hl[side].set([{ range: new monaco.Range(r.start, 1, r.end, 1), options }]);
+      // only the primary side scrolls: the diff editor syncs the other, and a second reveal would win
+      if (!reveal || side !== c.side) continue;
+      const rows = Math.floor(ed.getLayoutInfo().height / ed.getOption(monaco.editor.EditorOption.lineHeight));
+      if (r.end - r.start + 1 > rows) ed.revealLineNearTop(r.start);
+      else ed.revealLinesInCenterIfOutsideViewport(r.start, r.end);
+    }
+  };
+
   const jump = (side, line) => {
     const ed = editors[side];
     ed.revealLineInCenter(line);
@@ -269,10 +289,16 @@ function init() {
       const vis = g.rows.filter((r) => r.show);
       renderHead(g, vis);
       g.li.hidden = !vis.length;
-      const open = filtered || openGroups.has(g.where);
+      const open = filtered || !collapsed.has(g.where);
       g.ol.hidden = !open;
       g.head.setAttribute('aria-expanded', String(open));
     }
+    const all = groups.length > 0 && groups.every((g) => collapsed.has(g.where));
+    const ta = $('toggle-all');
+    ta.title = all ? 'Expand all' : 'Collapse all';
+    ta.setAttribute('aria-label', ta.title);
+    ta.dataset.collapsed = String(all);
+    ta.disabled = filtered;
     if (result?.changes.length && !rows.some((r) => r.show)) {
       const none = el('li', 'none', 'No changes match the filter.');
       none.id = 'list-none';
@@ -289,7 +315,7 @@ function init() {
   };
 
   const toggleGroup = (g) => {
-    if (!filtering()) openGroups[openGroups.has(g.where) ? 'delete' : 'add'](g.where);
+    if (!filtering()) collapsed[collapsed.has(g.where) ? 'delete' : 'add'](g.where);
     applyFilters();
     const first = g.rows.find((r) => r.show);
     if (!g.ol.hidden && first) select(first.btn, false);
@@ -300,7 +326,7 @@ function init() {
     if (!vis.length) return;
     const i = vis.findIndex((r) => r.btn === selected);
     const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
-    openGroups.add(t.g.where);
+    collapsed.delete(t.g.where);
     applyFilters();
     select(t.btn, false);
   };
@@ -313,6 +339,7 @@ function init() {
   let lastScroll = 0;
 
   function run() {
+    clearHl();
     clearTimeout(liveTimer);
     if (result) lastScroll = list.scrollTop;
     selected = null;
@@ -403,6 +430,7 @@ function init() {
     for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
     // a selected tag missing from this run keeps a 0 chip, so a transient state while typing doesn't drop it
     for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
+    const toggleAll = $('toggle-all');
     $('tagbar').replaceChildren(
       ...[...tagCount]
         .sort((a, b) => b[1] - a[1])
@@ -414,12 +442,16 @@ function init() {
           chip.append(el('b', null, n));
           return chip;
         }),
+      toggleAll,
     );
     $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = false;
     applyFilters();
     if (selKey) {
       const again = rows.find((r) => r.show && keyOf(r.c) === selKey);
-      if (again) (selected = again.btn).classList.add('sel');
+      if (again) {
+        (selected = again.btn).classList.add('sel');
+        showHl(again.c, false); // no scroll while typing
+      }
       updatePos();
     }
     list.scrollTop = lastScroll;
@@ -433,8 +465,8 @@ function init() {
     b.scrollIntoView({ block: 'nearest' });
     const c = b.parentElement._change;
     const ed = editors[c.side];
-    ed.revealLineInCenter(c.line);
     ed.setPosition({ lineNumber: c.line, column: 1 });
+    showHl(c, true);
     if (focusEditor) ed.focus();
     updatePos();
   };
@@ -453,6 +485,11 @@ function init() {
     if (next.classList.contains('item')) select(next, false);
   });
 
+  $('toggle-all').addEventListener('click', () => {
+    if (groups.every((g) => collapsed.has(g.where))) collapsed.clear();
+    else for (const g of groups) collapsed.add(g.where);
+    applyFilters();
+  });
   $('prev').addEventListener('click', () => nav(-1));
   $('next').addEventListener('click', () => nav(1));
   // capture on document runs before Monaco's own F8 (next marker) handler on its editor node

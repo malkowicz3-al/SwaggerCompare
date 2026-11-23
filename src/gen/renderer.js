@@ -6274,25 +6274,30 @@ ${end.comment}` : end.comment;
     if (doc.contents == null) return fail(1, "Empty document");
     if (!isMap(doc.contents)) return fail(1, "Document root must be a mapping");
     try {
-      return { data: doc.toJS(), index: buildIndex(doc, lc) };
+      return { data: doc.toJS(), index: buildIndex(doc, lc, text) };
     } catch (e) {
       return fail(1, e.message.split("\n")[0]);
     }
   }
-  function buildIndex(doc, lc) {
-    const index = /* @__PURE__ */ new Map([[JSON.stringify([]), 1]]);
+  function buildIndex(doc, lc, text) {
+    const index = /* @__PURE__ */ new Map([[JSON.stringify([]), { start: 1, end: 1 }]]);
+    const span = (from, to, min) => {
+      let off = Math.max(to - 1, min - 1);
+      while (off > from && /\s/.test(text[off])) off--;
+      return { start: lc.linePos(from).line, end: lc.linePos(off).line };
+    };
     const visit3 = (node, path) => {
       if (isMap(node)) {
         for (const p of node.items) {
           if (!isScalar(p.key)) continue;
           const sub = [...path, String(p.key.value)];
-          index.set(JSON.stringify(sub), lc.linePos(p.key.range[0]).line);
+          index.set(JSON.stringify(sub), span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]));
           visit3(p.value, sub);
         }
       } else if (isSeq(node)) {
         node.items.forEach((item, i) => {
           const sub = [...path, i];
-          if (item?.range) index.set(JSON.stringify(sub), lc.linePos(item.range[0]).line);
+          if (item?.range) index.set(JSON.stringify(sub), span(item.range[0], item.range[1], item.range[1]));
           visit3(item, sub);
         });
       }
@@ -6300,12 +6305,17 @@ ${end.comment}` : end.comment;
     visit3(doc.contents, []);
     return index;
   }
-  function lineOf(index, path) {
+  function nearest(index, path) {
     for (let i = path.length; i >= 0; i--) {
-      const line = index.get(JSON.stringify(path.slice(0, i)));
-      if (line) return line;
+      const r = index.get(JSON.stringify(path.slice(0, i)));
+      if (r) return { r, exact: i === path.length };
     }
-    return 1;
+    return { r: { start: 1, end: 1 }, exact: false };
+  }
+  var lineOf = (index, path) => nearest(index, path).r.start;
+  function rangeOf(index, path) {
+    const { r, exact } = nearest(index, path);
+    return exact ? { start: r.start, end: r.end, exact } : { start: r.start, end: r.start, exact };
   }
   var isPlain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   var has = (o, k) => Object.hasOwn(o, k);
@@ -6388,7 +6398,7 @@ ${end.comment}` : end.comment;
   function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where) {
     const side = kind === "removed" ? "left" : "right";
     const line = lineOf(ctx.st[side], side === "left" ? ctx.pl : ctx.pr);
-    const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line };
+    const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(ctx.st.left, ctx.pl), right: rangeOf(ctx.st.right, ctx.pr) };
     ctx.st.changes.push(ch);
     return ch;
   }
@@ -6550,6 +6560,7 @@ ${end.comment}` : end.comment;
     if (!cr) {
       ch.side = "left";
       ch.line = lineOf(st.left, [...ctx.pl, cl]);
+      ch.left = rangeOf(st.left, [...ctx.pl, cl]);
     }
     if (union) return true;
     for (const [s, k, doc, other, set2] of [
@@ -6669,14 +6680,14 @@ ${end.comment}` : end.comment;
     const props = (obj) => isPlain(obj.properties) ? obj.properties : {};
     const lProps = props(lObj);
     const rProps = props(rObj);
-    const at = (n, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n)], pr });
+    const at = (n, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n)], pl, pr });
     rArr.forEach((n, i) => {
-      if (!ls.has(n) && rArr.indexOf(n) === i) emit("changed", `${nm(n)}: now required`, at(n, [...ctx.pr, "required", i]), "required", where);
+      if (!ls.has(n) && rArr.indexOf(n) === i) emit("changed", `${nm(n)}: now required`, at(n, [...ctx.pl, "required"], [...ctx.pr, "required", i]), "required", where);
     });
     for (const n of ls) {
       if (rs.has(n) || has(lProps, n) && !has(rProps, n)) continue;
       const pr = has(rProps, n) ? [...ctx.pr, "properties", n] : [...ctx.pr, "required"];
-      emit("changed", `${nm(n)}: no longer required`, at(n, pr), "required", where);
+      emit("changed", `${nm(n)}: no longer required`, at(n, [...ctx.pl, "required", lArr.indexOf(n)], pr), "required", where);
     }
   }
 
@@ -6794,7 +6805,7 @@ ${end.comment}` : end.comment;
     let result = null;
     let liveTimer;
     let hidden = /* @__PURE__ */ new Set();
-    const openGroups = /* @__PURE__ */ new Set();
+    const collapsed = /* @__PURE__ */ new Set();
     const tagsOn = /* @__PURE__ */ new Set();
     let rows = [];
     let groups = [];
@@ -6874,6 +6885,23 @@ ${end.comment}` : end.comment;
       load("left", r, fr);
       load("right", l, fl);
     });
+    const hl = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+    const clearHl = () => {
+      hl.left.clear();
+      hl.right.clear();
+    };
+    const showHl = (c, reveal) => {
+      for (const side of ["left", "right"]) {
+        const r = c[side];
+        const ed = editors[side];
+        const options = r.exact ? { isWholeLine: true, className: "hl", linesDecorationsClassName: "hl-bar" } : { isWholeLine: true, className: "hl-anchor" };
+        hl[side].set([{ range: new monaco.Range(r.start, 1, r.end, 1), options }]);
+        if (!reveal || side !== c.side) continue;
+        const rows2 = Math.floor(ed.getLayoutInfo().height / ed.getOption(monaco.editor.EditorOption.lineHeight));
+        if (r.end - r.start + 1 > rows2) ed.revealLineNearTop(r.start);
+        else ed.revealLinesInCenterIfOutsideViewport(r.start, r.end);
+      }
+    };
     const jump = (side, line) => {
       const ed = editors[side];
       ed.revealLineInCenter(line);
@@ -6925,10 +6953,16 @@ ${end.comment}` : end.comment;
         const vis = g.rows.filter((r) => r.show);
         renderHead(g, vis);
         g.li.hidden = !vis.length;
-        const open = filtered || openGroups.has(g.where);
+        const open = filtered || !collapsed.has(g.where);
         g.ol.hidden = !open;
         g.head.setAttribute("aria-expanded", String(open));
       }
+      const all = groups.length > 0 && groups.every((g) => collapsed.has(g.where));
+      const ta = $("toggle-all");
+      ta.title = all ? "Expand all" : "Collapse all";
+      ta.setAttribute("aria-label", ta.title);
+      ta.dataset.collapsed = String(all);
+      ta.disabled = filtered;
       if (result?.changes.length && !rows.some((r) => r.show)) {
         const none = el("li", "none", "No changes match the filter.");
         none.id = "list-none";
@@ -6943,7 +6977,7 @@ ${end.comment}` : end.comment;
       $("prev").disabled = $("next").disabled = !vis.length;
     };
     const toggleGroup = (g) => {
-      if (!filtering()) openGroups[openGroups.has(g.where) ? "delete" : "add"](g.where);
+      if (!filtering()) collapsed[collapsed.has(g.where) ? "delete" : "add"](g.where);
       applyFilters();
       const first = g.rows.find((r) => r.show);
       if (!g.ol.hidden && first) select(first.btn, false);
@@ -6953,7 +6987,7 @@ ${end.comment}` : end.comment;
       if (!vis.length) return;
       const i = vis.findIndex((r) => r.btn === selected);
       const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
-      openGroups.add(t.g.where);
+      collapsed.delete(t.g.where);
       applyFilters();
       select(t.btn, false);
     };
@@ -6963,6 +6997,7 @@ ${end.comment}` : end.comment;
     const expanded = /* @__PURE__ */ new Set();
     let lastScroll = 0;
     function run() {
+      clearHl();
       clearTimeout(liveTimer);
       if (result) lastScroll = list.scrollTop;
       selected = null;
@@ -7049,6 +7084,7 @@ ${SIDE[c.side]}, line ${c.line}`;
       const tagCount = /* @__PURE__ */ new Map();
       for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
       for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
+      const toggleAll = $("toggle-all");
       $("tagbar").replaceChildren(
         ...[...tagCount].sort((a, b) => b[1] - a[1]).map(([t, n]) => {
           const chip = el("button", "tchip", `${t} `);
@@ -7057,13 +7093,17 @@ ${SIDE[c.side]}, line ${c.line}`;
           chip.setAttribute("aria-pressed", String(tagsOn.has(t)));
           chip.append(el("b", null, n));
           return chip;
-        })
+        }),
+        toggleAll
       );
       $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = false;
       applyFilters();
       if (selKey) {
         const again = rows.find((r2) => r2.show && keyOf(r2.c) === selKey);
-        if (again) (selected = again.btn).classList.add("sel");
+        if (again) {
+          (selected = again.btn).classList.add("sel");
+          showHl(again.c, false);
+        }
         updatePos();
       }
       list.scrollTop = lastScroll;
@@ -7076,8 +7116,8 @@ ${SIDE[c.side]}, line ${c.line}`;
       b.scrollIntoView({ block: "nearest" });
       const c = b.parentElement._change;
       const ed = editors[c.side];
-      ed.revealLineInCenter(c.line);
       ed.setPosition({ lineNumber: c.line, column: 1 });
+      showHl(c, true);
       if (focusEditor) ed.focus();
       updatePos();
     };
@@ -7091,6 +7131,11 @@ ${SIDE[c.side]}, line ${c.line}`;
       if (!next) return;
       next.focus();
       if (next.classList.contains("item")) select(next, false);
+    });
+    $("toggle-all").addEventListener("click", () => {
+      if (groups.every((g) => collapsed.has(g.where))) collapsed.clear();
+      else for (const g of groups) collapsed.add(g.where);
+      applyFilters();
     });
     $("prev").addEventListener("click", () => nav(-1));
     $("next").addEventListener("click", () => nav(1));
