@@ -33,9 +33,9 @@ function specLabel(text) {
   return m ? `${m[1] === 'swagger' ? 'Swagger' : 'OpenAPI'} ${m[2]}` : text.trim() ? 'Not a spec?' : '';
 }
 
-// Change text with "GET /users" rendered as a method pill + route
-function richText(text) {
-  const span = el('span', 'text');
+// "GET /users" rendered as a method pill + route
+function richText(text, cls = 'text') {
+  const span = el('span', cls);
   const m = text.match(ROUTE);
   if (!m) return (span.textContent = text), span;
   span.append(
@@ -253,7 +253,7 @@ function init() {
   };
 
   // the reader's place in the list; survives re-runs that end in a parse error or empty side
-  const keyOf = (c) => `${c.kind}|${c.text}|${c.path.join('/')}`;
+  const keyOf = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join('/')}`;
   let selected = null;
   let selKey = null;
   let lastScroll = 0;
@@ -295,11 +295,18 @@ function init() {
       counts[c.kind]++;
       const li = el('li');
       li._change = c;
-      li._haystack = `${c.text} ${c.path.join(' ')}`.toLowerCase();
+      li._haystack = [c.text, c.where, c.path.join(' '), ...(c.details ?? [])].join(' ').toLowerCase();
       const b = el('button', `item ${c.kind}`);
-      b.title = `${SIDE[c.side]}, line ${c.line}`;
+      b.title = `${c.path.join(' › ')}\n${SIDE[c.side]}, line ${c.line}`;
       b.dataset.i = i;
-      b.append(el('span', 'glyph', GLYPH[c.kind]), richText(c.text), el('span', 'path', c.path.join(' › ')));
+      const body = el('div');
+      body.append(el('span', 'text', c.text), richText(c.where, 'where'));
+      if (c.details) {
+        const d = el('div', 'details');
+        d.append(...c.details.map((t) => el('div', 'detail', t)));
+        body.append(d);
+      }
+      b.append(el('span', 'glyph', GLYPH[c.kind]), body);
       b.addEventListener('click', () => select(b, true));
       li.append(b);
       list.append(li);

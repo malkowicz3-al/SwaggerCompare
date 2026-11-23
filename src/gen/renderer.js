@@ -3230,11 +3230,11 @@ ${cn.comment}` : item.comment;
       if (end?.line === line && end.col > col) {
         count = Math.max(1, Math.min(end.col - col, 80 - ci));
       }
-      const pointer = " ".repeat(ci) + "^".repeat(count);
+      const pointer2 = " ".repeat(ci) + "^".repeat(count);
       error.message += `:
 
 ${lineStr}
-${pointer}
+${pointer2}
 `;
     }
   };
@@ -6258,8 +6258,10 @@ ${end.comment}` : end.comment;
     const R = parse2(rightText, "right");
     if (R.error) return R;
     const changes = [];
-    walk(L.data, R.data, { path: [], pl: [], pr: [], name: void 0, st: { changes, left: L.index, right: R.index } });
-    return { changes };
+    const st = { changes, left: L.index, right: R.index, lData: L.data, rData: R.data, extracted: /* @__PURE__ */ new Set(), inlined: /* @__PURE__ */ new Set() };
+    walk(L.data, R.data, { path: [], pl: [], pr: [], st });
+    const covered = (c) => (c.kind === "added" ? st.extracted : c.kind === "removed" ? st.inlined : /* @__PURE__ */ new Set()).has(JSON.stringify(c.path));
+    return { changes: changes.filter((c) => !covered(c)) };
   }
   function parse2(text, side) {
     const lc = new LineCounter();
@@ -6319,27 +6321,92 @@ ${end.comment}` : end.comment;
   }
   var fmt = (v) => isPlain(v) ? "{\u2026}" : Array.isArray(v) ? "[\u2026]" : JSON.stringify(v);
   function child(ctx, k, { l = k, r = k, shown = k } = {}) {
-    const name = ctx.name === void 0 ? void 0 : `${ctx.name}.${shown}`;
-    return { ...ctx, name, path: [...ctx.path, shown], pl: [...ctx.pl, l], pr: [...ctx.pr, r] };
+    return { ...ctx, path: [...ctx.path, shown], pl: [...ctx.pl, l], pr: [...ctx.pr, r] };
   }
-  function emit(kind, text, ctx, side = kind === "removed" ? "left" : "right") {
+  var SINGULAR = {
+    definitions: "schema",
+    schemas: "schema",
+    parameters: "parameter",
+    responses: "response",
+    requestBodies: "request body",
+    headers: "header",
+    securitySchemes: "security scheme",
+    securityDefinitions: "security definition",
+    examples: "example",
+    links: "link",
+    callbacks: "callback"
+  };
+  function nameAt(P) {
+    if (P[0] === "components" && P.length > 2) return 2;
+    return ["definitions", "parameters", "responses", "securityDefinitions"].includes(P[0]) && P.length > 1 ? 1 : -1;
+  }
+  function compLabel(segs) {
+    const i = nameAt(segs);
+    return i > 0 && segs.length === i + 1 ? `${SINGULAR[segs[i - 1]] ?? segs[i - 1]} ${segs[i]}` : void 0;
+  }
+  var noProps = (segs) => segs.filter((s, i) => s !== "properties" || i === segs.length - 1);
+  function pretty(R) {
+    if (R[0] === "requestBody") {
+      if (R[1] !== "content" || R.length < 3) return ["request body", ...R.slice(1)];
+      return R[3] === "schema" ? ["request body", ...R.slice(4)] : [`request body (${R[2]})`, ...R.slice(3)];
+    }
+    if (R[0] === "responses" && R.length > 1) {
+      const n = R[2] === "content" && R.length > 4 && R[4] === "schema" ? 5 : R[2] === "schema" ? 3 : 2;
+      return [`response ${R[1]}`, ...R.slice(n)];
+    }
+    const m = R[0] === "parameters" && /^[^:/#]+:(.*)$/.exec(R[1] ?? "");
+    if (m) return [m[1], ...R.slice(R[2] === "schema" ? 3 : 2)];
+    return R;
+  }
+  function locate(ctx, asObject = false) {
+    const P = ctx.path.map(String);
+    if (ctx.st.detail) return { where: "", rest: pretty(noProps(P)) };
+    if (P[0] === "paths") {
+      if (P.length < 3) return { where: "paths", rest: P.slice(1) };
+      if (METHODS.includes(P[2])) return { where: `${P[2].toUpperCase()} ${P[1]}`, rest: pretty(noProps(P.slice(3))) };
+      return { where: P[1], rest: pretty(noProps(P.slice(2))) };
+    }
+    const i = nameAt(P);
+    if (i < 0) return { where: P[0], rest: noProps(P.slice(1)) };
+    const sec = P[i - 1];
+    const isSchema = sec === "definitions" || sec === "schemas";
+    if (P.length === i + 1 && !asObject) return { where: isSchema ? "schemas" : sec, rest: [P[i]] };
+    if (!isSchema) return { where: compLabel(P.slice(0, i + 1)), rest: noProps(P.slice(i + 1)) };
+    const parts = [P[i]];
+    let lastPair;
+    for (let j = i + 1; j < P.length; j++) {
+      if (P[j] === "properties" && j + 1 < P.length) {
+        lastPair = parts.length;
+        parts.push(P[++j]);
+      } else parts.push(P[j]);
+    }
+    if (asObject) return { where: parts.join("."), rest: [] };
+    const cut = lastPair ?? 1;
+    return { where: parts.slice(0, cut).join("."), rest: parts.slice(cut) };
+  }
+  function emit(kind, text, ctx, where = locate(ctx).where) {
+    const side = kind === "removed" ? "left" : "right";
     const line = lineOf(ctx.st[side], side === "left" ? ctx.pl : ctx.pr);
-    ctx.st.changes.push({ kind, text, path: ctx.path.map(String), side, line });
+    const ch = { kind, text, where, path: ctx.path.map(String), side, line };
+    ctx.st.changes.push(ch);
+    return ch;
   }
+  var restOf = (ctx) => locate(ctx).rest.join(".");
   function walk(l, r, ctx) {
     if (eq(l, r)) return;
-    const p = ctx.path.join(".");
-    if (l === void 0) return emit("added", `Added ${p}`, ctx);
-    if (r === void 0) return emit("removed", `Removed ${p}`, ctx);
+    if (l === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx);
+    if (r === void 0) return emit("removed", restOf(ctx) ? `${restOf(ctx)} removed` : "Removed", ctx);
+    if (extract(l, r, ctx)) return;
     if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
     if (Array.isArray(l) && Array.isArray(r)) {
       for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ctx, i));
       return;
     }
-    emit("changed", `Changed ${p}: ${fmt(l)} \u2192 ${fmt(r)}`, ctx);
+    const p = restOf(ctx);
+    emit("changed", `${p ? `${p}: ` : ""}${fmt(l)} \u2192 ${fmt(r)}`, ctx);
   }
   function walkObject(l, r, ctx) {
-    const P = ctx.path;
+    const P = ctx.st.detail ? [] : ctx.path;
     const isPaths = P.length === 1 && P[0] === "paths";
     const isPathItem = P.length === 2 && P[0] === "paths";
     const isOp = P.length === 3 && P[0] === "paths";
@@ -6357,17 +6424,17 @@ ${end.comment}` : end.comment;
         const item = lv ?? rv;
         const methods = isPlain(item) ? METHODS.filter((m) => has(item, m)) : [];
         if (!methods.length) walk(lv, rv, c);
-        for (const m of methods) emit(kind, `${verb} endpoint ${m.toUpperCase()} ${k}`, child(c, m));
+        for (const m of methods) emit(kind, `${verb} endpoint`, child(c, m));
       } else if (isPathItem && oneSided && METHODS.includes(k)) {
-        emit(kind, `${verb} endpoint ${k.toUpperCase()} ${P[1]}`, c);
+        emit(kind, `${verb} endpoint`, c);
       } else if ((isPathItem || isOp) && k === "parameters" && [lv, rv].every((v) => v === void 0 || Array.isArray(v))) {
         walkParams(lv ?? [], rv ?? [], ctx);
       } else if (isResponses && oneSided) {
-        emit(kind, `${verb} response ${k} on ${P[2].toUpperCase()} ${P[1]}`, c);
+        emit(kind, `${verb} response ${k}`, c);
       } else if (isSchemas && oneSided) {
         emit(kind, `${verb} schema ${k}`, c);
       } else if (isSchemas) {
-        walk(lv, rv, { ...c, name: k });
+        walk(lv, rv, c);
       } else if (k === "properties" && [lv, rv].every((v) => v === void 0 || isPlain(v))) {
         walkProps(lv ?? {}, rv ?? {}, ctx);
       } else if (k === "required" && [lv, rv].every((v) => v === void 0 || Array.isArray(v))) {
@@ -6377,9 +6444,55 @@ ${end.comment}` : end.comment;
       }
     }
   }
+  var pureRef = (v) => isPlain(v) && typeof v.$ref === "string" && Object.keys(v).length === 1;
+  function pointer(ref) {
+    if (!ref.startsWith("#/")) return void 0;
+    return ref.slice(2).split("/").map((s) => {
+      s = s.replace(/~1/g, "/").replace(/~0/g, "~");
+      try {
+        return decodeURIComponent(s);
+      } catch {
+        return s;
+      }
+    });
+  }
+  function resolve(doc, segs) {
+    for (let hop = 0; hop < 10 && segs; hop++) {
+      let v = doc;
+      for (const s of segs) v = v !== null && typeof v === "object" && has(v, s) ? v[s] : void 0;
+      if (!pureRef(v)) return isPlain(v) ? v : void 0;
+      segs = pointer(v.$ref);
+    }
+    return void 0;
+  }
+  function extract(l, r, ctx, label2) {
+    const st = ctx.st;
+    if (st.detail || !isPlain(l) || !isPlain(r)) return false;
+    const ext = pureRef(r) && !has(l, "$ref");
+    if (!ext && !(pureRef(l) && !has(r, "$ref"))) return false;
+    const ref = (ext ? r : l).$ref;
+    const segs = pointer(ref);
+    const target = segs && resolve(ext ? st.rData : st.lData, segs);
+    let details;
+    if (!segs) details = ["definition not compared (external $ref)"];
+    else if (!target) details = ["definition not compared (unresolved $ref)"];
+    else {
+      const sink = [];
+      walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } });
+      details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
+    }
+    const text = `${label2 ?? restOf(ctx)}: ${ext ? "extracted to" : "inlined from"} ${(segs && compLabel(segs)) ?? ref}`;
+    emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx).details = details;
+    if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
+    return true;
+  }
   var label = (p) => !isPlain(p) ? void 0 : p.$ref ? `$ref ${p.$ref}` : p.in != null && p.name != null ? `${p.in} '${p.name}'` : void 0;
   var fromSchema = (p) => isPlain(p?.schema) && stype(p.schema) !== void 0;
   var ptype = (p) => fromSchema(p) ? stype(p.schema) : p?.type;
+  var omit = (o, k) => {
+    const { [k]: _, ...rest } = o;
+    return rest;
+  };
   function stripParam(p) {
     if (!isPlain(p)) return p;
     const { required, ...rest } = p;
@@ -6398,36 +6511,48 @@ ${end.comment}` : end.comment;
       const lab = label(p);
       if (lab === void 0) return rest.push(i);
       let key = lab;
-      for (let n = 2; m.has(key); n++) key = `${lab}#${n}`;
-      m.set(key, i);
+      let n = "";
+      for (let k = 2; m.has(key); k++) key = lab + (n = `#${k}`);
+      m.set(key, { i, n });
     });
     return { m, rest };
   }
+  function pairRefs(m, arr, doc, other) {
+    for (const [k, v] of [...m]) {
+      const p = arr[v.i];
+      if (other.has(k) || !pureRef(p)) continue;
+      const t = pointer(p.$ref) && resolve(doc, pointer(p.$ref));
+      const key = t?.in != null && t.name != null ? `${t.in} '${t.name}'` : void 0;
+      if (key === void 0 || m.has(key) || !other.has(key)) continue;
+      m.delete(k);
+      m.set(key, { i: v.i, n: "" });
+    }
+  }
   function walkParams(lArr, rArr, ctx) {
-    const P = ctx.path;
-    const where = P.length === 3 ? `${P[2].toUpperCase()} ${P[1]}` : P[1];
     const { m: lm, rest: lRest } = byLabel(lArr);
     const { m: rm, rest: rRest } = byLabel(rArr);
+    pairRefs(rm, rArr, ctx.st.rData, lm);
+    pairRefs(lm, lArr, ctx.st.lData, rm);
     const pc = child(ctx, "parameters");
     const labels = [...rm.keys(), ...[...lm.keys()].filter((k) => !rm.has(k))];
     for (const lab of labels) {
-      const il = lm.get(lab);
-      const ir = rm.get(lab);
+      const { i: il, n } = lm.get(lab) ?? {};
+      const { i: ir } = rm.get(lab) ?? {};
       const lp = lArr[il];
       const rp = rArr[ir];
-      const p = lp ?? rp;
-      const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + lab.slice(label(p).length);
+      const p = [lp, rp].find((q) => q && !q.$ref) ?? lp ?? rp;
+      const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n ?? rm.get(lab).n);
       const c = child(pc, shown, { l: il, r: ir });
-      if (il === void 0) emit("added", `Added parameter ${lab} on ${where}`, c);
-      else if (ir === void 0) emit("removed", `Removed parameter ${lab} on ${where}`, c);
+      const nm = p.name ?? lab;
+      if (il === void 0) emit("added", `Added parameter ${lab}`, c);
+      else if (ir === void 0) emit("removed", `Removed parameter ${lab}`, c);
       else {
-        if (!!lp.required !== !!rp.required) {
-          emit("changed", `Parameter ${lab} on ${where}: ${rp.required ? "now required" : "no longer required"}`, c);
-        }
-        if (!eq(ptype(lp), ptype(rp))) {
-          emit("changed", `Parameter ${lab} on ${where}: type ${tfmt(ptype(lp))} \u2192 ${tfmt(ptype(rp))}`, c);
-        }
-        walk(stripParam(lp), stripParam(rp), c);
+        if (extract(lp, rp, c, nm)) continue;
+        let [ls, rs] = [lp, rp];
+        if (extract(lp.schema, rp.schema, child(c, "schema"), p.name)) [ls, rs] = [omit(lp, "schema"), omit(rp, "schema")];
+        if (!!lp.required !== !!rp.required) emit("changed", `${nm}: ${rp.required ? "now required" : "no longer required"}`, c);
+        if (!eq(ptype(ls), ptype(rs))) emit("changed", `${nm}: type ${tfmt(ptype(ls))} \u2192 ${tfmt(ptype(rs))}`, c);
+        walk(stripParam(ls), stripParam(rs), c);
       }
     }
     for (let j = 0; j < Math.max(lRest.length, rRest.length); j++) {
@@ -6436,35 +6561,31 @@ ${end.comment}` : end.comment;
       walk(lArr[il], rArr[ir], child(pc, il ?? ir, { l: il, r: ir }));
     }
   }
-  var owner = (ctx) => ctx.name ?? ctx.path.join(".");
   var tkey = (s) => isPlain(s) && s.type !== void 0 ? "type" : "$ref";
   var stype = (s) => isPlain(s) ? s[tkey(s)] : void 0;
   var tfmt = (t) => typeof t === "string" || t === void 0 ? String(t) : JSON.stringify(t);
-  function stripSchema(s) {
-    if (!isPlain(s)) return s;
-    const { [tkey(s)]: _, ...rest } = s;
-    return rest;
-  }
+  var stripSchema = (s) => isPlain(s) ? omit(s, tkey(s)) : s;
   function walkProps(lProps, rProps, ctx) {
-    const o = owner(ctx);
     const pc = child(ctx, "properties");
     const names = [...Object.keys(rProps), ...Object.keys(lProps).filter((k) => !has(rProps, k))];
     for (const n of names) {
       const lv = get(lProps, n);
       const rv = get(rProps, n);
-      const c = { ...child(pc, n), name: `${o}.${n}` };
+      const c = child(pc, n);
+      const p = restOf(c);
       const t = stype(lv ?? rv);
       const suffix = t === void 0 ? "" : ` (${tfmt(t)})`;
-      if (lv === void 0) emit("added", `Added property ${o}.${n}${suffix}`, c);
-      else if (rv === void 0) emit("removed", `Removed property ${o}.${n}${suffix}`, c);
-      else {
-        if (!eq(stype(lv), stype(rv))) emit("changed", `${o}.${n}: type ${tfmt(stype(lv))} \u2192 ${tfmt(stype(rv))}`, c);
+      if (lv === void 0) emit("added", `Added property ${p}${suffix}`, c);
+      else if (rv === void 0) emit("removed", `Removed property ${p}${suffix}`, c);
+      else if (!extract(lv, rv, c)) {
+        if (!eq(stype(lv), stype(rv))) emit("changed", `${p}: type ${tfmt(stype(lv))} \u2192 ${tfmt(stype(rv))}`, c);
         walk(stripSchema(lv), stripSchema(rv), c);
       }
     }
   }
   function walkRequired(lArr, rArr, ctx, lObj, rObj) {
-    const o = owner(ctx);
+    const { where, rest } = locate(ctx, true);
+    const nm = (n) => [...rest, n].join(".");
     const ls = new Set(lArr);
     const rs = new Set(rArr);
     const props = (obj) => isPlain(obj.properties) ? obj.properties : {};
@@ -6472,12 +6593,12 @@ ${end.comment}` : end.comment;
     const rProps = props(rObj);
     const at = (n, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n)], pr });
     rArr.forEach((n, i) => {
-      if (!ls.has(n) && rArr.indexOf(n) === i) emit("changed", `${o}.${n}: now required`, at(n, [...ctx.pr, "required", i]));
+      if (!ls.has(n) && rArr.indexOf(n) === i) emit("changed", `${nm(n)}: now required`, at(n, [...ctx.pr, "required", i]), where);
     });
     for (const n of ls) {
       if (rs.has(n) || has(lProps, n) && !has(rProps, n)) continue;
       const pr = has(rProps, n) ? [...ctx.pr, "properties", n] : [...ctx.pr, "required"];
-      emit("changed", `${o}.${n}: no longer required`, at(n, pr));
+      emit("changed", `${nm(n)}: no longer required`, at(n, pr), where);
     }
   }
 
@@ -6509,8 +6630,8 @@ ${end.comment}` : end.comment;
     const m = text.match(/^\s*["']?(swagger|openapi)["']?\s*:\s*["']?([\w.-]+)/m);
     return m ? `${m[1] === "swagger" ? "Swagger" : "OpenAPI"} ${m[2]}` : text.trim() ? "Not a spec?" : "";
   }
-  function richText(text) {
-    const span = el("span", "text");
+  function richText(text, cls = "text") {
+    const span = el("span", cls);
     const m = text.match(ROUTE);
     if (!m) return span.textContent = text, span;
     span.append(
@@ -6712,7 +6833,7 @@ ${end.comment}` : end.comment;
         list.append(none);
       }
     };
-    const keyOf = (c) => `${c.kind}|${c.text}|${c.path.join("/")}`;
+    const keyOf = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join("/")}`;
     let selected = null;
     let selKey = null;
     let lastScroll = 0;
@@ -6750,11 +6871,19 @@ ${end.comment}` : end.comment;
         counts[c.kind]++;
         const li = el("li");
         li._change = c;
-        li._haystack = `${c.text} ${c.path.join(" ")}`.toLowerCase();
+        li._haystack = [c.text, c.where, c.path.join(" "), ...c.details ?? []].join(" ").toLowerCase();
         const b = el("button", `item ${c.kind}`);
-        b.title = `${SIDE[c.side]}, line ${c.line}`;
+        b.title = `${c.path.join(" \u203A ")}
+${SIDE[c.side]}, line ${c.line}`;
         b.dataset.i = i;
-        b.append(el("span", "glyph", GLYPH[c.kind]), richText(c.text), el("span", "path", c.path.join(" \u203A ")));
+        const body = el("div");
+        body.append(el("span", "text", c.text), richText(c.where, "where"));
+        if (c.details) {
+          const d = el("div", "details");
+          d.append(...c.details.map((t) => el("div", "detail", t)));
+          body.append(d);
+        }
+        b.append(el("span", "glyph", GLYPH[c.kind]), body);
         b.addEventListener("click", () => select(b, true));
         li.append(b);
         list.append(li);
