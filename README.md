@@ -24,7 +24,12 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 - **A change list that updates as you type**, one short line per change with a small tag (endpoint, property, required, pattern…), labelled with the endpoint or schema it belongs to.
 - **Changes, not noise.** Reordered keys, YAML vs JSON formatting and reordered parameters don't show up in the change list.
 - **Refactors read as one change.** When a field's inline definition is moved into a `$ref`, you see one entry, *"requestId: extracted to schema RequestId"*, with the real differences folded under a "Details" toggle.
-- **Grouped by object.** Changes are grouped per endpoint or schema, each group showing how many changes it has (+ added, − removed, ~ changed) and which tags (property, required, type…), so you can see at a glance where the big changes are. Groups start expanded; one button collapses or expands them all.
+- **Grouped by object.** Changes are grouped per endpoint or schema, each group showing how many changes it has (+ added, − removed, ~ changed) and which tags (property, required, type…), so you can see at a glance where the big changes are. Groups start collapsed; one button expands or collapses them all.
+- **Breaking changes marked with ⚠.** A removed endpoint or response code, a type change, a new required parameter, a field that became required in a request (or optional in a response), a narrowed enum… The **⚠ Breaking** chip shows only those.
+- **Which endpoints are hit.** A schema group shows *"Used in: GET /orders, POST /orders"*, followed through nested `$ref`s. Switch from **Objects** to **Endpoints** to see every change under each endpoint it affects (*"request body › currency: now required"*); changes that hit no endpoint go to "Other".
+- **Title, versions and a summary.** The title bar shows *"Orders API  1.4.0 → 2.0.0"*, each pane its spec's title and version, and the list starts with *"Endpoints: 1 added · 2 removed · 2 changed · Schemas: 2 changed · ⚠ 6 breaking"*.
+- **Copy report.** One button copies a Markdown report: title, summary, the breaking changes, then the changes per endpoint, ready to paste into a ticket or release notes.
+- **The name lights up.** When you click a change or step to it, the property or parameter name flashes briefly in both specs.
 - **Composition refactors read as one change too.** Moving shared fields into `allOf: [$ref Entity, …]`, flattening it back or turning a schema into a `oneOf` gives one entry, with the effective differences under "Details".
 - **Filters and search.** Toggle added, removed or changed entries, pick tags in the tag bar (property **5**, required **2**…), or search by endpoint, schema, field or tag.
 - **Jump from change to change.** F8 / Shift+F8 or the arrow buttons step through the changes in both editors, with a "3 / 17" counter.
@@ -45,9 +50,12 @@ A text diff of two specs tells you that lines 71 to 76 moved. SwaggerCompare par
 | Required fields | `currency: now required` · `email: no longer required` |
 | `$ref` refactors | `requestId: extracted to schema RequestId` · `requestId: inlined from schema RequestId` |
 | `allOf` / `oneOf` refactors | `Order: now allOf [schema Entity + inline]` · `Pet: now oneOf [schema Dog, schema Cat]` · `Order: allOf flattened` |
+| Breaking (⚠) | `Removed endpoint` · `Removed response 404` · `limit: type integer → string` · a retargeted `$ref` · `Added parameter query 'q'` (required) · a required request body added · `request body (application/xml) removed` · `currency: now required` (in a request) · `Removed property note` (in a response) · an enum value removed (in a request) or added (in a response) · a tighter `maxLength`, `minimum`, `pattern`… (in a request) |
 | Everything else | `version: "1.4.0" → "2.0.0"` · `request body (application/xml) added` |
 
 Nothing is dropped: anything that doesn't match a pattern above still appears as a plain added, removed or changed entry.
+
+Breaking is a heuristic: a change is marked when it can break an existing client, judged by where the changed spot is used (request or response). Changes in unused schemas, `info`, `servers`, examples, defaults and `x-` extensions are never marked, and `security`/`basePath` changes are not judged yet.
 
 ## Try it in a minute
 

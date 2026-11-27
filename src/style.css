@@ -48,6 +48,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 
 /* Title bar: draggable; right padding leaves room for the native window buttons */
 .titlebar {
+  position: relative;
   height: 48px;
   flex: none;
   display: flex;
@@ -62,6 +63,19 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .mark { width: 20px; height: 20px; stroke-width: 2.2; }
 .mark path:first-child { stroke: var(--removed); }
 .mark path:last-child { stroke: var(--added); }
+/* "Orders API  1.4.0 → 2.0.0", centred in the window; narrow enough to clear the brand and the window buttons */
+.versions {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 480px);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 500 12.5px/1 var(--mono);
+  color: var(--muted);
+}
+.versions[hidden] { display: none; }
 
 
 /* Workspace */
@@ -98,8 +112,10 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 }
 .pane-head + .swap + .pane-head, .pane-head[data-side="right"] { border-left: 1px solid var(--line); padding-left: 28px; }
 .pane-id { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.pane-name { font-weight: 600; font-size: 13px; }
-.pane-file { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-file { margin-left: 4px; color: var(--faint); font-weight: 400; font-size: 12px; }
+.pane-title { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-title[hidden] { display: none; }
 .spec {
   flex: none;
   font: 500 11px/1 var(--mono);
@@ -191,6 +207,21 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .nav { display: flex; align-items: center; gap: 2px; margin-left: auto; margin-right: 8px; }
 #pos { min-width: 44px; text-align: center; font: 500 11px/1 var(--mono); color: var(--muted); }
 .icon:disabled { opacity: .35; cursor: default; background: none; color: var(--muted); }
+/* second toolbar row: Objects | Endpoints, Breaking filter, Copy report */
+.toolbar { display: flex; align-items: center; gap: 6px; flex: none; margin: 10px 12px 0; }
+.toolbar[hidden], .summary[hidden] { display: none; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { height: 26px; padding: 0 10px; font-size: 12px; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button:hover { color: var(--text); }
+.seg button[aria-pressed="true"] { color: var(--text); background: var(--raised); }
+.bchip, .tbtn { height: 26px; padding: 0 9px; border-radius: 13px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.bchip b { font: 500 12px/1 var(--mono); }
+.bchip:hover:not(:disabled), .tbtn:hover { color: var(--text); border-color: var(--faint); }
+.bchip:disabled { opacity: .45; cursor: default; }
+.bchip[aria-pressed="true"] { color: var(--changed); background: rgba(242, 184, 75, .1); border-color: rgba(242, 184, 75, .4); }
+.tbtn { margin-left: auto; min-width: 96px; border-radius: 7px; }
+.summary { flex: none; margin: 8px 12px 0; font-size: 12px; color: var(--muted); }
 .tagbar { display: flex; flex-wrap: wrap; gap: 4px; flex: none; margin: 10px 12px 0; }
 /* the header has no room left (title, nav, 3 chips), so Collapse/Expand all sits at the tag bar's right end */
 #toggle-all { width: 22px; height: 22px; margin-left: auto; }
@@ -320,7 +351,10 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .gmini .removed { color: var(--removed); }
 .gmini .changed { color: var(--changed); }
 .gtags { grid-column: 2 / -1; margin-top: 2px; font: 400 10.5px/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.gused { grid-column: 2 / -1; margin-top: 1px; font-size: 11.5px; color: var(--faint); overflow-wrap: anywhere; }
 .gitems { margin: 0 0 4px; padding: 0 0 0 10px; list-style: none; }
+.warn { margin-right: 5px; color: var(--changed); }
+.item.breaking .glyph { box-shadow: inset 0 0 0 1px rgba(242, 184, 75, .5); }
 /* tog and details line up with .text: item padding 10px + glyph 22px + gap 10px */
 .tog {
   display: inline-flex;
@@ -374,6 +408,12 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .monaco-editor .cdr.hl { background: rgba(141, 180, 255, .14); box-shadow: inset 0 0 0 1px rgba(141, 180, 255, .25); z-index: 1; }
 .hl-bar { border-left: 3px solid var(--focus); margin-left: 2px; }
 .monaco-editor .cdr.hl-anchor { border-top: 1px dashed var(--focus); background: rgba(141, 180, 255, .05); }
+/* the selected change's name, flashed in the text layer (above .hl); fades out over 1.5 s */
+.monaco-editor .name-flash { position: relative; z-index: 1; border-radius: 3px; animation: name-flash 1.5s ease-out forwards; }
+@keyframes name-flash {
+  from { background: rgba(141, 180, 255, .55); outline: 1px solid var(--focus); }
+  to { background: transparent; outline: 1px solid transparent; }
+}
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 2px solid var(--panel); }
@@ -381,4 +421,6 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  /* a static mark instead of the fade; the renderer's timeout still removes it */
+  .monaco-editor .name-flash { animation: none; background: rgba(141, 180, 255, .35); outline: 1px solid var(--focus); }
 }

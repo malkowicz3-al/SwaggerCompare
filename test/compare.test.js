@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { compare } from '../src/compare.js';
+import { compare, usage } from '../src/compare.js';
 
 const read = (name) => readFileSync(new URL('./fixtures/' + name, import.meta.url), 'utf8');
 const texts = (res) => res.changes.map((c) => `${c.where} | ${c.text}`).sort();
@@ -458,4 +458,219 @@ test('ranges in JSON, CRLF, parameters and a missing required', () => {
   const now = pick(req(''), req('    required: [a]\n'), 'now required');
   assert.equal(now.left.exact, false);
   assert.equal(now.right.exact, true);
+});
+
+// meta, usage, affects, breaking, name flash
+test('meta from info and the spec version, also on errors', () => {
+  assert.deepEqual(s2.meta, { left: { title: 'Shop', version: '1.0', spec: '2.0' }, right: { title: 'Shop', version: '1.1', spec: '2.0' } });
+  const bad = compare('a:\n\tb: 1', 'openapi: 3.1.0\ninfo: {title: X, version: 2}\n');
+  assert.equal(bad.error.side, 'left');
+  assert.deepEqual(bad.meta.right, { title: 'X', version: '2', spec: '3.1.0' });
+  assert.equal(bad.meta.left, null);
+  assert.deepEqual(compare('a: 1', 'a: 1').meta.left, { title: undefined, version: undefined, spec: undefined });
+});
+
+const ref = (n) => ({ $ref: `#/components/schemas/${n}` });
+const body = (n) => ({ content: { 'application/json': { schema: ref(n) } } });
+// POST /o with an optional request body / 200 response schema, plus extra components
+const api = (schemas, { req, res, parameters, components = {} } = {}) => ({
+  openapi: '3.0.3',
+  info: { title: 'T', version: '1' },
+  paths: { '/o': { post: { ...(parameters && { parameters }), ...(req && { requestBody: body(req) }), responses: { 200: { description: 'ok', ...(res && body(res)) } } } } },
+  components: { schemas, ...components },
+});
+const key = (n) => JSON.stringify(['components', 'schemas', n]);
+
+test('usage follows refs transitively, through cycles and response refs', () => {
+  const schemas = { A: { properties: { b: ref('B') } }, B: { items: ref('C') }, C: { properties: { a: ref('A') } }, S: {} };
+  const use = usage(api(schemas, { res: 'A', components: { responses: { R: body('S') } } }));
+  for (const n of ['A', 'B', 'C']) assert.deepEqual(use.get(key(n)), [{ endpoint: 'POST /o', via: 'response 200', dir: 'response' }]);
+  assert.equal(use.get(key('S')), undefined);
+  const withRef = api(schemas, { components: { responses: { R: body('S') } } });
+  withRef.paths['/o'].post.responses[404] = { $ref: '#/components/responses/R' };
+  const u2 = usage(withRef);
+  assert.deepEqual(u2.get(key('S')), [{ endpoint: 'POST /o', via: 'response 404', dir: 'response' }]);
+  assert.deepEqual(u2.get(JSON.stringify(['components', 'responses', 'R'])), u2.get(key('S')));
+  const p = usage(api({ Id: {} }, { req: 'Id', parameters: [{ $ref: '#/components/parameters/P' }], components: { parameters: { P: { in: 'query', name: 'p', schema: ref('Id') } } } }));
+  assert.deepEqual(p.get(key('Id')), [
+    { endpoint: 'POST /o', via: 'parameter p', dir: 'request' },
+    { endpoint: 'POST /o', via: 'request body', dir: 'request' },
+  ]);
+});
+
+const pickJ = (l, r, text) => compare(json(l), json(r)).changes.find((c) => c.text.includes(text));
+
+test('affects: endpoint, path-level, component and other', () => {
+  const op = (q) => ({ paths: { '/x': { get: { parameters: [{ in: 'query', name: 'q', required: q }] }, post: {} } } });
+  assert.deepEqual(pickJ(op(false), op(true), 'q:').affects, [{ endpoint: 'GET /x', dir: 'request' }]);
+  const pl = (q) => ({ paths: { '/x': { parameters: [{ in: 'query', name: 'q', required: q }], get: {}, post: {} } } });
+  assert.deepEqual(pickJ(pl(false), pl(true), 'q:').affects.map((a) => a.endpoint), ['GET /x', 'POST /x']);
+  const s = (t) => api({ S: { properties: { a: { type: t } } } }, { res: 'S' });
+  assert.deepEqual(pickJ(s('string'), s('integer'), 'type').affects, [{ endpoint: 'POST /o', via: 'response 200', dir: 'response' }]);
+  assert.deepEqual(pickJ({ info: { version: '1' } }, { info: { version: '2' } }, 'version').affects, []);
+});
+
+// schema S with property a (string), used where `use` says
+const brk = (a, b, text, use) => {
+  const doc = (p) => api({ S: { ...(p.required && { required: p.required }), properties: { a: { type: 'string', ...p.a }, ...p.more } } }, use);
+  const c = compare(json(doc(a)), json(doc(b))).changes.find((x) => x.text.includes(text));
+  assert.ok(c, text);
+  return c.breaking;
+};
+const REQ = { req: 'S' };
+const RES = { res: 'S' };
+
+test('breaking: endpoint removed, response code removed, type change', () => {
+  const ops = (m) => ({ paths: { '/x': Object.fromEntries(m.map((k) => [k, { responses: { 200: {}, 404: {} } }])) } });
+  assert.equal(pickJ(ops(['get', 'post']), ops(['get']), 'Removed endpoint').breaking, true);
+  assert.equal(pickJ(ops(['get']), ops(['get', 'post']), 'Added endpoint').breaking, false);
+  const resp = (codes) => ({ paths: { '/x': { get: { responses: Object.fromEntries(codes.map((c) => [c, {}])) } } } });
+  assert.equal(pickJ(resp([200, 404]), resp([200]), 'Removed response').breaking, true);
+  assert.equal(pickJ(resp([200]), resp([200, 404]), 'Added response').breaking, false);
+  assert.equal(brk({}, { a: { type: 'integer' } }, 'type', RES), true);
+  // an unused schema breaks nothing
+  assert.equal(brk({}, { a: { type: 'integer' } }, 'type', {}), false);
+});
+
+test('breaking: new required parameter', () => {
+  const op = (parameters) => ({ paths: { '/x/{id}': { get: { parameters } } } });
+  assert.equal(pickJ(op([]), op([{ in: 'query', name: 'q', required: true }]), 'Added parameter').breaking, true);
+  assert.equal(pickJ(op([]), op([{ in: 'path', name: 'id' }]), 'Added parameter').breaking, true);
+  assert.equal(pickJ(op([]), op([{ in: 'query', name: 'q' }]), 'Added parameter').breaking, false);
+});
+
+test('breaking: now required in a request, no longer required in a response', () => {
+  assert.equal(brk({}, { required: ['a'] }, 'now required', REQ), true);
+  assert.equal(brk({}, { required: ['a'] }, 'now required', RES), false);
+  assert.equal(brk({ required: ['a'] }, {}, 'no longer required', RES), true);
+  assert.equal(brk({ required: ['a'] }, {}, 'no longer required', REQ), false);
+});
+
+test('breaking: property removed in a response', () => {
+  const b = { type: 'string' };
+  assert.equal(brk({ more: { b } }, {}, 'Removed property', RES), true);
+  assert.equal(brk({ more: { b } }, {}, 'Removed property', REQ), false);
+  assert.equal(brk({}, { more: { b } }, 'Added property', RES), false);
+});
+
+test('breaking: enum narrowed in a request, widened in a response', () => {
+  const e = (...v) => ({ a: { enum: v } });
+  assert.equal(brk(e('x', 'y'), e('x'), 'enum', REQ), true);
+  assert.equal(brk(e('x', 'y'), e('x'), 'enum', RES), false);
+  assert.equal(brk(e('x'), e('x', 'y'), 'enum', RES), true);
+  assert.equal(brk(e('x'), e('x', 'y'), 'enum', REQ), false);
+  assert.equal(brk({}, e('x'), 'enum', REQ), true);
+});
+
+test('breaking: tighter min/max/pattern in a request', () => {
+  assert.equal(brk({ a: { maxLength: 10 } }, { a: { maxLength: 5 } }, 'maxLength', REQ), true);
+  assert.equal(brk({ a: { maxLength: 5 } }, { a: { maxLength: 10 } }, 'maxLength', REQ), false);
+  assert.equal(brk({}, { a: { minimum: 1 } }, 'minimum', REQ), true);
+  assert.equal(brk({ a: { pattern: 'a' } }, { a: { pattern: 'b' } }, 'pattern', REQ), true);
+  assert.equal(brk({ a: { maxLength: 10 } }, { a: { maxLength: 5 } }, 'maxLength', RES), false);
+});
+
+test('breaking: refactor when any detail breaks', () => {
+  const doc = (a, Id) => api({ S: { properties: { a } }, ...(Id && { Id }) }, REQ);
+  const ext = (Id) => compare(json(doc({ type: 'string' })), json(doc(ref('Id'), Id))).changes.find((c) => c.tag === 'refactor');
+  assert.equal(ext({ type: 'string' }).breaking, false);
+  assert.equal(ext({ type: 'integer' }).breaking, true);
+});
+
+test('breaking: a schema in request and response breaks by either rule; additions and info never', () => {
+  const both = { req: 'S', res: 'S' };
+  assert.equal(brk({ more: { b: {} } }, {}, 'Removed property', both), true);
+  assert.equal(brk({}, { required: ['a'] }, 'now required', both), true);
+  assert.equal(brk({}, { a: { description: 'd' } }, 'description', both), false);
+  assert.equal(pickJ({ info: { version: '1' } }, { info: { version: '2' } }, 'version').breaking, false);
+  for (const c of [...s2.changes, ...o3.changes]) assert.equal(typeof c.breaking, 'boolean');
+});
+
+test('flash: key columns in YAML, JSON and a flow-style parameter', () => {
+  const y = pick('info:\n  version: "1"\n', 'info:\n  version: "2"\n', 'version');
+  assert.deepEqual(y.flash, { left: { line: 2, from: 3, to: 10 }, right: { line: 2, from: 3, to: 10 } });
+  const j = pick('{\n  "info": {\n    "version": "1"\n  }\n}', '{\n  "info": {\n    "version": "2"\n  }\n}', 'version');
+  assert.deepEqual(j.flash.left, { line: 3, from: 5, to: 14 });
+  const line = '        - {in: query, name: limit}';
+  const op = (ps) => `paths:\n  /x:\n    get:\n      parameters:\n${ps}`;
+  const a = pick(op('        - {in: query, name: other}\n'), op(`${line}\n`), 'Added parameter');
+  const from = line.indexOf('limit') + 1;
+  assert.deepEqual(a.flash, { right: { line: 5, from, to: from + 5 } });
+});
+
+test('flash: a trailing $ref is stripped so the property name flashes', () => {
+  const props = (a) => `definitions:\n  User:\n    properties:\n      a:\n${a}`;
+  const ext = pick(props('        type: string\n'), props("        $ref: '#/definitions/Id'\n  Id:\n    type: string\n"), 'extracted');
+  assert.deepEqual(ext.flash, { left: { line: 4, from: 7, to: 8 }, right: { line: 4, from: 7, to: 8 } });
+});
+
+test('breaking: keys inside examples, defaults and x-* are data, not keywords', () => {
+  const op = (v) => ({ paths: { '/x': { get: { responses: { 200: { content: { 'application/json': { example: v, examples: { a: { value: v } } } } } } } } } });
+  const res = compare(json(op({ type: 'card', required: true })), json(op({ type: 'bank', required: false })));
+  assert.ok(res.changes.length >= 4);
+  assert.ok(res.changes.every((c) => !c.breaking));
+  assert.equal(brk({ a: { default: { type: 'x' } } }, { a: { default: { type: 'y' } } }, 'type', RES), false);
+  assert.equal(brk({ a: { 'x-meta': { minimum: 1 } } }, { a: { 'x-meta': { minimum: 2 } } }, 'minimum', REQ), false);
+  // a property that happens to be called "example" is still judged
+  assert.equal(brk({ more: { example: { type: 'string' } } }, {}, 'Removed property', RES), true);
+  for (const n of ['example', 'default', 'x-id']) {
+    assert.equal(brk({ more: { [n]: {} } }, { more: { [n]: {} }, required: [n] }, `${n}: now required`, REQ), true, n);
+  }
+});
+
+test('breaking: a retargeted $ref, a required request body, a removed content type', () => {
+  const retarget = pickJ(api({ S: {}, T: {} }, REQ), api({ S: {}, T: {} }, { req: 'T' }), '$ref');
+  assert.deepEqual([retarget.tag, retarget.breaking], ['$ref', true]);
+  const body = (requestBody) => ({ paths: { '/x': { post: { ...(requestBody && { requestBody }), responses: { 200: {} } } } } });
+  const content = { 'application/json': {} };
+  assert.equal(pickJ(body(), body({ required: true, content }), 'request body').breaking, true);
+  assert.equal(pickJ(body(), body({ content }), 'request body').breaking, false);
+  const two = { ...content, 'application/xml': {} };
+  assert.equal(pickJ(body({ content: two }), body({ content }), 'removed').breaking, true);
+  assert.equal(pickJ(body({ content }), body({ content: two }), 'added').breaking, false);
+  const resp = (c) => ({ paths: { '/x': { get: { responses: { 200: { content: c } } } } } });
+  assert.equal(pickJ(resp(two), resp(content), 'removed').breaking, true);
+});
+
+test('breaking: enum judged as sets, not by position', () => {
+  const enumBreaks = (l, r, use) => {
+    const doc = (v) => api({ S: { properties: { a: { type: 'string', enum: v } } } }, use);
+    const cs = compare(json(doc(l)), json(doc(r))).changes.filter((c) => c.tag === 'enum');
+    assert.ok(cs.length);
+    return cs.map((c) => c.breaking);
+  };
+  // inserted in the middle: widened only
+  assert.deepEqual(enumBreaks(['a', 'c'], ['a', 'b', 'c'], REQ), [false, false]);
+  assert.deepEqual(enumBreaks(['a', 'c'], ['a', 'b', 'c'], RES), [true, true]);
+  // removed from the middle: narrowed only
+  assert.deepEqual(enumBreaks(['a', 'b', 'c'], ['a', 'c'], REQ), [true, true]);
+  assert.deepEqual(enumBreaks(['a', 'b', 'c'], ['a', 'c'], RES), [false, false]);
+});
+
+test('affects: one entry per endpoint and direction, vias joined', () => {
+  const doc = (t) => {
+    const d = api({ S: { properties: { a: { type: t } } } }, { req: 'S', res: 'S' });
+    d.paths['/o'].post.responses[404] = { description: 'x', ...body('S') };
+    return d;
+  };
+  assert.deepEqual(pickJ(doc('string'), doc('integer'), 'type').affects, [
+    { endpoint: 'POST /o', via: 'request body', dir: 'request' },
+    { endpoint: 'POST /o', via: 'response 200, 404', dir: 'response' },
+  ]);
+});
+
+test('usage and affects stay fast on a large spec (500 paths sharing a schema chain)', () => {
+  const doc = (t) => {
+    const paths = {};
+    for (let i = 0; i < 500; i++) paths[`/r${i}`] = { get: { responses: { 200: body('A'), 404: body('A') } }, post: { requestBody: body('A'), responses: { 200: {} } } };
+    const schemas = { A: { properties: { b: ref('B') } }, B: { properties: { c: ref('C') } }, C: { properties: { x: { type: t }, y: { type: t } } } };
+    return json({ openapi: '3.0.3', paths, components: { schemas } });
+  };
+  const [l, r] = [doc('string'), doc('integer')];
+  const t0 = performance.now();
+  const res = compare(l, r);
+  const ms = performance.now() - t0;
+  assert.equal(res.changes.length, 2);
+  assert.equal(res.changes[0].affects.length, 1000);
+  assert.ok(ms < 3000, `${ms} ms`); // ~0.5 s today; catches a superlinear regression, not machine noise
 });

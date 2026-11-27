@@ -1,4 +1,5 @@
 import { compare } from './compare.js';
+import { heading, summary, byEndpoint, markdown } from './report.js';
 
 const base = new URL('../vendor/monaco/', location.href).href;
 // under file:// (SwaggerCompare.bat) a worker can't load file URLs; throwing here makes Monaco
@@ -121,10 +122,27 @@ function init() {
   let result = null; // last successful compare, for filtering
   let liveTimer;
   let hidden = new Set();
-  const collapsed = new Set(); // where of collapsed groups; survives re-runs
+  const open = new Set(); // where of expanded groups (collapsed by default); survives re-runs
   const tagsOn = new Set();
-  let rows = []; // {li, btn, c, g, show}, in list order
-  let groups = []; // {where, li, head, ol, rows}
+  let breakOnly = false;
+  let view = 'objects'; // or 'endpoints'
+  const meta = { left: null, right: null }; // last good {title, version} per side, so a parse error doesn't flicker it
+  let rows = []; // {li, btn, c, g, show}, in list order; in the endpoint view a change can have several rows
+  let groups = []; // {where, li, head, ol, rows, used}
+
+  const renderMeta = () => {
+    for (const side of ['left', 'right']) {
+      const m = meta[side];
+      const t = $(`title-${side}`);
+      // "Orders API · v1.4.0"; a spec version "v2" isn't shown as "vv2"
+      t.textContent = [m?.title, m?.version && `v${m.version.replace(/^v/i, '')}`].filter(Boolean).join(' · ');
+      t.title = t.textContent;
+      t.hidden = !t.textContent;
+    }
+    const v = $('versions');
+    v.textContent = v.title = heading(meta);
+    v.hidden = !v.textContent;
+  };
 
   // Pane header: file name + detected spec version
   const refreshHead = (side) => {
@@ -136,8 +154,11 @@ function init() {
     spec.classList.toggle('bad', spec.textContent === 'Not a spec?');
   };
 
-  const load = (side, text, name) => {
+  // m: the side's known meta (swap moves it along); a new or cleared file starts without the previous file's title
+  const load = (side, text, name, m = null) => {
     files[side] = name;
+    meta[side] = m;
+    renderMeta();
     // an undoable edit (setValue would wipe undo), so Ctrl+Z recovers from an accidental clear/drop/swap
     const ed = editors[side];
     ed.pushUndoStop();
@@ -207,28 +228,42 @@ function init() {
   $('swap').addEventListener('click', () => {
     const [l, r] = [models.left.getValue(), models.right.getValue()];
     const [fl, fr] = [files.left, files.right];
-    load('left', r, fr);
-    load('right', l, fl);
+    const [ml, mr] = [meta.left, meta.right];
+    load('left', r, fr, mr);
+    load('right', l, fl, ml);
   });
 
   // the selected change's fragment in both editors; an inexact side only marks the nearest ancestor's line
   const hl = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+  // the changed object's or parameter's name, flashed briefly when the user moves to a change
+  const flash = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+  let flashTimer;
+  const clearFlash = () => {
+    clearTimeout(flashTimer);
+    flash.left.clear();
+    flash.right.clear();
+  };
   const clearHl = () => {
     hl.left.clear();
     hl.right.clear();
+    clearFlash();
   };
   const showHl = (c, reveal) => {
+    clearFlash();
     for (const side of ['left', 'right']) {
       const r = c[side];
       const ed = editors[side];
       const options = r.exact ? { isWholeLine: true, className: 'hl', linesDecorationsClassName: 'hl-bar' } : { isWholeLine: true, className: 'hl-anchor' };
       hl[side].set([{ range: new monaco.Range(r.start, 1, r.end, 1), options }]);
+      const k = c.flash[side];
+      if (reveal && k) flash[side].set([{ range: new monaco.Range(k.line, k.from, k.line, k.to), options: { inlineClassName: 'name-flash' } }]);
       // only the primary side scrolls: the diff editor syncs the other, and a second reveal would win
       if (!reveal || side !== c.side) continue;
       const rows = Math.floor(ed.getLayoutInfo().height / ed.getOption(monaco.editor.EditorOption.lineHeight));
       if (r.end - r.start + 1 > rows) ed.revealLineNearTop(r.start);
       else ed.revealLinesInCenterIfOutsideViewport(r.start, r.end);
     }
+    if (reveal) flashTimer = setTimeout(clearFlash, 1600); // just past the 1.5 s CSS fade
   };
 
   const jump = (side, line) => {
@@ -259,7 +294,7 @@ function init() {
     }
   };
 
-  const filtering = () => !!(hidden.size || tagsOn.size || $('search').value.trim());
+  const filtering = () => !!(hidden.size || tagsOn.size || breakOnly || $('search').value.trim());
 
   // header shows counts and tags of the group's visible items only
   const renderHead = (g, vis) => {
@@ -272,15 +307,24 @@ function init() {
     const mini = el('span', 'gmini');
     for (const k in n) if (n[k]) mini.append(el('span', k, GLYPH[k] + n[k]));
     const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
-    g.head.setAttribute('aria-label', `${g.where}, ${vis.length} change${vis.length === 1 ? '' : 's'}: ${said.join(', ')}`);
+    const nb = vis.filter((r) => r.c.breaking).length;
+    if (nb) said.push(`${nb} breaking`);
+    const usedIn = g.used.length ? `; used in: ${g.used.join(', ')}` : '';
+    g.head.setAttribute('aria-label', `${g.where}, ${vis.length} change${vis.length === 1 ? '' : 's'}: ${said.join(', ')}${usedIn}`);
     g.head.replaceChildren(el('span', 'chev'), richText(g.where, 'gwhere'), el('span', 'gcount', vis.length), mini, el('span', 'gtags', tags.join(' · ')));
+    if (g.used.length) {
+      const more = g.used.length > 4 ? ` (+${g.used.length - 4})` : '';
+      const used = el('span', 'gused', `Used in: ${g.used.slice(0, 4).join(', ')}${more}`);
+      used.title = g.used.join('\n');
+      g.head.append(used);
+    }
   };
 
   const applyFilters = () => {
     const q = $('search').value.trim().toLowerCase();
     $('list-none')?.remove();
     for (const r of rows) {
-      r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!q || r.li._haystack.includes(q));
+      r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!breakOnly || r.c.breaking) && (!q || r.li._haystack.includes(q));
       r.li.hidden = !r.show;
     }
     // with a filter on, every matching group is expanded
@@ -289,11 +333,11 @@ function init() {
       const vis = g.rows.filter((r) => r.show);
       renderHead(g, vis);
       g.li.hidden = !vis.length;
-      const open = filtered || !collapsed.has(g.where);
-      g.ol.hidden = !open;
-      g.head.setAttribute('aria-expanded', String(open));
+      const isOpen = filtered || open.has(g.where);
+      g.ol.hidden = !isOpen;
+      g.head.setAttribute('aria-expanded', String(isOpen));
     }
-    const all = groups.length > 0 && groups.every((g) => collapsed.has(g.where));
+    const all = groups.length > 0 && groups.every((g) => !open.has(g.where));
     const ta = $('toggle-all');
     ta.title = all ? 'Expand all' : 'Collapse all';
     ta.setAttribute('aria-label', ta.title);
@@ -315,7 +359,7 @@ function init() {
   };
 
   const toggleGroup = (g) => {
-    if (!filtering()) collapsed[collapsed.has(g.where) ? 'delete' : 'add'](g.where);
+    if (!filtering()) open[open.has(g.where) ? 'delete' : 'add'](g.where);
     applyFilters();
     const first = g.rows.find((r) => r.show);
     if (!g.ol.hidden && first) select(first.btn, false);
@@ -326,7 +370,7 @@ function init() {
     if (!vis.length) return;
     const i = vis.findIndex((r) => r.btn === selected);
     const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
-    collapsed.delete(t.g.where);
+    open.add(t.g.where);
     applyFilters();
     select(t.btn, false);
   };
@@ -338,7 +382,7 @@ function init() {
   const expanded = new Set(); // keyOf of entries whose details are open
   let lastScroll = 0;
 
-  function run() {
+  function run(openSelected = false) {
     clearHl();
     clearTimeout(liveTimer);
     if (result) lastScroll = list.scrollTop;
@@ -347,16 +391,22 @@ function init() {
     rows = [];
     groups = [];
     result = null;
-    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = true;
+    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = $('toolbar').hidden = $('summary').hidden = true;
     $('total').textContent = '';
 
     const [l, r] = [models.left.getValue(), models.right.getValue()];
+    // compare() also parses a lone spec (the empty side is an error), which gives that side's title and version
+    const res = l.trim() || r.trim() ? compare(l, r) : null;
+    for (const [side, text] of [['left', l], ['right', r]]) {
+      if (!text.trim()) meta[side] = null;
+      else if (res.meta[side]) meta[side] = res.meta[side];
+    }
+    renderMeta();
     if (!l.trim() || !r.trim()) {
       const missing = !l.trim() && !r.trim() ? 'both specs' : !l.trim() ? 'the original spec' : 'the modified spec';
       showState('idle', 'Two specs, one list of changes', [`Paste or drop ${missing}. Changes appear here as you type.`]);
       return;
     }
-    const res = compare(l, r);
     if (res.error) {
       const { side, line, message } = res.error;
       // no auto-jump: the user may be mid-typing
@@ -374,42 +424,57 @@ function init() {
     result = res;
     state.hidden = true;
     const counts = { added: 0, removed: 0, changed: 0 };
-    const byWhere = new Map();
-    res.changes.forEach((c, i) => {
-      counts[c.kind]++;
-      let g = byWhere.get(c.where);
+    for (const c of res.changes) counts[c.kind]++;
+    const index = new Map(res.changes.map((c, i) => [c, i]));
+    // one entry per row: a change under its object, or under every endpoint it hits
+    const entries =
+      view === 'endpoints'
+        ? byEndpoint(res.changes).flatMap((g) => g.rows.map((row) => ({ key: g.key, ...row })))
+        : res.changes.map((c) => ({ key: c.where, c, text: c.text }));
+    const byKey = new Map();
+    entries.forEach(({ key, c, text }, n) => {
+      let g = byKey.get(key);
       if (!g) {
-        g = { where: c.where, li: el('li', 'group'), head: el('button', 'ghead'), ol: el('ol', 'gitems'), rows: [] };
+        g = { where: key, li: el('li', 'group'), head: el('button', 'ghead'), ol: el('ol', 'gitems'), rows: [], used: [] };
         g.head.type = 'button';
         g.ol.id = `grp-${groups.length}`;
         g.head.setAttribute('aria-controls', g.ol.id);
         g.head.addEventListener('click', () => toggleGroup(g));
         g.li.append(g.head, g.ol);
-        byWhere.set(c.where, g);
+        byKey.set(key, g);
         groups.push(g);
         list.append(g.li);
       }
+      // a component change lists the endpoints using it; an endpoint's own changes have no `via`
+      if (view === 'objects') for (const a of c.affects) if (a.via && !g.used.includes(a.endpoint)) g.used.push(a.endpoint);
       const li = el('li');
       li._change = c;
-      li._haystack = [c.tag, c.text, c.where, c.path.join(' '), ...(c.details ?? [])].join(' ').toLowerCase();
-      const b = el('button', `item ${c.kind}`);
-      b.title = `${c.path.join(' › ')}\n${SIDE[c.side]}, line ${c.line}`;
-      b.dataset.i = i;
+      const hits = c.affects.flatMap((a) => [a.endpoint, a.via ?? '']);
+      li._haystack = [c.tag, c.text, c.where, c.path.join(' '), ...(c.details ?? []), c.breaking ? 'breaking' : '', ...hits].join(' ').toLowerCase();
+      const b = el('button', `item ${c.kind}${c.breaking ? ' breaking' : ''}`);
+      b.title = `${c.path.join(' › ')}\n${SIDE[c.side]}, line ${c.line}${c.breaking ? '\nBreaking change' : ''}`;
+      b.dataset.i = index.get(c);
       const body = el('div');
-      body.append(el('span', c.tag === 'refactor' ? 'tag tag-refactor' : 'tag', c.tag), el('span', 'text', c.text));
+      if (c.breaking) {
+        const w = el('span', 'warn', '⚠');
+        w.setAttribute('role', 'img');
+        w.setAttribute('aria-label', 'Breaking');
+        body.append(w);
+      }
+      body.append(el('span', c.tag === 'refactor' ? 'tag tag-refactor' : 'tag', c.tag), el('span', 'text', text));
       b.append(el('span', 'glyph', GLYPH[c.kind]), body);
       b.addEventListener('click', () => select(b, true));
       li.append(b);
       if (c.details) {
-        const open = expanded.has(keyOf(c));
+        const isOpen = expanded.has(keyOf(c));
         const tog = el('button', 'tog');
         tog.type = 'button';
-        tog.setAttribute('aria-expanded', String(open));
-        tog.setAttribute('aria-controls', `det-${i}`);
+        tog.setAttribute('aria-expanded', String(isOpen));
+        tog.setAttribute('aria-controls', `det-${n}`);
         tog.append(el('span', 'chev'), `Details (${c.details.length})`);
         const d = el('div', 'details');
-        d.id = `det-${i}`;
-        d.hidden = !open;
+        d.id = `det-${n}`;
+        d.hidden = !isOpen;
         d.append(...c.details.map((t) => el('div', 'detail', t)));
         tog.addEventListener('click', () => {
           d.hidden = !d.hidden;
@@ -425,6 +490,10 @@ function init() {
     });
     for (const k in counts) $(`n-${k}`).textContent = counts[k];
     $('total').textContent = res.changes.length;
+    const nb = res.changes.filter((c) => c.breaking).length;
+    $('n-breaking').textContent = nb;
+    $('breaking').disabled = !nb && !breakOnly;
+    $('summary').textContent = summary(res.changes);
 
     const tagCount = new Map();
     for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
@@ -444,10 +513,14 @@ function init() {
         }),
       toggleAll,
     );
-    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = false;
+    $('filters').hidden = $('search-wrap').hidden = $('nav').hidden = $('tagbar').hidden = $('toolbar').hidden = $('summary').hidden = false;
+    // the same row (group + change), else the change's first row (e.g. after switching views); its group is opened only on a view switch, so a group the user collapsed stays collapsed while typing
+    const want =
+      selKey && (rows.find((r) => r.g.where === selKey.where && keyOf(r.c) === selKey.key) ?? rows.find((r) => keyOf(r.c) === selKey.key));
+    if (want && openSelected) open.add(want.g.where);
     applyFilters();
     if (selKey) {
-      const again = rows.find((r) => r.show && keyOf(r.c) === selKey);
+      const again = want?.show ? want : null;
       if (again) {
         (selected = again.btn).classList.add('sel');
         showHl(again.c, false); // no scroll while typing
@@ -457,10 +530,52 @@ function init() {
     list.scrollTop = lastScroll;
   }
 
+  const setView = (v) => {
+    view = v;
+    document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    run(true);
+    if (selected) selected.scrollIntoView({ block: 'center' });
+    else list.scrollTop = 0;
+  };
+
+  // navigator.clipboard is missing or refused in some contexts (file:// in an Edge app window); fall back to execCommand
+  const copyText = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const ta = el('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.append(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    }
+  };
+  let copyTimer;
+  $('copy').addEventListener('click', async () => {
+    const b = $('copy');
+    if (!result) return;
+    const ok = await copyText(markdown(result));
+    b.focus(); // the fallback textarea took it
+    b.textContent = ok ? 'Copied' : 'Copy failed';
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => (b.textContent = 'Copy report'), 1500);
+  });
+  document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => view !== b.dataset.view && setView(b.dataset.view)));
+  $('breaking').addEventListener('click', () => {
+    breakOnly = !breakOnly;
+    $('breaking').setAttribute('aria-pressed', String(breakOnly));
+    applyFilters();
+  });
+
   const select = (b, focusEditor) => {
     selected?.classList.remove('sel');
     selected = b;
-    selKey = keyOf(b.parentElement._change);
+    const row = rows.find((r) => r.btn === b);
+    selKey = { where: row.g.where, key: keyOf(row.c) };
     b.classList.add('sel');
     b.scrollIntoView({ block: 'nearest' });
     const c = b.parentElement._change;
@@ -486,8 +601,8 @@ function init() {
   });
 
   $('toggle-all').addEventListener('click', () => {
-    if (groups.every((g) => collapsed.has(g.where))) collapsed.clear();
-    else for (const g of groups) collapsed.add(g.where);
+    const all = groups.every((g) => !open.has(g.where));
+    for (const g of groups) open[all ? 'add' : 'delete'](g.where);
     applyFilters();
   });
   $('prev').addEventListener('click', () => nav(-1));

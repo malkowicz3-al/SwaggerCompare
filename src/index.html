@@ -19,6 +19,7 @@
     <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6M4 12h4M4 18h6" /><path d="M14 6h6M16 12h4M14 18h6" /></svg>
     <span>SwaggerCompare</span>
   </div>
+  <div class="versions" id="versions" hidden></div>
 </header>
 
 <main class="workspace">
@@ -26,8 +27,8 @@
     <div class="panes">
       <div class="pane-head" data-side="left">
         <div class="pane-id">
-          <span class="pane-name">Original</span>
-          <span class="pane-file" id="file-left">Empty</span>
+          <span class="pane-name">Original <span class="pane-file" id="file-left">Empty</span></span>
+          <span class="pane-title" id="title-left" hidden></span>
         </div>
         <span class="spec" id="spec-left" hidden></span>
         <div class="pane-actions">
@@ -38,8 +39,8 @@
       <button id="swap" class="swap" title="Swap original and modified"><svg viewBox="0 0 24 24"><path d="M7 7h12l-3.5-3.5M17 17H5l3.5 3.5"/></svg></button>
       <div class="pane-head" data-side="right">
         <div class="pane-id">
-          <span class="pane-name">Modified</span>
-          <span class="pane-file" id="file-right">Empty</span>
+          <span class="pane-name">Modified <span class="pane-file" id="file-right">Empty</span></span>
+          <span class="pane-title" id="title-right" hidden></span>
         </div>
         <span class="spec" id="spec-right" hidden></span>
         <div class="pane-actions">
@@ -66,6 +67,15 @@
         <button class="chip changed" data-kind="changed" aria-pressed="true" title="Show changed"><span>~</span><b id="n-changed">0</b></button>
       </div>
     </div>
+    <div class="toolbar" id="toolbar" hidden>
+      <div class="seg" role="group" aria-label="Group changes by">
+        <button type="button" data-view="objects" aria-pressed="true">Objects</button>
+        <button type="button" data-view="endpoints" aria-pressed="false">Endpoints</button>
+      </div>
+      <button type="button" id="breaking" class="bchip" aria-pressed="false" title="Show only breaking changes">⚠ Breaking <b id="n-breaking">0</b></button>
+      <button type="button" id="copy" class="tbtn" aria-live="polite" title="Copy a Markdown report of all changes">Copy report</button>
+    </div>
+    <p class="summary" id="summary" hidden></p>
     <div class="tagbar" id="tagbar" role="group" aria-label="Filter by tag" hidden>
       <button id="toggle-all" class="icon" type="button" title="Collapse all" aria-label="Collapse all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 11 5-5 5 5M7 18l5-5 5 5"/></svg></button>
     </div>

@@ -599,8 +599,8 @@
       return anchor ? anchor.count * anchor.aliasCount : 0;
     } else if (isCollection(node)) {
       let count = 0;
-      for (const item of node.items) {
-        const c = getAliasCount(doc, item, anchors);
+      for (const item2 of node.items) {
+        const c = getAliasCount(doc, item2, anchors);
         if (c > count)
           count = c;
       }
@@ -1178,22 +1178,22 @@ ${indent}${body}`;
     return `|${header}
 ${indent}${start}${value}${end}`;
   }
-  function plainString(item, ctx, onComment, onChompKeep) {
-    const { type, value } = item;
+  function plainString(item2, ctx, onComment, onChompKeep) {
+    const { type, value } = item2;
     const { actualString, implicitKey, indent, indentStep, inFlow } = ctx;
     if (implicitKey && value.includes("\n") || inFlow && /[[\]{},]/.test(value)) {
       return quotedString(value, ctx);
     }
     if (/^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
-      return implicitKey || inFlow || !value.includes("\n") ? quotedString(value, ctx) : blockString(item, ctx, onComment, onChompKeep);
+      return implicitKey || inFlow || !value.includes("\n") ? quotedString(value, ctx) : blockString(item2, ctx, onComment, onChompKeep);
     }
     if (!implicitKey && !inFlow && type !== Scalar.PLAIN && value.includes("\n")) {
-      return blockString(item, ctx, onComment, onChompKeep);
+      return blockString(item2, ctx, onComment, onChompKeep);
     }
     if (containsDocumentMarker(value)) {
       if (indent === "") {
         ctx.forceBlockIndent = true;
-        return blockString(item, ctx, onComment, onChompKeep);
+        return blockString(item2, ctx, onComment, onChompKeep);
       } else if (implicitKey && indent === indentStep) {
         return quotedString(value, ctx);
       }
@@ -1208,10 +1208,10 @@ ${indent}`);
     }
     return implicitKey ? str : foldFlowLines(str, indent, FOLD_FLOW, getFoldOptions(ctx, false));
   }
-  function stringifyString(item, ctx, onComment, onChompKeep) {
+  function stringifyString(item2, ctx, onComment, onChompKeep) {
     const { implicitKey, inFlow } = ctx;
-    const ss = typeof item.value === "string" ? item : Object.assign({}, item, { value: String(item.value) });
-    let { type } = item;
+    const ss = typeof item2.value === "string" ? item2 : Object.assign({}, item2, { value: String(item2.value) });
+    let { type } = item2;
     if (type !== Scalar.QUOTE_DOUBLE) {
       if (/[\x00-\x08\x0b-\x1f\x7f-\x9f\u{D800}-\u{DFFF}]/u.test(ss.value))
         type = Scalar.QUOTE_DOUBLE;
@@ -1285,25 +1285,25 @@ ${indent}`);
       options: opt
     };
   }
-  function getTagObject(tags, item) {
-    if (item.tag) {
-      const match = tags.filter((t) => t.tag === item.tag);
+  function getTagObject(tags, item2) {
+    if (item2.tag) {
+      const match = tags.filter((t) => t.tag === item2.tag);
       if (match.length > 0)
-        return match.find((t) => t.format === item.format) ?? match[0];
+        return match.find((t) => t.format === item2.format) ?? match[0];
     }
     let tagObj = void 0;
     let obj;
-    if (isScalar(item)) {
-      obj = item.value;
+    if (isScalar(item2)) {
+      obj = item2.value;
       let match = tags.filter((t) => t.identify?.(obj));
       if (match.length > 1) {
         const testMatch = match.filter((t) => t.test);
         if (testMatch.length > 0)
           match = testMatch;
       }
-      tagObj = match.find((t) => t.format === item.format) ?? match.find((t) => !t.format);
+      tagObj = match.find((t) => t.format === item2.format) ?? match.find((t) => !t.format);
     } else {
-      obj = item;
+      obj = item2;
       tagObj = tags.find((t) => t.nodeClass && obj instanceof t.nodeClass);
     }
     if (!tagObj) {
@@ -1326,24 +1326,24 @@ ${indent}`);
       props.push(doc.directives.tagString(tag));
     return props.join(" ");
   }
-  function stringify(item, ctx, onComment, onChompKeep) {
-    if (isPair(item))
-      return item.toString(ctx, onComment, onChompKeep);
-    if (isAlias(item)) {
+  function stringify(item2, ctx, onComment, onChompKeep) {
+    if (isPair(item2))
+      return item2.toString(ctx, onComment, onChompKeep);
+    if (isAlias(item2)) {
       if (ctx.doc.directives)
-        return item.toString(ctx);
-      if (ctx.resolvedAliases?.has(item)) {
+        return item2.toString(ctx);
+      if (ctx.resolvedAliases?.has(item2)) {
         throw new TypeError(`Cannot stringify circular structure without alias nodes`);
       } else {
         if (ctx.resolvedAliases)
-          ctx.resolvedAliases.add(item);
+          ctx.resolvedAliases.add(item2);
         else
-          ctx.resolvedAliases = /* @__PURE__ */ new Set([item]);
-        item = item.resolve(ctx.doc);
+          ctx.resolvedAliases = /* @__PURE__ */ new Set([item2]);
+        item2 = item2.resolve(ctx.doc);
       }
     }
     let tagObj = void 0;
-    const node = isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
+    const node = isNode(item2) ? item2 : ctx.doc.createNode(item2, { onTagObj: (o) => tagObj = o });
     tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
     const props = stringifyProps(node, tagObj, ctx);
     if (props.length > 0)
@@ -1609,8 +1609,8 @@ ${ctx.indent}`;
       return new _Pair(key, value);
     }
     toJSON(_, ctx) {
-      const pair = ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
-      return addPairToJSMap(ctx, pair, this);
+      const pair2 = ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
+      return addPairToJSMap(ctx, pair2, this);
     }
     toString(ctx, onComment, onChompKeep) {
       return ctx?.doc ? stringifyPair(this, ctx, onComment, onChompKeep) : JSON.stringify(this);
@@ -1629,16 +1629,16 @@ ${ctx.indent}`;
     let chompKeep = false;
     const lines = [];
     for (let i = 0; i < items.length; ++i) {
-      const item = items[i];
+      const item2 = items[i];
       let comment2 = null;
-      if (isNode(item)) {
-        if (!chompKeep && item.spaceBefore)
+      if (isNode(item2)) {
+        if (!chompKeep && item2.spaceBefore)
           lines.push("");
-        addCommentBefore(ctx, lines, item.commentBefore, chompKeep);
-        if (item.comment)
-          comment2 = item.comment;
-      } else if (isPair(item)) {
-        const ik = isNode(item.key) ? item.key : null;
+        addCommentBefore(ctx, lines, item2.commentBefore, chompKeep);
+        if (item2.comment)
+          comment2 = item2.comment;
+      } else if (isPair(item2)) {
+        const ik = isNode(item2.key) ? item2.key : null;
         if (ik) {
           if (!chompKeep && ik.spaceBefore)
             lines.push("");
@@ -1646,7 +1646,7 @@ ${ctx.indent}`;
         }
       }
       chompKeep = false;
-      let str2 = stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+      let str2 = stringify(item2, itemCtx, () => comment2 = null, () => chompKeep = true);
       if (comment2)
         str2 += lineComment(str2, itemIndent, commentString(comment2));
       if (chompKeep && comment2)
@@ -1684,16 +1684,16 @@ ${indent}${line}` : "\n";
     let linesAtValue = 0;
     const lines = [];
     for (let i = 0; i < items.length; ++i) {
-      const item = items[i];
+      const item2 = items[i];
       let comment = null;
-      if (isNode(item)) {
-        if (item.spaceBefore)
+      if (isNode(item2)) {
+        if (item2.spaceBefore)
           lines.push("");
-        addCommentBefore(ctx, lines, item.commentBefore, false);
-        if (item.comment)
-          comment = item.comment;
-      } else if (isPair(item)) {
-        const ik = isNode(item.key) ? item.key : null;
+        addCommentBefore(ctx, lines, item2.commentBefore, false);
+        if (item2.comment)
+          comment = item2.comment;
+      } else if (isPair(item2)) {
+        const ik = isNode(item2.key) ? item2.key : null;
         if (ik) {
           if (ik.spaceBefore)
             lines.push("");
@@ -1701,19 +1701,19 @@ ${indent}${line}` : "\n";
           if (ik.comment)
             reqNewline = true;
         }
-        const iv = isNode(item.value) ? item.value : null;
+        const iv = isNode(item2.value) ? item2.value : null;
         if (iv) {
           if (iv.comment)
             comment = iv.comment;
           if (iv.commentBefore)
             reqNewline = true;
-        } else if (item.value == null && ik?.comment) {
+        } else if (item2.value == null && ik?.comment) {
           comment = ik.comment;
         }
       }
       if (comment)
         reqNewline = true;
-      let str = stringify(item, itemCtx, () => comment = null);
+      let str = stringify(item2, itemCtx, () => comment = null);
       reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
       if (i < items.length - 1) {
         str += ",";
@@ -1813,14 +1813,14 @@ ${indent}${end}`;
      * @param overwrite - If not set `true`, using a key that is already in the
      *   collection will throw. Otherwise, overwrites the previous value.
      */
-    add(pair, overwrite) {
+    add(pair2, overwrite) {
       let _pair;
-      if (isPair(pair))
-        _pair = pair;
-      else if (!pair || typeof pair !== "object" || !("key" in pair)) {
-        _pair = new Pair(pair, pair?.value);
+      if (isPair(pair2))
+        _pair = pair2;
+      else if (!pair2 || typeof pair2 !== "object" || !("key" in pair2)) {
+        _pair = new Pair(pair2, pair2?.value);
       } else
-        _pair = new Pair(pair.key, pair.value);
+        _pair = new Pair(pair2.key, pair2.value);
       const prev = findPair(this.items, _pair.key);
       const sortEntries = this.schema?.sortMapEntries;
       if (prev) {
@@ -1831,7 +1831,7 @@ ${indent}${end}`;
         else
           prev.value = _pair.value;
       } else if (sortEntries) {
-        const i = this.items.findIndex((item) => sortEntries(_pair, item) < 0);
+        const i = this.items.findIndex((item2) => sortEntries(_pair, item2) < 0);
         if (i === -1)
           this.items.push(_pair);
         else
@@ -1867,16 +1867,16 @@ ${indent}${end}`;
       const map2 = Type ? new Type() : ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
       if (ctx?.onCreate)
         ctx.onCreate(map2);
-      for (const item of this.items)
-        addPairToJSMap(ctx, map2, item);
+      for (const item2 of this.items)
+        addPairToJSMap(ctx, map2, item2);
       return map2;
     }
     toString(ctx, onComment, onChompKeep) {
       if (!ctx)
         return JSON.stringify(this);
-      for (const item of this.items) {
-        if (!isPair(item))
-          throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
+      for (const item2 of this.items) {
+        if (!isPair(item2))
+          throw new Error(`Map items must all be pairs; found ${JSON.stringify(item2)} instead`);
       }
       if (!ctx.allNullValues && this.hasAllNullValues(false))
         ctx = Object.assign({}, ctx, { allNullValues: true });
@@ -1970,8 +1970,8 @@ ${indent}${end}`;
       if (ctx?.onCreate)
         ctx.onCreate(seq2);
       let i = 0;
-      for (const item of this.items)
-        seq2.push(toJS(item, String(i++), ctx));
+      for (const item2 of this.items)
+        seq2.push(toJS(item2, String(i++), ctx));
       return seq2;
     }
     toString(ctx, onComment, onChompKeep) {
@@ -2028,9 +2028,9 @@ ${indent}${end}`;
     default: true,
     tag: "tag:yaml.org,2002:str",
     resolve: (str) => str,
-    stringify(item, ctx, onComment, onChompKeep) {
+    stringify(item2, ctx, onComment, onChompKeep) {
       ctx = Object.assign({ actualString: true }, ctx);
-      return stringifyString(item, ctx, onComment, onChompKeep);
+      return stringifyString(item2, ctx, onComment, onChompKeep);
     }
   };
 
@@ -2285,24 +2285,24 @@ ${indent}${end}`;
   function resolvePairs(seq2, onError) {
     if (isSeq(seq2)) {
       for (let i = 0; i < seq2.items.length; ++i) {
-        let item = seq2.items[i];
-        if (isPair(item))
+        let item2 = seq2.items[i];
+        if (isPair(item2))
           continue;
-        else if (isMap(item)) {
-          if (item.items.length > 1)
+        else if (isMap(item2)) {
+          if (item2.items.length > 1)
             onError("Each pair must have its own sequence indicator");
-          const pair = item.items[0] || new Pair(new Scalar(null));
-          if (item.commentBefore)
-            pair.key.commentBefore = pair.key.commentBefore ? `${item.commentBefore}
-${pair.key.commentBefore}` : item.commentBefore;
-          if (item.comment) {
-            const cn = pair.value ?? pair.key;
-            cn.comment = cn.comment ? `${item.comment}
-${cn.comment}` : item.comment;
+          const pair2 = item2.items[0] || new Pair(new Scalar(null));
+          if (item2.commentBefore)
+            pair2.key.commentBefore = pair2.key.commentBefore ? `${item2.commentBefore}
+${pair2.key.commentBefore}` : item2.commentBefore;
+          if (item2.comment) {
+            const cn = pair2.value ?? pair2.key;
+            cn.comment = cn.comment ? `${item2.comment}
+${cn.comment}` : item2.comment;
           }
-          item = pair;
+          item2 = pair2;
         }
-        seq2.items[i] = isPair(item) ? item : new Pair(item);
+        seq2.items[i] = isPair(item2) ? item2 : new Pair(item2);
       }
     } else
       onError("Expected a sequence for this tag");
@@ -2368,13 +2368,13 @@ ${cn.comment}` : item.comment;
       const map2 = /* @__PURE__ */ new Map();
       if (ctx?.onCreate)
         ctx.onCreate(map2);
-      for (const pair of this.items) {
+      for (const pair2 of this.items) {
         let key, value;
-        if (isPair(pair)) {
-          key = toJS(pair.key, "", ctx);
-          value = toJS(pair.value, key, ctx);
+        if (isPair(pair2)) {
+          key = toJS(pair2.key, "", ctx);
+          value = toJS(pair2.value, key, ctx);
         } else {
-          key = toJS(pair, "", ctx);
+          key = toJS(pair2, "", ctx);
         }
         if (map2.has(key))
           throw new Error("Ordered maps must not include duplicate keys");
@@ -2552,24 +2552,24 @@ ${cn.comment}` : item.comment;
       this.tag = _YAMLSet.tag;
     }
     add(key) {
-      let pair;
+      let pair2;
       if (isPair(key))
-        pair = key;
+        pair2 = key;
       else if (key && typeof key === "object" && "key" in key && "value" in key && key.value === null)
-        pair = new Pair(key.key, null);
+        pair2 = new Pair(key.key, null);
       else
-        pair = new Pair(key, null);
-      const prev = findPair(this.items, pair.key);
+        pair2 = new Pair(key, null);
+      const prev = findPair(this.items, pair2.key);
       if (!prev)
-        this.items.push(pair);
+        this.items.push(pair2);
     }
     /**
      * If `keepPair` is `true`, returns the Pair matching `key`.
      * Otherwise, returns the value of that Pair's key.
      */
     get(key, keepPair) {
-      const pair = findPair(this.items, key);
-      return !keepPair && isPair(pair) ? isScalar(pair.key) ? pair.key.value : pair.key : pair;
+      const pair2 = findPair(this.items, key);
+      return !keepPair && isPair(pair2) ? isScalar(pair2.key) ? pair2.key.value : pair2.key : pair2;
     }
     set(key, value) {
       if (typeof value !== "boolean")
@@ -3420,7 +3420,7 @@ ${pointer2}
     if (uniqueKeys === false)
       return false;
     const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || isScalar(a) && isScalar(b) && a.value === b.value;
-    return items.some((pair) => isEqual(pair.key, search));
+    return items.some((pair2) => isEqual(pair2.key, search));
   }
 
   // node_modules/yaml/browser/dist/compose/resolve-block-map.js
@@ -3494,10 +3494,10 @@ ${pointer2}
         if (ctx.schema.compat)
           flowIndentCheck(bm.indent, value, onError);
         offset = valueNode.range[2];
-        const pair = new Pair(keyNode, valueNode);
+        const pair2 = new Pair(keyNode, valueNode);
         if (ctx.options.keepSourceTokens)
-          pair.srcToken = collItem;
-        map2.items.push(pair);
+          pair2.srcToken = collItem;
+        map2.items.push(pair2);
       } else {
         if (implicitKey)
           onError(keyNode.range, "MISSING_CHAR", "Implicit map keys need to be followed by map values");
@@ -3507,10 +3507,10 @@ ${pointer2}
           else
             keyNode.comment = valueProps.comment;
         }
-        const pair = new Pair(keyNode);
+        const pair2 = new Pair(keyNode);
         if (ctx.options.keepSourceTokens)
-          pair.srcToken = collItem;
-        map2.items.push(pair);
+          pair2.srcToken = collItem;
+        map2.items.push(pair2);
       }
     }
     if (commentEnd && commentEnd < offset)
@@ -3732,18 +3732,18 @@ ${pointer2}
           else
             keyNode.comment = valueProps.comment;
         }
-        const pair = new Pair(keyNode, valueNode);
+        const pair2 = new Pair(keyNode, valueNode);
         if (ctx.options.keepSourceTokens)
-          pair.srcToken = collItem;
+          pair2.srcToken = collItem;
         if (isMap2) {
           const map2 = coll;
           if (mapIncludes(ctx, map2.items, keyNode))
             onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-          map2.items.push(pair);
+          map2.items.push(pair2);
         } else {
           const map2 = new YAMLMap(ctx.schema);
           map2.flow = true;
-          map2.items.push(pair);
+          map2.items.push(pair2);
           const endRange = (valueNode ?? keyNode).range;
           map2.range = [keyNode.range[0], endRange[1], endRange[2]];
           coll.items.push(map2);
@@ -3831,13 +3831,13 @@ ${pointer2}
   }
 
   // node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
-  function resolveBlockScalar(ctx, scalar, onError) {
-    const start = scalar.offset;
-    const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
+  function resolveBlockScalar(ctx, scalar2, onError) {
+    const start = scalar2.offset;
+    const header = parseBlockScalarHeader(scalar2, ctx.options.strict, onError);
     if (!header)
       return { value: "", type: null, comment: "", range: [start, start, start] };
     const type = header.mode === ">" ? Scalar.BLOCK_FOLDED : Scalar.BLOCK_LITERAL;
-    const lines = scalar.source ? splitLines(scalar.source) : [];
+    const lines = scalar2.source ? splitLines(scalar2.source) : [];
     let chompStart = lines.length;
     for (let i = lines.length - 1; i >= 0; --i) {
       const content = lines[i][1];
@@ -3849,12 +3849,12 @@ ${pointer2}
     if (chompStart === 0) {
       const value2 = header.chomp === "+" && lines.length > 0 ? "\n".repeat(Math.max(1, lines.length - 1)) : "";
       let end2 = start + header.length;
-      if (scalar.source)
-        end2 += scalar.source.length;
+      if (scalar2.source)
+        end2 += scalar2.source.length;
       return { value: value2, type, comment: header.comment, range: [start, end2, end2] };
     }
-    let trimIndent = scalar.indent + header.indent;
-    let offset = scalar.offset + header.length;
+    let trimIndent = scalar2.indent + header.indent;
+    let offset = scalar2.offset + header.length;
     let contentStart = 0;
     for (let i = 0; i < chompStart; ++i) {
       const [indent, content] = lines[i];
@@ -3932,7 +3932,7 @@ ${pointer2}
       default:
         value += "\n";
     }
-    const end = start + header.length + scalar.source.length;
+    const end = start + header.length + scalar2.source.length;
     return { value, type, comment: header.comment, range: [start, end, end] };
   }
   function parseBlockScalarHeader({ offset, props }, strict, onError) {
@@ -4007,8 +4007,8 @@ ${pointer2}
   }
 
   // node_modules/yaml/browser/dist/compose/resolve-flow-scalar.js
-  function resolveFlowScalar(scalar, strict, onError) {
-    const { offset, type, source, end } = scalar;
+  function resolveFlowScalar(scalar2, strict, onError) {
+    const { offset, type, source, end } = scalar2;
     let _type;
     let value;
     const _onError = (rel, code, msg) => onError(offset + rel, code, msg);
@@ -4027,7 +4027,7 @@ ${pointer2}
         break;
       /* istanbul ignore next should not happen */
       default:
-        onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
+        onError(scalar2, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
         return {
           value: "",
           type: null,
@@ -4232,26 +4232,26 @@ ${pointer2}
       tag = findScalarTagByTest(ctx, value, token, onError);
     else
       tag = ctx.schema[SCALAR];
-    let scalar;
+    let scalar2;
     try {
       const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
-      scalar = isScalar(res) ? res : new Scalar(res);
+      scalar2 = isScalar(res) ? res : new Scalar(res);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
-      scalar = new Scalar(value);
+      scalar2 = new Scalar(value);
     }
-    scalar.range = range;
-    scalar.source = value;
+    scalar2.range = range;
+    scalar2.source = value;
     if (type)
-      scalar.type = type;
+      scalar2.type = type;
     if (tagName)
-      scalar.tag = tagName;
+      scalar2.tag = tagName;
     if (tag.format)
-      scalar.format = tag.format;
+      scalar2.format = tag.format;
     if (comment)
-      scalar.comment = comment;
-    return scalar;
+      scalar2.comment = comment;
+    return scalar2;
   }
   function findScalarTagByName(schema4, value, tagName, tagToken, onError) {
     if (tagName === "!")
@@ -4646,15 +4646,15 @@ ${end.comment}` : end.comment;
   visit2.SKIP = SKIP2;
   visit2.REMOVE = REMOVE2;
   visit2.itemAtPath = (cst, path) => {
-    let item = cst;
+    let item2 = cst;
     for (const [field, index] of path) {
-      const tok = item?.[field];
+      const tok = item2?.[field];
       if (tok && "items" in tok) {
-        item = tok.items[index];
+        item2 = tok.items[index];
       } else
         return void 0;
     }
-    return item;
+    return item2;
   };
   visit2.parentCollection = (cst, path) => {
     const parent = visit2.itemAtPath(cst, path.slice(0, -1));
@@ -4664,12 +4664,12 @@ ${end.comment}` : end.comment;
       return coll;
     throw new Error("Parent collection not found");
   };
-  function _visit(path, item, visitor) {
-    let ctrl = visitor(item, path);
+  function _visit(path, item2, visitor) {
+    let ctrl = visitor(item2, path);
     if (typeof ctrl === "symbol")
       return ctrl;
     for (const field of ["key", "value"]) {
-      const token = item[field];
+      const token = item2[field];
       if (token && "items" in token) {
         for (let i = 0; i < token.items.length; ++i) {
           const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
@@ -4683,10 +4683,10 @@ ${end.comment}` : end.comment;
           }
         }
         if (typeof ctrl === "function" && field === "key")
-          ctrl = ctrl(item, path);
+          ctrl = ctrl(item2, path);
       }
     }
-    return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
+    return typeof ctrl === "function" ? ctrl(item2, path) : ctrl;
   }
 
   // node_modules/yaml/browser/dist/parse/cst.js
@@ -5722,37 +5722,37 @@ ${end.comment}` : end.comment;
         };
       }
     }
-    *scalar(scalar) {
+    *scalar(scalar2) {
       if (this.type === "map-value-ind") {
         const prev = getPrevProps(this.peek(2));
         const start = getFirstKeyStartProps(prev);
         let sep;
-        if (scalar.end) {
-          sep = scalar.end;
+        if (scalar2.end) {
+          sep = scalar2.end;
           sep.push(this.sourceToken);
-          delete scalar.end;
+          delete scalar2.end;
         } else
           sep = [this.sourceToken];
         const map2 = {
           type: "block-map",
-          offset: scalar.offset,
-          indent: scalar.indent,
-          items: [{ start, key: scalar, sep }]
+          offset: scalar2.offset,
+          indent: scalar2.indent,
+          items: [{ start, key: scalar2, sep }]
         };
         this.onKeyLine = true;
         this.stack[this.stack.length - 1] = map2;
       } else
-        yield* this.lineEnd(scalar);
+        yield* this.lineEnd(scalar2);
     }
-    *blockScalar(scalar) {
+    *blockScalar(scalar2) {
       switch (this.type) {
         case "space":
         case "comment":
         case "newline":
-          scalar.props.push(this.sourceToken);
+          scalar2.props.push(this.sourceToken);
           return;
         case "scalar":
-          scalar.source = this.source;
+          scalar2.source = this.source;
           this.atNewLine = true;
           this.indent = 0;
           if (this.onNewLine) {
@@ -6254,15 +6254,18 @@ ${end.comment}` : end.comment;
   var METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
   function compare(leftText, rightText) {
     const L = parse2(leftText, "left");
-    if (L.error) return L;
     const R = parse2(rightText, "right");
-    if (R.error) return R;
+    const meta = { left: L.error ? null : metaOf(L.data), right: R.error ? null : metaOf(R.data) };
+    if (L.error) return { ...L, meta };
+    if (R.error) return { ...R, meta };
     const changes = [];
-    const st = { changes, left: L.index, right: R.index, lData: L.data, rData: R.data, extracted: /* @__PURE__ */ new Set(), inlined: /* @__PURE__ */ new Set() };
+    const st = { changes, left: L.index, right: R.index, lData: L.data, rData: R.data, useL: usage(L.data), useR: usage(R.data), affects: /* @__PURE__ */ new Map(), extracted: /* @__PURE__ */ new Set(), inlined: /* @__PURE__ */ new Set() };
     walk(L.data, R.data, { path: [], pl: [], pr: [], st });
     const covered = (c) => (c.kind === "added" ? st.extracted : c.kind === "removed" ? st.inlined : /* @__PURE__ */ new Set()).has(JSON.stringify(c.path));
-    return { changes: changes.filter((c) => !covered(c)) };
+    return { changes: changes.filter((c) => !covered(c)), meta };
   }
+  var scalar = (v) => typeof v === "string" || typeof v === "number" ? String(v) : void 0;
+  var metaOf = (d) => ({ title: scalar(d?.info?.title), version: scalar(d?.info?.version), spec: scalar(d?.openapi ?? d?.swagger) });
   function parse2(text, side) {
     const lc = new LineCounter();
     const doc = parseDocument(text, { lineCounter: lc });
@@ -6286,19 +6289,24 @@ ${end.comment}` : end.comment;
       while (off > from && /\s/.test(text[off])) off--;
       return { start: lc.linePos(from).line, end: lc.linePos(off).line };
     };
+    const keyAt = ([s, e]) => {
+      const { line, col } = lc.linePos(s);
+      return { line, from: col, to: col + e - s };
+    };
     const visit3 = (node, path) => {
       if (isMap(node)) {
         for (const p of node.items) {
           if (!isScalar(p.key)) continue;
           const sub = [...path, String(p.key.value)];
-          index.set(JSON.stringify(sub), span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]));
+          index.set(JSON.stringify(sub), { ...span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]), key: keyAt(p.key.range) });
           visit3(p.value, sub);
         }
       } else if (isSeq(node)) {
-        node.items.forEach((item, i) => {
+        node.items.forEach((item2, i) => {
           const sub = [...path, i];
-          if (item?.range) index.set(JSON.stringify(sub), span(item.range[0], item.range[1], item.range[1]));
-          visit3(item, sub);
+          const name = isMap(item2) ? item2.items.find((q) => isScalar(q.key) && q.key.value === "name")?.value : item2;
+          if (item2?.range) index.set(JSON.stringify(sub), { ...span(item2.range[0], item2.range[1], item2.range[1]), ...isScalar(name) && { key: keyAt(name.range) } });
+          visit3(item2, sub);
         });
       }
     };
@@ -6395,28 +6403,113 @@ ${end.comment}` : end.comment;
     return { where: parts.slice(0, cut).join("."), rest: parts.slice(cut) };
   }
   var tagOf = (p) => [...p].map(String).reverse().find((s) => !/^\d+$/.test(s)) ?? "other";
-  function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where) {
+  function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where, vals) {
+    const st = ctx.st;
     const side = kind === "removed" ? "left" : "right";
-    const line = lineOf(ctx.st[side], side === "left" ? ctx.pl : ctx.pr);
-    const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(ctx.st.left, ctx.pl), right: rangeOf(ctx.st.right, ctx.pr) };
-    ctx.st.changes.push(ch);
+    const line = lineOf(st[side], side === "left" ? ctx.pl : ctx.pr);
+    const affects = st.detail ? [] : affectsOf(ctx);
+    const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(st.left, ctx.pl), right: rangeOf(st.right, ctx.pr), affects, flash: flashOf(ctx) };
+    ch.breaking = isBreaking(ch, st.detail ? st.dirs : dirsOf(affects), vals);
+    st.changes.push(ch);
     return ch;
   }
+  var dirsOf = (affects) => new Set(affects.map((a) => a.dir));
+  function affectsOf(ctx) {
+    const P = ctx.path.map(String);
+    const st = ctx.st;
+    if (P[0] === "paths" && P.length > 1) {
+      const op = METHODS.includes(P[2]);
+      const k = op ? P[3] : P[2];
+      const dir = k === "parameters" || k === "requestBody" ? "request" : k === "responses" ? "response" : "endpoint";
+      const item2 = (d) => isPlain(d?.paths) && isPlain(get(d.paths, P[1])) ? d.paths[P[1]] : {};
+      const methods = op ? [P[2]] : METHODS.filter((m) => has(item2(st.lData), m) || has(item2(st.rData), m));
+      return methods.map((m) => ({ endpoint: `${m.toUpperCase()} ${P[1]}`, dir }));
+    }
+    const i = nameAt(P);
+    if (i < 0) return [];
+    const key = JSON.stringify(P.slice(0, i + 1));
+    if (!st.affects.has(key)) st.affects.set(key, componentAffects(st.useL.get(key) ?? [], st.useR.get(key) ?? []));
+    return st.affects.get(key);
+  }
+  function componentAffects(useL, useR) {
+    const out = /* @__PURE__ */ new Map();
+    for (const a of [...useL, ...useR]) {
+      const k = `${a.endpoint}|${a.dir}`;
+      if (!out.has(k)) out.set(k, { endpoint: a.endpoint, dir: a.dir, vias: [] });
+      const vias = out.get(k).vias;
+      if (!vias.includes(a.via)) vias.push(a.via);
+    }
+    const head = (v) => /^(response|parameter) /.exec(v)?.[0];
+    return [...out.values()].map(({ endpoint, dir, vias }) => ({
+      endpoint,
+      via: vias.map((v, j) => j && head(v) && head(v) === head(vias[j - 1]) ? v.slice(head(v).length) : v).join(", "),
+      dir
+    }));
+  }
+  function flashOf(ctx) {
+    const flash = {};
+    for (const [side, p] of [["left", ctx.pl], ["right", ctx.pr]]) {
+      const own = ["$ref", ...KW].includes(p.at(-1)) ? p.slice(0, -1) : p;
+      const key = ctx.st[side].get(JSON.stringify(own))?.key;
+      if (key) flash[side] = key;
+    }
+    return flash;
+  }
+  var MINS = ["minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties"];
+  var MAXS = ["maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties"];
+  function isBreaking(c, dirs, { lv, rv, details, enums } = {}) {
+    if (!dirs?.size || inValue(c.path)) return false;
+    const req = dirs.has("request");
+    const res = dirs.has("response");
+    const { kind, tag } = c;
+    if (tag === "refactor") return !!details?.some((d) => d.breaking);
+    if (kind === "removed" && (tag === "endpoint" || tag === "response")) return true;
+    if (kind === "removed" && c.path.at(-2) === "content" && !NAMES.includes(c.path.at(-3))) return true;
+    if (tag === "type" || tag === "$ref") return kind === "changed";
+    if (tag === "parameter") return kind === "added" && (rv?.required === true || rv?.in === "path");
+    if (tag === "requestBody") return kind === "added" && rv?.required === true;
+    if (tag === "required") {
+      if (/now required$/.test(c.text) || rv === true) return req;
+      if (/no longer required$/.test(c.text) || lv === true) return res;
+      return false;
+    }
+    if (tag === "property") return kind === "removed" && res;
+    if (tag === "enum") {
+      const whole = c.path.at(-1) === "enum";
+      const [l, r] = enums ?? [[], []];
+      const missing = (a, b) => a.some((v) => !b.some((w) => eq(v, w)));
+      const narrowed = whole ? kind === "added" : missing(l, r);
+      const widened = whole ? kind === "removed" : missing(r, l);
+      return narrowed && req || widened && res;
+    }
+    if (tag === "pattern" || MINS.includes(tag) || MAXS.includes(tag)) {
+      const tighter = kind === "added" || kind === "changed" && (tag === "pattern" || (MINS.includes(tag) ? rv > lv : rv < lv));
+      return tighter && req;
+    }
+    return false;
+  }
+  var NAMES = ["properties", "headers", "definitions", "schemas", "parameters", "responses", "required"];
+  var VALUES = ["example", "examples", "default"];
+  var inValue = (path) => path.some(
+    (s, i) => !NAMES.includes(path[i - 1]) && (VALUES.includes(s) || s.startsWith("x-") || s === "enum" && i < path.length - 2)
+  );
   var restOf = (ctx) => locate(ctx).rest.join(".");
   var ownWhere = (ctx) => compLabel(ctx.path.map(String)) ? locate(ctx, true).where : void 0;
   function walk(l, r, ctx) {
     if (eq(l, r)) return;
-    if (l === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx);
-    if (r === void 0) return emit("removed", restOf(ctx) ? `${restOf(ctx)} removed` : "Removed", ctx);
+    const vals = { lv: l, rv: r, enums: ctx.enums };
+    if (l === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx, void 0, void 0, vals);
+    if (r === void 0) return emit("removed", restOf(ctx) ? `${restOf(ctx)} removed` : "Removed", ctx, void 0, void 0, vals);
     if (extract(l, r, ctx)) return;
     if (compose(l, r, ctx)) return;
     if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
     if (Array.isArray(l) && Array.isArray(r)) {
-      for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ctx, i));
+      const ac = ctx.path.at(-1) === "enum" ? { ...ctx, enums: [l, r] } : ctx;
+      for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ac, i));
       return;
     }
     const p = restOf(ctx);
-    emit("changed", `${p ? `${p}: ` : ""}${fmt(l)} \u2192 ${fmt(r)}`, ctx);
+    emit("changed", `${p ? `${p}: ` : ""}${fmt(l)} \u2192 ${fmt(r)}`, ctx, void 0, void 0, vals);
   }
   function walkObject(l, r, ctx) {
     const P = ctx.st.detail ? [] : ctx.path;
@@ -6434,8 +6527,8 @@ ${end.comment}` : end.comment;
       const verb = lv === void 0 ? "Added" : "Removed";
       const c = child(ctx, k);
       if (isPaths && oneSided) {
-        const item = lv ?? rv;
-        const methods = isPlain(item) ? METHODS.filter((m) => has(item, m)) : [];
+        const item2 = lv ?? rv;
+        const methods = isPlain(item2) ? METHODS.filter((m) => has(item2, m)) : [];
         if (!methods.length) walk(lv, rv, c);
         for (const m of methods) emit(kind, `${verb} endpoint`, child(c, m), "endpoint");
       } else if (isPathItem && oneSided && METHODS.includes(k)) {
@@ -6487,15 +6580,15 @@ ${end.comment}` : end.comment;
     const segs = pointer(ref);
     const target = segs && resolve(ext ? st.rData : st.lData, segs);
     let details;
+    const sink = [];
     if (!segs) details = ["definition not compared (external $ref)"];
     else if (!target) details = ["definition not compared (unresolved $ref)"];
     else {
-      const sink = [];
-      walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } });
+      walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
       details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
     }
     const text = `${label2 ?? restOf(ctx)}: ${ext ? "extracted to" : "inlined from"} ${(segs && compLabel(segs)) ?? ref}`;
-    emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx, "refactor", ownWhere(ctx)).details = details;
+    emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx, "refactor", ownWhere(ctx), { details: sink }).details = details;
     if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
     return true;
   }
@@ -6542,7 +6635,7 @@ ${end.comment}` : end.comment;
     if (!cl && !cr) return false;
     if (cl === cr && eq(refsOf(l[cl]), refsOf(r[cr]))) return false;
     const sink = [];
-    const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } };
+    const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } };
     const union = isUnion(l, cl) || isUnion(r, cr);
     if (union) walk(l, r, dctx);
     else walk(flat(l, st.lData), flat(r, st.rData), dctx);
@@ -6555,7 +6648,7 @@ ${end.comment}` : end.comment;
       const ch2 = [...rr.filter((x) => !lr.includes(x)).map((x) => `+ ${refName(x)}`), ...lr.filter((x) => !rr.includes(x)).map((x) => `\u2212 ${refName(x)}`)];
       what = `${cr} members changed: ${ch2.join(", ")}`;
     } else what = `now ${cr} [${r[cr].map(desc).join(cr === "allOf" ? " + " : ", ")}]`;
-    const ch = emit("changed", `${label2 ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, "refactor", ownWhere(ctx));
+    const ch = emit("changed", `${label2 ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, "refactor", ownWhere(ctx), { details: sink });
     ch.details = details;
     if (!cr) {
       ch.side = "left";
@@ -6632,7 +6725,7 @@ ${end.comment}` : end.comment;
       const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n ?? rm.get(lab).n);
       const c = child(pc, shown, { l: il, r: ir });
       const nm = p.name ?? lab;
-      if (il === void 0) emit("added", `Added parameter ${lab}`, c, "parameter");
+      if (il === void 0) emit("added", `Added parameter ${lab}`, c, "parameter", void 0, { rv: pureRef(rp) ? resolve(ctx.st.rData, pointer(rp.$ref)) : rp });
       else if (ir === void 0) emit("removed", `Removed parameter ${lab}`, c, "parameter");
       else {
         if (extract(lp, rp, c, nm)) continue;
@@ -6689,6 +6782,131 @@ ${end.comment}` : end.comment;
       const pr = has(rProps, n) ? [...ctx.pr, "properties", n] : [...ctx.pr, "required"];
       emit("changed", `${nm(n)}: no longer required`, at(n, [...ctx.pl, "required", lArr.indexOf(n)], pr), "required", where);
     }
+  }
+  function usage(data) {
+    const use = /* @__PURE__ */ new Map();
+    const direct = /* @__PURE__ */ new Map();
+    const closure = /* @__PURE__ */ new Map();
+    const refsIn = (node, out = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set()) => {
+      if (node === null || typeof node !== "object" || seen.has(node)) return out;
+      seen.add(node);
+      const segs = isPlain(node) && typeof node.$ref === "string" ? pointer(node.$ref) : void 0;
+      const i = segs ? nameAt(segs) : -1;
+      if (i > 0) out.add(JSON.stringify(segs.slice(0, i + 1)));
+      for (const v of Object.values(node)) refsIn(v, out, seen);
+      return out;
+    };
+    const from = (start) => {
+      if (closure.has(start)) return closure.get(start);
+      const seen = /* @__PURE__ */ new Set();
+      const todo = [start];
+      while (todo.length) {
+        const k = todo.pop();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (!direct.has(k)) direct.set(k, refsIn(JSON.parse(k).reduce((v, s) => isPlain(v) ? get(v, s) : void 0, data)));
+        todo.push(...direct.get(k));
+      }
+      closure.set(start, seen);
+      return seen;
+    };
+    const reach = (node) => {
+      const out = /* @__PURE__ */ new Set();
+      for (const k of refsIn(node)) for (const x of from(k)) out.add(x);
+      return out;
+    };
+    for (const [p, item2] of Object.entries(isPlain(data?.paths) ? data.paths : {})) {
+      if (!isPlain(item2)) continue;
+      const shared = Array.isArray(item2.parameters) ? item2.parameters : [];
+      for (const m of METHODS.filter((m2) => isPlain(get(item2, m2)))) {
+        const op = item2[m];
+        const endpoint = `${m.toUpperCase()} ${p}`;
+        const parts = [...shared, ...Array.isArray(op.parameters) ? op.parameters : []].map((prm) => {
+          const t = pureRef(prm) ? resolve(data, pointer(prm.$ref)) : prm;
+          return [`parameter ${t?.name ?? prm?.$ref ?? "?"}`, "request", prm];
+        });
+        if (op.requestBody !== void 0) parts.push(["request body", "request", op.requestBody]);
+        for (const [code, r] of Object.entries(isPlain(op.responses) ? op.responses : {})) parts.push([`response ${code}`, "response", r]);
+        for (const [via, dir, node] of parts) {
+          for (const k of reach(node)) {
+            if (!use.has(k)) use.set(k, /* @__PURE__ */ new Map());
+            const m2 = use.get(k);
+            const id = `${endpoint}|${via}`;
+            if (!m2.has(id)) m2.set(id, { endpoint, via, dir });
+          }
+        }
+      }
+    }
+    return new Map([...use].map(([k, m]) => [k, [...m.values()]]));
+  }
+
+  // src/report.js
+  var pair = (a, b) => a == null || a === b ? b ?? "" : b == null ? a : `${a} \u2192 ${b}`;
+  function heading(meta) {
+    const l = meta?.left ?? {};
+    const r = meta?.right ?? {};
+    const ver = (v) => v?.replace(/^v/i, "");
+    return [pair(l.title, r.title), pair(ver(l.version), ver(r.version))].filter(Boolean).join("  ");
+  }
+  var schemaOf = (p) => p[0] === "definitions" ? p[1] : p[0] === "components" && p[1] === "schemas" ? p[2] : void 0;
+  function counts(changes, ofKind, keyOf) {
+    const added = /* @__PURE__ */ new Set();
+    const removed = /* @__PURE__ */ new Set();
+    const changed = /* @__PURE__ */ new Set();
+    for (const c of changes) {
+      for (const k of keyOf(c)) {
+        if (ofKind(c) && c.kind === "added") added.add(k);
+        else if (ofKind(c) && c.kind === "removed") removed.add(k);
+        else changed.add(k);
+      }
+    }
+    const parts = [];
+    if (added.size) parts.push(`${added.size} added`);
+    if (removed.size) parts.push(`${removed.size} removed`);
+    const n = [...changed].filter((k) => !added.has(k) && !removed.has(k)).length;
+    if (n) parts.push(`${n} changed`);
+    return parts.join(" \xB7 ");
+  }
+  function summary(changes) {
+    if (!changes.length) return "No changes";
+    const eps = counts(changes, (c) => c.tag === "endpoint", (c) => c.affects.map((a) => a.endpoint));
+    const schemaKey = (c) => schemaOf(c.path) === void 0 ? [] : [schemaOf(c.path)];
+    const sch = counts(changes, (c) => c.tag === "schema", schemaKey);
+    const nb = changes.filter((c) => c.breaking).length;
+    return [eps && `Endpoints: ${eps}`, sch && `Schemas: ${sch}`, nb && `\u26A0 ${nb} breaking`].filter(Boolean).join(" \xB7 ");
+  }
+  function byEndpoint(changes) {
+    const groups = /* @__PURE__ */ new Map();
+    const other = [];
+    for (const c of changes) {
+      if (!c.affects.length) other.push({ c, text: c.text });
+      const vias = /* @__PURE__ */ new Map();
+      for (const a of c.affects) {
+        if (!vias.has(a.endpoint)) vias.set(a.endpoint, []);
+        if (a.via) vias.get(a.endpoint).push(a.via);
+      }
+      for (const [key, v] of vias) {
+        if (!groups.has(key)) groups.set(key, { key, rows: [] });
+        groups.get(key).rows.push({ c, text: v.length ? `${v.join(", ")} \u203A ${c.text}` : c.text });
+      }
+    }
+    return [...groups.values(), ...other.length ? [{ key: "Other", rows: other }] : []];
+  }
+  var item = (text, c) => [`- ${c.breaking ? "\u26A0 " : ""}${text}`, ...(c.details ?? []).map((d) => `  - ${d}`)];
+  function markdown(res) {
+    const title = `# ${heading(res.meta) || "API changes"}`;
+    if (res.error) return `${title}
+
+The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.message}
+`;
+    const out = [title, "", summary(res.changes)];
+    const breaking = res.changes.filter((c) => c.breaking);
+    if (breaking.length) out.push("", "## Breaking", "", ...breaking.map((c) => `- ${c.where}: ${c.text}`));
+    for (const g of byEndpoint(res.changes)) {
+      const other = g.key === "Other";
+      out.push("", `## ${g.key}`, "", ...g.rows.flatMap(({ c, text }) => item(other ? `${c.where}: ${text}` : text, c)));
+    }
+    return out.join("\n") + "\n";
   }
 
   // src/renderer.js
@@ -6805,10 +7023,25 @@ ${end.comment}` : end.comment;
     let result = null;
     let liveTimer;
     let hidden = /* @__PURE__ */ new Set();
-    const collapsed = /* @__PURE__ */ new Set();
+    const open = /* @__PURE__ */ new Set();
     const tagsOn = /* @__PURE__ */ new Set();
+    let breakOnly = false;
+    let view = "objects";
+    const meta = { left: null, right: null };
     let rows = [];
     let groups = [];
+    const renderMeta = () => {
+      for (const side of ["left", "right"]) {
+        const m = meta[side];
+        const t = $(`title-${side}`);
+        t.textContent = [m?.title, m?.version && `v${m.version.replace(/^v/i, "")}`].filter(Boolean).join(" \xB7 ");
+        t.title = t.textContent;
+        t.hidden = !t.textContent;
+      }
+      const v = $("versions");
+      v.textContent = v.title = heading(meta);
+      v.hidden = !v.textContent;
+    };
     const refreshHead = (side) => {
       const text = models[side].getValue();
       $(`file-${side}`).textContent = files[side] ?? (text.trim() ? "Pasted text" : "Empty");
@@ -6817,8 +7050,10 @@ ${end.comment}` : end.comment;
       spec.hidden = !spec.textContent;
       spec.classList.toggle("bad", spec.textContent === "Not a spec?");
     };
-    const load = (side, text, name) => {
+    const load = (side, text, name, m = null) => {
       files[side] = name;
+      meta[side] = m;
+      renderMeta();
       const ed = editors[side];
       ed.pushUndoStop();
       ed.executeEdits("load", [{ range: models[side].getFullModelRange(), text }]);
@@ -6882,25 +7117,38 @@ ${end.comment}` : end.comment;
     $("swap").addEventListener("click", () => {
       const [l, r] = [models.left.getValue(), models.right.getValue()];
       const [fl, fr] = [files.left, files.right];
-      load("left", r, fr);
-      load("right", l, fl);
+      const [ml, mr] = [meta.left, meta.right];
+      load("left", r, fr, mr);
+      load("right", l, fl, ml);
     });
     const hl = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+    const flash = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
+    let flashTimer;
+    const clearFlash = () => {
+      clearTimeout(flashTimer);
+      flash.left.clear();
+      flash.right.clear();
+    };
     const clearHl = () => {
       hl.left.clear();
       hl.right.clear();
+      clearFlash();
     };
     const showHl = (c, reveal) => {
+      clearFlash();
       for (const side of ["left", "right"]) {
         const r = c[side];
         const ed = editors[side];
         const options = r.exact ? { isWholeLine: true, className: "hl", linesDecorationsClassName: "hl-bar" } : { isWholeLine: true, className: "hl-anchor" };
         hl[side].set([{ range: new monaco.Range(r.start, 1, r.end, 1), options }]);
+        const k = c.flash[side];
+        if (reveal && k) flash[side].set([{ range: new monaco.Range(k.line, k.from, k.line, k.to), options: { inlineClassName: "name-flash" } }]);
         if (!reveal || side !== c.side) continue;
         const rows2 = Math.floor(ed.getLayoutInfo().height / ed.getOption(monaco.editor.EditorOption.lineHeight));
         if (r.end - r.start + 1 > rows2) ed.revealLineNearTop(r.start);
         else ed.revealLinesInCenterIfOutsideViewport(r.start, r.end);
       }
+      if (reveal) flashTimer = setTimeout(clearFlash, 1600);
     };
     const jump = (side, line) => {
       const ed = editors[side];
@@ -6927,7 +7175,7 @@ ${end.comment}` : end.comment;
         state.append(b);
       }
     };
-    const filtering = () => !!(hidden.size || tagsOn.size || $("search").value.trim());
+    const filtering = () => !!(hidden.size || tagsOn.size || breakOnly || $("search").value.trim());
     const renderHead = (g, vis) => {
       const n = { added: 0, removed: 0, changed: 0 };
       const tags = [];
@@ -6938,14 +7186,23 @@ ${end.comment}` : end.comment;
       const mini = el("span", "gmini");
       for (const k in n) if (n[k]) mini.append(el("span", k, GLYPH[k] + n[k]));
       const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
-      g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}`);
+      const nb = vis.filter((r) => r.c.breaking).length;
+      if (nb) said.push(`${nb} breaking`);
+      const usedIn = g.used.length ? `; used in: ${g.used.join(", ")}` : "";
+      g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}${usedIn}`);
       g.head.replaceChildren(el("span", "chev"), richText(g.where, "gwhere"), el("span", "gcount", vis.length), mini, el("span", "gtags", tags.join(" \xB7 ")));
+      if (g.used.length) {
+        const more = g.used.length > 4 ? ` (+${g.used.length - 4})` : "";
+        const used = el("span", "gused", `Used in: ${g.used.slice(0, 4).join(", ")}${more}`);
+        used.title = g.used.join("\n");
+        g.head.append(used);
+      }
     };
     const applyFilters = () => {
       const q = $("search").value.trim().toLowerCase();
       $("list-none")?.remove();
       for (const r of rows) {
-        r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!q || r.li._haystack.includes(q));
+        r.show = !hidden.has(r.c.kind) && (!tagsOn.size || tagsOn.has(r.c.tag)) && (!breakOnly || r.c.breaking) && (!q || r.li._haystack.includes(q));
         r.li.hidden = !r.show;
       }
       const filtered = filtering();
@@ -6953,11 +7210,11 @@ ${end.comment}` : end.comment;
         const vis = g.rows.filter((r) => r.show);
         renderHead(g, vis);
         g.li.hidden = !vis.length;
-        const open = filtered || !collapsed.has(g.where);
-        g.ol.hidden = !open;
-        g.head.setAttribute("aria-expanded", String(open));
+        const isOpen = filtered || open.has(g.where);
+        g.ol.hidden = !isOpen;
+        g.head.setAttribute("aria-expanded", String(isOpen));
       }
-      const all = groups.length > 0 && groups.every((g) => collapsed.has(g.where));
+      const all = groups.length > 0 && groups.every((g) => !open.has(g.where));
       const ta = $("toggle-all");
       ta.title = all ? "Expand all" : "Collapse all";
       ta.setAttribute("aria-label", ta.title);
@@ -6977,7 +7234,7 @@ ${end.comment}` : end.comment;
       $("prev").disabled = $("next").disabled = !vis.length;
     };
     const toggleGroup = (g) => {
-      if (!filtering()) collapsed[collapsed.has(g.where) ? "delete" : "add"](g.where);
+      if (!filtering()) open[open.has(g.where) ? "delete" : "add"](g.where);
       applyFilters();
       const first = g.rows.find((r) => r.show);
       if (!g.ol.hidden && first) select(first.btn, false);
@@ -6987,7 +7244,7 @@ ${end.comment}` : end.comment;
       if (!vis.length) return;
       const i = vis.findIndex((r) => r.btn === selected);
       const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
-      collapsed.delete(t.g.where);
+      open.add(t.g.where);
       applyFilters();
       select(t.btn, false);
     };
@@ -6996,7 +7253,7 @@ ${end.comment}` : end.comment;
     let selKey = null;
     const expanded = /* @__PURE__ */ new Set();
     let lastScroll = 0;
-    function run() {
+    function run(openSelected = false) {
       clearHl();
       clearTimeout(liveTimer);
       if (result) lastScroll = list.scrollTop;
@@ -7005,15 +7262,20 @@ ${end.comment}` : end.comment;
       rows = [];
       groups = [];
       result = null;
-      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = true;
+      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = $("toolbar").hidden = $("summary").hidden = true;
       $("total").textContent = "";
       const [l, r] = [models.left.getValue(), models.right.getValue()];
+      const res = l.trim() || r.trim() ? compare(l, r) : null;
+      for (const [side, text] of [["left", l], ["right", r]]) {
+        if (!text.trim()) meta[side] = null;
+        else if (res.meta[side]) meta[side] = res.meta[side];
+      }
+      renderMeta();
       if (!l.trim() || !r.trim()) {
         const missing = !l.trim() && !r.trim() ? "both specs" : !l.trim() ? "the original spec" : "the modified spec";
         showState("idle", "Two specs, one list of changes", [`Paste or drop ${missing}. Changes appear here as you type.`]);
         return;
       }
-      const res = compare(l, r);
       if (res.error) {
         const { side, line, message } = res.error;
         showState("err", `The ${SIDE[side].toLowerCase()} spec can't be parsed`, [`Line ${line}: `, el("code", null, message.replace(/ at line \d+, column \d+:?$/, ""))], {
@@ -7028,44 +7290,56 @@ ${end.comment}` : end.comment;
       }
       result = res;
       state.hidden = true;
-      const counts = { added: 0, removed: 0, changed: 0 };
-      const byWhere = /* @__PURE__ */ new Map();
-      res.changes.forEach((c, i) => {
-        counts[c.kind]++;
-        let g = byWhere.get(c.where);
+      const counts2 = { added: 0, removed: 0, changed: 0 };
+      for (const c of res.changes) counts2[c.kind]++;
+      const index = new Map(res.changes.map((c, i) => [c, i]));
+      const entries = view === "endpoints" ? byEndpoint(res.changes).flatMap((g) => g.rows.map((row) => ({ key: g.key, ...row }))) : res.changes.map((c) => ({ key: c.where, c, text: c.text }));
+      const byKey = /* @__PURE__ */ new Map();
+      entries.forEach(({ key, c, text }, n) => {
+        let g = byKey.get(key);
         if (!g) {
-          g = { where: c.where, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [] };
+          g = { where: key, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [], used: [] };
           g.head.type = "button";
           g.ol.id = `grp-${groups.length}`;
           g.head.setAttribute("aria-controls", g.ol.id);
           g.head.addEventListener("click", () => toggleGroup(g));
           g.li.append(g.head, g.ol);
-          byWhere.set(c.where, g);
+          byKey.set(key, g);
           groups.push(g);
           list.append(g.li);
         }
+        if (view === "objects") {
+          for (const a of c.affects) if (a.via && !g.used.includes(a.endpoint)) g.used.push(a.endpoint);
+        }
         const li = el("li");
         li._change = c;
-        li._haystack = [c.tag, c.text, c.where, c.path.join(" "), ...c.details ?? []].join(" ").toLowerCase();
-        const b = el("button", `item ${c.kind}`);
+        const hits = c.affects.flatMap((a) => [a.endpoint, a.via ?? ""]);
+        li._haystack = [c.tag, c.text, c.where, c.path.join(" "), ...c.details ?? [], c.breaking ? "breaking" : "", ...hits].join(" ").toLowerCase();
+        const b = el("button", `item ${c.kind}${c.breaking ? " breaking" : ""}`);
         b.title = `${c.path.join(" \u203A ")}
-${SIDE[c.side]}, line ${c.line}`;
-        b.dataset.i = i;
+${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
+        b.dataset.i = index.get(c);
         const body = el("div");
-        body.append(el("span", c.tag === "refactor" ? "tag tag-refactor" : "tag", c.tag), el("span", "text", c.text));
+        if (c.breaking) {
+          const w = el("span", "warn", "\u26A0");
+          w.setAttribute("role", "img");
+          w.setAttribute("aria-label", "Breaking");
+          body.append(w);
+        }
+        body.append(el("span", c.tag === "refactor" ? "tag tag-refactor" : "tag", c.tag), el("span", "text", text));
         b.append(el("span", "glyph", GLYPH[c.kind]), body);
         b.addEventListener("click", () => select(b, true));
         li.append(b);
         if (c.details) {
-          const open = expanded.has(keyOf(c));
+          const isOpen = expanded.has(keyOf(c));
           const tog = el("button", "tog");
           tog.type = "button";
-          tog.setAttribute("aria-expanded", String(open));
-          tog.setAttribute("aria-controls", `det-${i}`);
+          tog.setAttribute("aria-expanded", String(isOpen));
+          tog.setAttribute("aria-controls", `det-${n}`);
           tog.append(el("span", "chev"), `Details (${c.details.length})`);
           const d = el("div", "details");
-          d.id = `det-${i}`;
-          d.hidden = !open;
+          d.id = `det-${n}`;
+          d.hidden = !isOpen;
           d.append(...c.details.map((t) => el("div", "detail", t)));
           tog.addEventListener("click", () => {
             d.hidden = !d.hidden;
@@ -7079,8 +7353,12 @@ ${SIDE[c.side]}, line ${c.line}`;
         rows.push(row);
         g.rows.push(row);
       });
-      for (const k in counts) $(`n-${k}`).textContent = counts[k];
+      for (const k in counts2) $(`n-${k}`).textContent = counts2[k];
       $("total").textContent = res.changes.length;
+      const nb = res.changes.filter((c) => c.breaking).length;
+      $("n-breaking").textContent = nb;
+      $("breaking").disabled = !nb && !breakOnly;
+      $("summary").textContent = summary(res.changes);
       const tagCount = /* @__PURE__ */ new Map();
       for (const c of res.changes) tagCount.set(c.tag, (tagCount.get(c.tag) ?? 0) + 1);
       for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
@@ -7096,10 +7374,12 @@ ${SIDE[c.side]}, line ${c.line}`;
         }),
         toggleAll
       );
-      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = false;
+      $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = $("toolbar").hidden = $("summary").hidden = false;
+      const want = selKey && (rows.find((r2) => r2.g.where === selKey.where && keyOf(r2.c) === selKey.key) ?? rows.find((r2) => keyOf(r2.c) === selKey.key));
+      if (want && openSelected) open.add(want.g.where);
       applyFilters();
       if (selKey) {
-        const again = rows.find((r2) => r2.show && keyOf(r2.c) === selKey);
+        const again = want?.show ? want : null;
         if (again) {
           (selected = again.btn).classList.add("sel");
           showHl(again.c, false);
@@ -7108,10 +7388,49 @@ ${SIDE[c.side]}, line ${c.line}`;
       }
       list.scrollTop = lastScroll;
     }
+    const setView = (v) => {
+      view = v;
+      document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+      run(true);
+      if (selected) selected.scrollIntoView({ block: "center" });
+      else list.scrollTop = 0;
+    };
+    const copyText = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const ta = el("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.append(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+      }
+    };
+    let copyTimer;
+    $("copy").addEventListener("click", async () => {
+      const b = $("copy");
+      if (!result) return;
+      const ok = await copyText(markdown(result));
+      b.focus();
+      b.textContent = ok ? "Copied" : "Copy failed";
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => b.textContent = "Copy report", 1500);
+    });
+    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => view !== b.dataset.view && setView(b.dataset.view)));
+    $("breaking").addEventListener("click", () => {
+      breakOnly = !breakOnly;
+      $("breaking").setAttribute("aria-pressed", String(breakOnly));
+      applyFilters();
+    });
     const select = (b, focusEditor) => {
       selected?.classList.remove("sel");
       selected = b;
-      selKey = keyOf(b.parentElement._change);
+      const row = rows.find((r) => r.btn === b);
+      selKey = { where: row.g.where, key: keyOf(row.c) };
       b.classList.add("sel");
       b.scrollIntoView({ block: "nearest" });
       const c = b.parentElement._change;
@@ -7133,8 +7452,8 @@ ${SIDE[c.side]}, line ${c.line}`;
       if (next.classList.contains("item")) select(next, false);
     });
     $("toggle-all").addEventListener("click", () => {
-      if (groups.every((g) => collapsed.has(g.where))) collapsed.clear();
-      else for (const g of groups) collapsed.add(g.where);
+      const all = groups.every((g) => !open.has(g.where));
+      for (const g of groups) open[all ? "add" : "delete"](g.where);
       applyFilters();
     });
     $("prev").addEventListener("click", () => nav(-1));

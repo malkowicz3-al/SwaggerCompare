@@ -4,16 +4,21 @@ const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'tr
 
 export function compare(leftText, rightText) {
   const L = parse(leftText, 'left');
-  if (L.error) return L;
   const R = parse(rightText, 'right');
-  if (R.error) return R;
+  // null = that side didn't parse, so the UI can keep its last good meta
+  const meta = { left: L.error ? null : metaOf(L.data), right: R.error ? null : metaOf(R.data) };
+  if (L.error) return { ...L, meta };
+  if (R.error) return { ...R, meta };
   const changes = [];
-  const st = { changes, left: L.index, right: R.index, lData: L.data, rData: R.data, extracted: new Set(), inlined: new Set() };
+  const st = { changes, left: L.index, right: R.index, lData: L.data, rData: R.data, useL: usage(L.data), useR: usage(R.data), affects: new Map(), extracted: new Set(), inlined: new Set() };
   walk(L.data, R.data, { path: [], pl: [], pr: [], st });
   // an extracted/inlined definition is reported once, on the $ref entry
   const covered = (c) => (c.kind === 'added' ? st.extracted : c.kind === 'removed' ? st.inlined : new Set()).has(JSON.stringify(c.path));
-  return { changes: changes.filter((c) => !covered(c)) };
+  return { changes: changes.filter((c) => !covered(c)), meta };
 }
+
+const scalar = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : undefined);
+const metaOf = (d) => ({ title: scalar(d?.info?.title), version: scalar(d?.info?.version), spec: scalar(d?.openapi ?? d?.swagger) });
 
 function parse(text, side) {
   const lc = new LineCounter();
@@ -32,7 +37,8 @@ function parse(text, side) {
   }
 }
 
-// pathKey → {start, end} lines of the whole fragment (key through the last content line of its value)
+// pathKey → {start, end} lines of the whole fragment (key through the last content line of its value),
+// plus key = {line, from, to} (1-based columns, to exclusive) of the node's name: map key, item's `name` value, or scalar item
 function buildIndex(doc, lc, text) {
   const index = new Map([[JSON.stringify([]), { start: 1, end: 1 }]]);
   const span = (from, to, min) => {
@@ -41,18 +47,23 @@ function buildIndex(doc, lc, text) {
     while (off > from && /\s/.test(text[off])) off--;
     return { start: lc.linePos(from).line, end: lc.linePos(off).line };
   };
+  const keyAt = ([s, e]) => {
+    const { line, col } = lc.linePos(s);
+    return { line, from: col, to: col + e - s };
+  };
   const visit = (node, path) => {
     if (isMap(node)) {
       for (const p of node.items) {
         if (!isScalar(p.key)) continue; // complex/null keys fall back to the parent's line
         const sub = [...path, String(p.key.value)];
-        index.set(JSON.stringify(sub), span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]));
+        index.set(JSON.stringify(sub), { ...span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]), key: keyAt(p.key.range) });
         visit(p.value, sub);
       }
     } else if (isSeq(node)) {
       node.items.forEach((item, i) => {
         const sub = [...path, i];
-        if (item?.range) index.set(JSON.stringify(sub), span(item.range[0], item.range[1], item.range[1]));
+        const name = isMap(item) ? item.items.find((q) => isScalar(q.key) && q.key.value === 'name')?.value : item;
+        if (item?.range) index.set(JSON.stringify(sub), { ...span(item.range[0], item.range[1], item.range[1]), ...(isScalar(name) && { key: keyAt(name.range) }) });
         visit(item, sub);
       });
     }
@@ -171,13 +182,125 @@ function locate(ctx, asObject = false) {
 // default tag = last non-numeric path segment: enum.2 → 'enum', servers.0.url → 'url'
 const tagOf = (p) => [...p].map(String).reverse().find((s) => !/^\d+$/.test(s)) ?? 'other';
 
-function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where) {
+// vals = {lv, rv} compared values, or {details} = the refactor's detail entries; both feed isBreaking
+function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where, vals) {
+  const st = ctx.st;
   const side = kind === 'removed' ? 'left' : 'right';
-  const line = lineOf(ctx.st[side], side === 'left' ? ctx.pl : ctx.pr);
-  const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(ctx.st.left, ctx.pl), right: rangeOf(ctx.st.right, ctx.pr) };
-  ctx.st.changes.push(ch);
+  const line = lineOf(st[side], side === 'left' ? ctx.pl : ctx.pr);
+  const affects = st.detail ? [] : affectsOf(ctx);
+  const ch = { kind, tag, text, where, path: ctx.path.map(String), side, line, left: rangeOf(st.left, ctx.pl), right: rangeOf(st.right, ctx.pr), affects, flash: flashOf(ctx) };
+  ch.breaking = isBreaking(ch, st.detail ? st.dirs : dirsOf(affects), vals);
+  st.changes.push(ch);
   return ch;
 }
+
+const dirsOf = (affects) => new Set(affects.map((a) => a.dir));
+
+// Endpoints hit by a change: the endpoint itself (every method for a path-level change), a component's users, or none ("Other").
+function affectsOf(ctx) {
+  const P = ctx.path.map(String);
+  const st = ctx.st;
+  if (P[0] === 'paths' && P.length > 1) {
+    const op = METHODS.includes(P[2]);
+    const k = op ? P[3] : P[2];
+    const dir = k === 'parameters' || k === 'requestBody' ? 'request' : k === 'responses' ? 'response' : 'endpoint';
+    const item = (d) => (isPlain(d?.paths) && isPlain(get(d.paths, P[1])) ? d.paths[P[1]] : {});
+    const methods = op ? [P[2]] : METHODS.filter((m) => has(item(st.lData), m) || has(item(st.rData), m));
+    return methods.map((m) => ({ endpoint: `${m.toUpperCase()} ${P[1]}`, dir }));
+  }
+  const i = nameAt(P);
+  if (i < 0) return [];
+  const key = JSON.stringify(P.slice(0, i + 1));
+  if (!st.affects.has(key)) st.affects.set(key, componentAffects(st.useL.get(key) ?? [], st.useR.get(key) ?? []));
+  return st.affects.get(key);
+}
+
+// one entry per (endpoint, dir), its vias joined: "response 400, 404, 500"; a schema used in many responses stays one row
+function componentAffects(useL, useR) {
+  const out = new Map();
+  for (const a of [...useL, ...useR]) {
+    const k = `${a.endpoint}|${a.dir}`;
+    if (!out.has(k)) out.set(k, { endpoint: a.endpoint, dir: a.dir, vias: [] });
+    const vias = out.get(k).vias;
+    if (!vias.includes(a.via)) vias.push(a.via);
+  }
+  const head = (v) => /^(response|parameter) /.exec(v)?.[0];
+  return [...out.values()].map(({ endpoint, dir, vias }) => ({
+    endpoint,
+    via: vias.map((v, j) => (j && head(v) && head(v) === head(vias[j - 1]) ? v.slice(head(v).length) : v)).join(', '),
+    dir,
+  }));
+}
+
+// name ranges on the exact sides; a trailing $ref/allOf/oneOf/anyOf points at its owner, so refactors flash the property name
+function flashOf(ctx) {
+  const flash = {};
+  for (const [side, p] of [['left', ctx.pl], ['right', ctx.pr]]) {
+    const own = ['$ref', ...KW].includes(p.at(-1)) ? p.slice(0, -1) : p;
+    const key = ctx.st[side].get(JSON.stringify(own))?.key;
+    if (key) flash[side] = key;
+  }
+  return flash;
+}
+
+const MINS = ['minimum', 'exclusiveMinimum', 'minLength', 'minItems', 'minProperties'];
+const MAXS = ['maximum', 'exclusiveMaximum', 'maxLength', 'maxItems', 'maxProperties'];
+
+// dirs = how the changed spot is used (request/response/endpoint); unused components, info, servers… have none → never breaking.
+// | endpoint removed, response code removed, type change, $ref retargeted | yes          |
+// | new required parameter, required request body added                   | yes          |
+// | content type removed                                                  | yes          |
+// | now required                                                          | in a request |
+// | no longer required                                                    | in a response |
+// | property removed                                                      | in a response |
+// | enum narrowed (a value gone, compared as sets)                        | in a request |
+// | enum widened (a new value)                                            | in a response |
+// | tighter min/max/pattern                                               | in a request |
+// | refactor                                                              | any detail breaking |
+// | anything else (additions, descriptions, examples, defaults, x-*)      | no           |
+// shortcut: security, basePath and servers are never breaking; add rows here when needed
+function isBreaking(c, dirs, { lv, rv, details, enums } = {}) {
+  if (!dirs?.size || inValue(c.path)) return false;
+  const req = dirs.has('request');
+  const res = dirs.has('response');
+  const { kind, tag } = c;
+  if (tag === 'refactor') return !!details?.some((d) => d.breaking);
+  if (kind === 'removed' && (tag === 'endpoint' || tag === 'response')) return true;
+  if (kind === 'removed' && c.path.at(-2) === 'content' && !NAMES.includes(c.path.at(-3))) return true;
+  if (tag === 'type' || tag === '$ref') return kind === 'changed';
+  if (tag === 'parameter') return kind === 'added' && (rv?.required === true || rv?.in === 'path');
+  if (tag === 'requestBody') return kind === 'added' && rv?.required === true;
+  if (tag === 'required') {
+    if (/now required$/.test(c.text) || rv === true) return req;
+    if (/no longer required$/.test(c.text) || lv === true) return res;
+    return false;
+  }
+  if (tag === 'property') return kind === 'removed' && res;
+  if (tag === 'enum') {
+    // a whole enum added restricts the values, a removed one lifts the restriction; otherwise compare the value sets,
+    // since arrays are walked by index and an inserted value shows up as "changed" entries
+    const whole = c.path.at(-1) === 'enum';
+    const [l, r] = enums ?? [[], []];
+    const missing = (a, b) => a.some((v) => !b.some((w) => eq(v, w)));
+    const narrowed = whole ? kind === 'added' : missing(l, r);
+    const widened = whole ? kind === 'removed' : missing(r, l);
+    return (narrowed && req) || (widened && res);
+  }
+  if (tag === 'pattern' || MINS.includes(tag) || MAXS.includes(tag)) {
+    const tighter = kind === 'added' || (kind === 'changed' && (tag === 'pattern' || (MINS.includes(tag) ? rv > lv : rv < lv)));
+    return tighter && req;
+  }
+  return false;
+}
+
+// segments after which the next one is a name (a property "type", a header "x-rate", required.example), not a keyword
+const NAMES = ['properties', 'headers', 'definitions', 'schemas', 'parameters', 'responses', 'required'];
+const VALUES = ['example', 'examples', 'default'];
+// inside an example/default value, an x-* extension or an enum value's own structure, keys are data, not schema keywords
+const inValue = (path) =>
+  path.some(
+    (s, i) => !NAMES.includes(path[i - 1]) && (VALUES.includes(s) || s.startsWith('x-') || (s === 'enum' && i < path.length - 2)),
+  );
 
 const restOf = (ctx) => locate(ctx).rest.join('.');
 // a refactor of a whole component belongs to that component's group ("Order"), not to "schemas"
@@ -185,17 +308,20 @@ const ownWhere = (ctx) => (compLabel(ctx.path.map(String)) ? locate(ctx, true).w
 
 function walk(l, r, ctx) {
   if (eq(l, r)) return;
-  if (l === undefined) return emit('added', restOf(ctx) ? `${restOf(ctx)} added` : 'Added', ctx);
-  if (r === undefined) return emit('removed', restOf(ctx) ? `${restOf(ctx)} removed` : 'Removed', ctx);
+  const vals = { lv: l, rv: r, enums: ctx.enums };
+  if (l === undefined) return emit('added', restOf(ctx) ? `${restOf(ctx)} added` : 'Added', ctx, undefined, undefined, vals);
+  if (r === undefined) return emit('removed', restOf(ctx) ? `${restOf(ctx)} removed` : 'Removed', ctx, undefined, undefined, vals);
   if (extract(l, r, ctx)) return;
   if (compose(l, r, ctx)) return;
   if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
   if (Array.isArray(l) && Array.isArray(r)) {
-    for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ctx, i));
+    // an enum's entries are judged on the whole arrays (isBreaking)
+    const ac = ctx.path.at(-1) === 'enum' ? { ...ctx, enums: [l, r] } : ctx;
+    for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ac, i));
     return;
   }
   const p = restOf(ctx);
-  emit('changed', `${p ? `${p}: ` : ''}${fmt(l)} → ${fmt(r)}`, ctx);
+  emit('changed', `${p ? `${p}: ` : ''}${fmt(l)} → ${fmt(r)}`, ctx, undefined, undefined, vals);
 }
 
 function walkObject(l, r, ctx) {
@@ -279,15 +405,15 @@ function extract(l, r, ctx, label) {
   const segs = pointer(ref);
   const target = segs && resolve(ext ? st.rData : st.lData, segs);
   let details;
+  const sink = [];
   if (!segs) details = ['definition not compared (external $ref)'];
   else if (!target) details = ['definition not compared (unresolved $ref)'];
   else {
-    const sink = [];
-    walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } });
+    walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
     details = sink.length ? sink.map((c) => c.text) : ['definition unchanged'];
   }
   const text = `${label ?? restOf(ctx)}: ${ext ? 'extracted to' : 'inlined from'} ${(segs && compLabel(segs)) ?? ref}`;
-  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx, 'refactor', ownWhere(ctx)).details = details;
+  emit('changed', text, ext ? { ...ctx, pr: [...ctx.pr, '$ref'] } : ctx, 'refactor', ownWhere(ctx), { details: sink }).details = details;
   // only a resolved, whole component is covered by this entry; a ref into a sub-path (W/properties/id) covers nothing
   if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
   return true;
@@ -343,7 +469,7 @@ function compose(l, r, ctx, label) {
   if (!cl && !cr) return false;
   if (cl === cr && eq(refsOf(l[cl]), refsOf(r[cr]))) return false;
   const sink = [];
-  const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true } };
+  const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } };
   const union = isUnion(l, cl) || isUnion(r, cr);
   if (union) walk(l, r, dctx);
   else walk(flat(l, st.lData), flat(r, st.rData), dctx);
@@ -356,7 +482,7 @@ function compose(l, r, ctx, label) {
     const ch = [...rr.filter((x) => !lr.includes(x)).map((x) => `+ ${refName(x)}`), ...lr.filter((x) => !rr.includes(x)).map((x) => `− ${refName(x)}`)];
     what = `${cr} members changed: ${ch.join(', ')}`;
   } else what = `now ${cr} [${r[cr].map(desc).join(cr === 'allOf' ? ' + ' : ', ')}]`;
-  const ch = emit('changed', `${label ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, 'refactor', ownWhere(ctx));
+  const ch = emit('changed', `${label ?? restOf(ctx)}: ${what}`, cr ? { ...ctx, pr: [...ctx.pr, cr] } : ctx, 'refactor', ownWhere(ctx), { details: sink });
   ch.details = details;
   if (!cr) {
     ch.side = 'left';
@@ -447,7 +573,7 @@ function walkParams(lArr, rArr, ctx) {
     const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n ?? rm.get(lab).n);
     const c = child(pc, shown, { l: il, r: ir });
     const nm = p.name ?? lab;
-    if (il === undefined) emit('added', `Added parameter ${lab}`, c, 'parameter');
+    if (il === undefined) emit('added', `Added parameter ${lab}`, c, 'parameter', undefined, { rv: pureRef(rp) ? resolve(ctx.st.rData, pointer(rp.$ref)) : rp });
     else if (ir === undefined) emit('removed', `Removed parameter ${lab}`, c, 'parameter');
     else {
       if (extract(lp, rp, c, nm)) continue;
@@ -512,4 +638,63 @@ function walkRequired(lArr, rArr, ctx, lObj, rObj) {
     const pr = has(rProps, n) ? [...ctx.pr, 'properties', n] : [...ctx.pr, 'required'];
     emit('changed', `${nm(n)}: no longer required`, at(n, [...ctx.pl, 'required', lArr.indexOf(n)], pr), 'required', where);
   }
+}
+
+// componentKey (JSON path of the component, e.g. ["definitions","User"]) → [{endpoint, via, dir}] of the operations
+// reaching it through local $refs, transitively; dir is 'request' (parameters, requestBody) or 'response'
+export function usage(data) {
+  const use = new Map(); // component key → Map(`endpoint|via` → entry)
+  const direct = new Map(); // memo: component key → keys of the components it references
+  const closure = new Map(); // memo: component key → every component key reachable from it, itself included
+  const refsIn = (node, out = new Set(), seen = new Set()) => {
+    if (node === null || typeof node !== 'object' || seen.has(node)) return out;
+    seen.add(node);
+    const segs = isPlain(node) && typeof node.$ref === 'string' ? pointer(node.$ref) : undefined;
+    const i = segs ? nameAt(segs) : -1;
+    if (i > 0) out.add(JSON.stringify(segs.slice(0, i + 1)));
+    for (const v of Object.values(node)) refsIn(v, out, seen);
+    return out;
+  };
+  const from = (start) => {
+    if (closure.has(start)) return closure.get(start);
+    const seen = new Set();
+    const todo = [start];
+    while (todo.length) {
+      const k = todo.pop();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      if (!direct.has(k)) direct.set(k, refsIn(JSON.parse(k).reduce((v, s) => (isPlain(v) ? get(v, s) : undefined), data)));
+      todo.push(...direct.get(k));
+    }
+    closure.set(start, seen);
+    return seen;
+  };
+  const reach = (node) => {
+    const out = new Set();
+    for (const k of refsIn(node)) for (const x of from(k)) out.add(x);
+    return out;
+  };
+  for (const [p, item] of Object.entries(isPlain(data?.paths) ? data.paths : {})) {
+    if (!isPlain(item)) continue;
+    const shared = Array.isArray(item.parameters) ? item.parameters : [];
+    for (const m of METHODS.filter((m) => isPlain(get(item, m)))) {
+      const op = item[m];
+      const endpoint = `${m.toUpperCase()} ${p}`;
+      const parts = [...shared, ...(Array.isArray(op.parameters) ? op.parameters : [])].map((prm) => {
+        const t = pureRef(prm) ? resolve(data, pointer(prm.$ref)) : prm;
+        return [`parameter ${t?.name ?? prm?.$ref ?? '?'}`, 'request', prm];
+      });
+      if (op.requestBody !== undefined) parts.push(['request body', 'request', op.requestBody]);
+      for (const [code, r] of Object.entries(isPlain(op.responses) ? op.responses : {})) parts.push([`response ${code}`, 'response', r]);
+      for (const [via, dir, node] of parts) {
+        for (const k of reach(node)) {
+          if (!use.has(k)) use.set(k, new Map());
+          const m = use.get(k);
+          const id = `${endpoint}|${via}`; // via implies dir
+          if (!m.has(id)) m.set(id, { endpoint, via, dir });
+        }
+      }
+    }
+  }
+  return new Map([...use].map(([k, m]) => [k, [...m.values()]]));
 }
