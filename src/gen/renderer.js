@@ -7,24 +7,24 @@
   var SCALAR = /* @__PURE__ */ Symbol.for("yaml.scalar");
   var SEQ = /* @__PURE__ */ Symbol.for("yaml.seq");
   var NODE_TYPE = /* @__PURE__ */ Symbol.for("yaml.node.type");
-  var isAlias = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === ALIAS;
-  var isDocument = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === DOC;
-  var isMap = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
-  var isPair = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === PAIR;
-  var isScalar = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SCALAR;
-  var isSeq = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SEQ;
-  function isCollection(node) {
-    if (node && typeof node === "object")
-      switch (node[NODE_TYPE]) {
+  var isAlias = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === ALIAS;
+  var isDocument = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === DOC;
+  var isMap = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === MAP;
+  var isPair = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === PAIR;
+  var isScalar = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SCALAR;
+  var isSeq = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SEQ;
+  function isCollection(node2) {
+    if (node2 && typeof node2 === "object")
+      switch (node2[NODE_TYPE]) {
         case MAP:
         case SEQ:
           return true;
       }
     return false;
   }
-  function isNode(node) {
-    if (node && typeof node === "object")
-      switch (node[NODE_TYPE]) {
+  function isNode(node2) {
+    if (node2 && typeof node2 === "object")
+      switch (node2[NODE_TYPE]) {
         case ALIAS:
         case MAP:
         case SCALAR:
@@ -33,104 +33,104 @@
       }
     return false;
   }
-  var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
+  var hasAnchor = (node2) => (isScalar(node2) || isCollection(node2)) && !!node2.anchor;
 
   // node_modules/yaml/browser/dist/visit.js
   var BREAK = /* @__PURE__ */ Symbol("break visit");
   var SKIP = /* @__PURE__ */ Symbol("skip children");
   var REMOVE = /* @__PURE__ */ Symbol("remove node");
-  function visit(node, visitor) {
+  function visit(node2, visitor) {
     const visitor_ = initVisitor(visitor);
-    if (isDocument(node)) {
-      const cd = visit_(null, node.contents, visitor_, Object.freeze([node]));
+    if (isDocument(node2)) {
+      const cd = visit_(null, node2.contents, visitor_, Object.freeze([node2]));
       if (cd === REMOVE)
-        node.contents = null;
+        node2.contents = null;
     } else
-      visit_(null, node, visitor_, Object.freeze([]));
+      visit_(null, node2, visitor_, Object.freeze([]));
   }
   visit.BREAK = BREAK;
   visit.SKIP = SKIP;
   visit.REMOVE = REMOVE;
-  function visit_(key, node, visitor, path) {
-    const ctrl = callVisitor(key, node, visitor, path);
+  function visit_(key, node2, visitor, path) {
+    const ctrl = callVisitor(key, node2, visitor, path);
     if (isNode(ctrl) || isPair(ctrl)) {
       replaceNode(key, path, ctrl);
       return visit_(key, ctrl, visitor, path);
     }
     if (typeof ctrl !== "symbol") {
-      if (isCollection(node)) {
-        path = Object.freeze(path.concat(node));
-        for (let i2 = 0; i2 < node.items.length; ++i2) {
-          const ci = visit_(i2, node.items[i2], visitor, path);
+      if (isCollection(node2)) {
+        path = Object.freeze(path.concat(node2));
+        for (let i2 = 0; i2 < node2.items.length; ++i2) {
+          const ci = visit_(i2, node2.items[i2], visitor, path);
           if (typeof ci === "number")
             i2 = ci - 1;
           else if (ci === BREAK)
             return BREAK;
           else if (ci === REMOVE) {
-            node.items.splice(i2, 1);
+            node2.items.splice(i2, 1);
             i2 -= 1;
           }
         }
-      } else if (isPair(node)) {
-        path = Object.freeze(path.concat(node));
-        const ck = visit_("key", node.key, visitor, path);
+      } else if (isPair(node2)) {
+        path = Object.freeze(path.concat(node2));
+        const ck = visit_("key", node2.key, visitor, path);
         if (ck === BREAK)
           return BREAK;
         else if (ck === REMOVE)
-          node.key = null;
-        const cv = visit_("value", node.value, visitor, path);
+          node2.key = null;
+        const cv = visit_("value", node2.value, visitor, path);
         if (cv === BREAK)
           return BREAK;
         else if (cv === REMOVE)
-          node.value = null;
+          node2.value = null;
       }
     }
     return ctrl;
   }
-  async function visitAsync(node, visitor) {
+  async function visitAsync(node2, visitor) {
     const visitor_ = initVisitor(visitor);
-    if (isDocument(node)) {
-      const cd = await visitAsync_(null, node.contents, visitor_, Object.freeze([node]));
+    if (isDocument(node2)) {
+      const cd = await visitAsync_(null, node2.contents, visitor_, Object.freeze([node2]));
       if (cd === REMOVE)
-        node.contents = null;
+        node2.contents = null;
     } else
-      await visitAsync_(null, node, visitor_, Object.freeze([]));
+      await visitAsync_(null, node2, visitor_, Object.freeze([]));
   }
   visitAsync.BREAK = BREAK;
   visitAsync.SKIP = SKIP;
   visitAsync.REMOVE = REMOVE;
-  async function visitAsync_(key, node, visitor, path) {
-    const ctrl = await callVisitor(key, node, visitor, path);
+  async function visitAsync_(key, node2, visitor, path) {
+    const ctrl = await callVisitor(key, node2, visitor, path);
     if (isNode(ctrl) || isPair(ctrl)) {
       replaceNode(key, path, ctrl);
       return visitAsync_(key, ctrl, visitor, path);
     }
     if (typeof ctrl !== "symbol") {
-      if (isCollection(node)) {
-        path = Object.freeze(path.concat(node));
-        for (let i2 = 0; i2 < node.items.length; ++i2) {
-          const ci = await visitAsync_(i2, node.items[i2], visitor, path);
+      if (isCollection(node2)) {
+        path = Object.freeze(path.concat(node2));
+        for (let i2 = 0; i2 < node2.items.length; ++i2) {
+          const ci = await visitAsync_(i2, node2.items[i2], visitor, path);
           if (typeof ci === "number")
             i2 = ci - 1;
           else if (ci === BREAK)
             return BREAK;
           else if (ci === REMOVE) {
-            node.items.splice(i2, 1);
+            node2.items.splice(i2, 1);
             i2 -= 1;
           }
         }
-      } else if (isPair(node)) {
-        path = Object.freeze(path.concat(node));
-        const ck = await visitAsync_("key", node.key, visitor, path);
+      } else if (isPair(node2)) {
+        path = Object.freeze(path.concat(node2));
+        const ck = await visitAsync_("key", node2.key, visitor, path);
         if (ck === BREAK)
           return BREAK;
         else if (ck === REMOVE)
-          node.key = null;
-        const cv = await visitAsync_("value", node.value, visitor, path);
+          node2.key = null;
+        const cv = await visitAsync_("value", node2.value, visitor, path);
         if (cv === BREAK)
           return BREAK;
         else if (cv === REMOVE)
-          node.value = null;
+          node2.value = null;
       }
     }
     return ctrl;
@@ -153,32 +153,32 @@
     }
     return visitor;
   }
-  function callVisitor(key, node, visitor, path) {
+  function callVisitor(key, node2, visitor, path) {
     if (typeof visitor === "function")
-      return visitor(key, node, path);
-    if (isMap(node))
-      return visitor.Map?.(key, node, path);
-    if (isSeq(node))
-      return visitor.Seq?.(key, node, path);
-    if (isPair(node))
-      return visitor.Pair?.(key, node, path);
-    if (isScalar(node))
-      return visitor.Scalar?.(key, node, path);
-    if (isAlias(node))
-      return visitor.Alias?.(key, node, path);
+      return visitor(key, node2, path);
+    if (isMap(node2))
+      return visitor.Map?.(key, node2, path);
+    if (isSeq(node2))
+      return visitor.Seq?.(key, node2, path);
+    if (isPair(node2))
+      return visitor.Pair?.(key, node2, path);
+    if (isScalar(node2))
+      return visitor.Scalar?.(key, node2, path);
+    if (isAlias(node2))
+      return visitor.Alias?.(key, node2, path);
     return void 0;
   }
-  function replaceNode(key, path, node) {
+  function replaceNode(key, path, node2) {
     const parent = path[path.length - 1];
     if (isCollection(parent)) {
-      parent.items[key] = node;
+      parent.items[key] = node2;
     } else if (isPair(parent)) {
       if (key === "key")
-        parent.key = node;
+        parent.key = node2;
       else
-        parent.value = node;
+        parent.value = node2;
     } else if (isDocument(parent)) {
-      parent.contents = node;
+      parent.contents = node2;
     } else {
       const pt = isAlias(parent) ? "alias" : "scalar";
       throw new Error(`Cannot replace node with ${pt} parent`);
@@ -329,9 +329,9 @@
       let tagNames;
       if (doc && tagEntries.length > 0 && isNode(doc.contents)) {
         const tags = {};
-        visit(doc.contents, (_key, node) => {
-          if (isNode(node) && node.tag)
-            tags[node.tag] = true;
+        visit(doc.contents, (_key, node2) => {
+          if (isNode(node2) && node2.tag)
+            tags[node2.tag] = true;
         });
         tagNames = Object.keys(tags);
       } else
@@ -360,9 +360,9 @@
   function anchorNames(root) {
     const anchors = /* @__PURE__ */ new Set();
     visit(root, {
-      Value(_key, node) {
-        if (node.anchor)
-          anchors.add(node.anchor);
+      Value(_key, node2) {
+        if (node2.anchor)
+          anchors.add(node2.anchor);
       }
     });
     return anchors;
@@ -408,7 +408,7 @@
   }
 
   // node_modules/yaml/browser/dist/doc/applyReviver.js
-  function applyReviver(reviver, obj, key, val) {
+  function applyReviver(reviver, obj2, key, val) {
     if (val && typeof val === "object") {
       if (Array.isArray(val)) {
         for (let i2 = 0, len = val.length; i2 < len; ++i2) {
@@ -448,7 +448,7 @@
         }
       }
     }
-    return reviver.call(obj, key, val);
+    return reviver.call(obj2, key, val);
   }
 
   // node_modules/yaml/browser/dist/nodes/toJS.js
@@ -530,20 +530,20 @@
       } else {
         nodes = [];
         visit(doc, {
-          Node: (_key, node) => {
-            if (isAlias(node) || hasAnchor(node))
-              nodes.push(node);
+          Node: (_key, node2) => {
+            if (isAlias(node2) || hasAnchor(node2))
+              nodes.push(node2);
           }
         });
         if (ctx)
           ctx.aliasResolveCache = nodes;
       }
       let found = void 0;
-      for (const node of nodes) {
-        if (node === this)
+      for (const node2 of nodes) {
+        if (node2 === this)
           break;
-        if (node.anchor === this.source)
-          found = node;
+        if (node2.anchor === this.source)
+          found = node2;
       }
       if (found && ctx) {
         const { anchors, doc: doc2, maxAliasCount } = ctx;
@@ -592,22 +592,22 @@
       return src;
     }
   };
-  function getAliasCount(doc, node, anchors) {
-    if (isAlias(node)) {
-      const source = node.resolve(doc);
+  function getAliasCount(doc, node2, anchors) {
+    if (isAlias(node2)) {
+      const source = node2.resolve(doc);
       const anchor = anchors && source && anchors.get(source);
       return anchor ? anchor.count * anchor.aliasCount : 0;
-    } else if (isCollection(node)) {
+    } else if (isCollection(node2)) {
       let count = 0;
-      for (const item2 of node.items) {
+      for (const item2 of node2.items) {
         const c = getAliasCount(doc, item2, anchors);
         if (c > count)
           count = c;
       }
       return count;
-    } else if (isPair(node)) {
-      const kc = getAliasCount(doc, node.key, anchors);
-      const vc = getAliasCount(doc, node.value, anchors);
+    } else if (isPair(node2)) {
+      const kc = getAliasCount(doc, node2.key, anchors);
+      const vc = getAliasCount(doc, node2.value, anchors);
       return Math.max(kc, vc);
     }
     return 1;
@@ -678,10 +678,10 @@
         value = value.toJSON();
       }
       if (!value || typeof value !== "object") {
-        const node2 = new Scalar(value);
+        const node3 = new Scalar(value);
         if (ref)
-          ref.node = node2;
-        return node2;
+          ref.node = node3;
+        return node3;
       }
       tagObj = value instanceof Map ? schema4[MAP] : Symbol.iterator in Object(value) ? schema4[SEQ] : schema4[MAP];
     }
@@ -689,14 +689,14 @@
       onTagObj(tagObj);
       delete ctx.onTagObj;
     }
-    const node = tagObj?.createNode ? tagObj.createNode(ctx.schema, value, ctx) : typeof tagObj?.nodeClass?.from === "function" ? tagObj.nodeClass.from(ctx.schema, value, ctx) : new Scalar(value);
+    const node2 = tagObj?.createNode ? tagObj.createNode(ctx.schema, value, ctx) : typeof tagObj?.nodeClass?.from === "function" ? tagObj.nodeClass.from(ctx.schema, value, ctx) : new Scalar(value);
     if (tagName)
-      node.tag = tagName;
+      node2.tag = tagName;
     else if (!tagObj.default)
-      node.tag = tagObj.tag;
+      node2.tag = tagObj.tag;
     if (ref)
-      ref.node = node;
-    return node;
+      ref.node = node2;
+    return node2;
   }
 
   // node_modules/yaml/browser/dist/nodes/Collection.js
@@ -757,10 +757,10 @@
         this.add(value);
       else {
         const [key, ...rest] = path;
-        const node = this.get(key, true);
-        if (isCollection(node))
-          node.addIn(rest, value);
-        else if (node === void 0 && this.schema)
+        const node2 = this.get(key, true);
+        if (isCollection(node2))
+          node2.addIn(rest, value);
+        else if (node2 === void 0 && this.schema)
           this.set(key, collectionFromPath(this.schema, rest, value));
         else
           throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
@@ -774,9 +774,9 @@
       const [key, ...rest] = path;
       if (rest.length === 0)
         return this.delete(key);
-      const node = this.get(key, true);
-      if (isCollection(node))
-        return node.deleteIn(rest);
+      const node2 = this.get(key, true);
+      if (isCollection(node2))
+        return node2.deleteIn(rest);
       else
         throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
     }
@@ -787,17 +787,17 @@
      */
     getIn(path, keepScalar) {
       const [key, ...rest] = path;
-      const node = this.get(key, true);
+      const node2 = this.get(key, true);
       if (rest.length === 0)
-        return !keepScalar && isScalar(node) ? node.value : node;
+        return !keepScalar && isScalar(node2) ? node2.value : node2;
       else
-        return isCollection(node) ? node.getIn(rest, keepScalar) : void 0;
+        return isCollection(node2) ? node2.getIn(rest, keepScalar) : void 0;
     }
     hasAllNullValues(allowScalar) {
-      return this.items.every((node) => {
-        if (!isPair(node))
+      return this.items.every((node2) => {
+        if (!isPair(node2))
           return false;
-        const n2 = node.value;
+        const n2 = node2.value;
         return n2 == null || allowScalar && isScalar(n2) && n2.value == null && !n2.commentBefore && !n2.comment && !n2.tag;
       });
     }
@@ -808,8 +808,8 @@
       const [key, ...rest] = path;
       if (rest.length === 0)
         return this.has(key);
-      const node = this.get(key, true);
-      return isCollection(node) ? node.hasIn(rest) : false;
+      const node2 = this.get(key, true);
+      return isCollection(node2) ? node2.hasIn(rest) : false;
     }
     /**
      * Sets a value in this collection. For `!!set`, `value` needs to be a
@@ -820,10 +820,10 @@
       if (rest.length === 0) {
         this.set(key, value);
       } else {
-        const node = this.get(key, true);
-        if (isCollection(node))
-          node.setIn(rest, value);
-        else if (node === void 0 && this.schema)
+        const node2 = this.get(key, true);
+        if (isCollection(node2))
+          node2.setIn(rest, value);
+        else if (node2 === void 0 && this.schema)
           this.set(key, collectionFromPath(this.schema, rest, value));
         else
           throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
@@ -1292,10 +1292,10 @@ ${indent}`);
         return match.find((t) => t.format === item2.format) ?? match[0];
     }
     let tagObj = void 0;
-    let obj;
+    let obj2;
     if (isScalar(item2)) {
-      obj = item2.value;
-      let match = tags.filter((t) => t.identify?.(obj));
+      obj2 = item2.value;
+      let match = tags.filter((t) => t.identify?.(obj2));
       if (match.length > 1) {
         const testMatch = match.filter((t) => t.test);
         if (testMatch.length > 0)
@@ -1303,25 +1303,25 @@ ${indent}`);
       }
       tagObj = match.find((t) => t.format === item2.format) ?? match.find((t) => !t.format);
     } else {
-      obj = item2;
-      tagObj = tags.find((t) => t.nodeClass && obj instanceof t.nodeClass);
+      obj2 = item2;
+      tagObj = tags.find((t) => t.nodeClass && obj2 instanceof t.nodeClass);
     }
     if (!tagObj) {
-      const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
+      const name = obj2?.constructor?.name ?? (obj2 === null ? "null" : typeof obj2);
       throw new Error(`Tag not resolved for ${name} value`);
     }
     return tagObj;
   }
-  function stringifyProps(node, tagObj, { anchors, doc }) {
+  function stringifyProps(node2, tagObj, { anchors, doc }) {
     if (!doc.directives)
       return "";
     const props = [];
-    const anchor = (isScalar(node) || isCollection(node)) && node.anchor;
+    const anchor = (isScalar(node2) || isCollection(node2)) && node2.anchor;
     if (anchor && anchorIsValid(anchor)) {
       anchors.add(anchor);
       props.push(`&${anchor}`);
     }
-    const tag = node.tag ?? (tagObj.default ? null : tagObj.tag);
+    const tag = node2.tag ?? (tagObj.default ? null : tagObj.tag);
     if (tag)
       props.push(doc.directives.tagString(tag));
     return props.join(" ");
@@ -1343,15 +1343,15 @@ ${indent}`);
       }
     }
     let tagObj = void 0;
-    const node = isNode(item2) ? item2 : ctx.doc.createNode(item2, { onTagObj: (o2) => tagObj = o2 });
-    tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
-    const props = stringifyProps(node, tagObj, ctx);
+    const node2 = isNode(item2) ? item2 : ctx.doc.createNode(item2, { onTagObj: (o2) => tagObj = o2 });
+    tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node2));
+    const props = stringifyProps(node2, tagObj, ctx);
     if (props.length > 0)
       ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
-    const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node, ctx, onComment, onChompKeep) : isScalar(node) ? stringifyString(node, ctx, onComment, onChompKeep) : node.toString(ctx, onComment, onChompKeep);
+    const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : isScalar(node2) ? stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
     if (!props)
       return str2;
-    return isScalar(node) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
+    return isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
 ${ctx.indent}${str2}`;
   }
 
@@ -1571,8 +1571,8 @@ ${ctx.indent}`;
     if (isNode(key) && ctx?.doc) {
       const strCtx = createStringifyContext(ctx.doc, {});
       strCtx.anchors = /* @__PURE__ */ new Set();
-      for (const node of ctx.anchors.keys())
-        strCtx.anchors.add(node.anchor);
+      for (const node2 of ctx.anchors.keys())
+        strCtx.anchors.add(node2.anchor);
       strCtx.inFlow = true;
       strCtx.inStringifyKey = true;
       const strKey = key.toString(strCtx);
@@ -1784,23 +1784,23 @@ ${indent}${end}`;
      * A generic collection parsing method that can be extended
      * to other node classes that inherit from YAMLMap
      */
-    static from(schema4, obj, ctx) {
+    static from(schema4, obj2, ctx) {
       const { keepUndefined, replacer } = ctx;
       const map2 = new this(schema4);
       const add2 = (key, value) => {
         if (typeof replacer === "function")
-          value = replacer.call(obj, key, value);
+          value = replacer.call(obj2, key, value);
         else if (Array.isArray(replacer) && !replacer.includes(key))
           return;
         if (value !== void 0 || keepUndefined)
           map2.items.push(createPair(key, value, ctx));
       };
-      if (obj instanceof Map) {
-        for (const [key, value] of obj)
+      if (obj2 instanceof Map) {
+        for (const [key, value] of obj2)
           add2(key, value);
-      } else if (obj && typeof obj === "object") {
-        for (const key of Object.keys(obj))
-          add2(key, obj[key]);
+      } else if (obj2 && typeof obj2 === "object") {
+        for (const key of Object.keys(obj2))
+          add2(key, obj2[key]);
       }
       if (typeof schema4.sortMapEntries === "function") {
         map2.items.sort(schema4.sortMapEntries);
@@ -1849,8 +1849,8 @@ ${indent}${end}`;
     }
     get(key, keepScalar) {
       const it = findPair(this.items, key);
-      const node = it?.value;
-      return (!keepScalar && isScalar(node) ? node.value : node) ?? void 0;
+      const node2 = it?.value;
+      return (!keepScalar && isScalar(node2) ? node2.value : node2) ?? void 0;
     }
     has(key) {
       return !!findPair(this.items, key);
@@ -1901,7 +1901,7 @@ ${indent}${end}`;
         onError("Expected a mapping for this tag");
       return map2;
     },
-    createNode: (schema4, obj, ctx) => YAMLMap.from(schema4, obj, ctx)
+    createNode: (schema4, obj2, ctx) => YAMLMap.from(schema4, obj2, ctx)
   };
 
   // node_modules/yaml/browser/dist/nodes/YAMLSeq.js
@@ -1985,15 +1985,15 @@ ${indent}${end}`;
         onComment
       });
     }
-    static from(schema4, obj, ctx) {
+    static from(schema4, obj2, ctx) {
       const { replacer } = ctx;
       const seq2 = new this(schema4);
-      if (obj && Symbol.iterator in Object(obj)) {
+      if (obj2 && Symbol.iterator in Object(obj2)) {
         let i2 = 0;
-        for (let it of obj) {
+        for (let it of obj2) {
           if (typeof replacer === "function") {
-            const key = obj instanceof Set ? it : String(i2++);
-            it = replacer.call(obj, key, it);
+            const key = obj2 instanceof Set ? it : String(i2++);
+            it = replacer.call(obj2, key, it);
           }
           seq2.items.push(createNode(it, void 0, ctx));
         }
@@ -2019,7 +2019,7 @@ ${indent}${end}`;
         onError("Expected a sequence for this tag");
       return seq2;
     },
-    createNode: (schema4, obj, ctx) => YAMLSeq.from(schema4, obj, ctx)
+    createNode: (schema4, obj2, ctx) => YAMLSeq.from(schema4, obj2, ctx)
   };
 
   // node_modules/yaml/browser/dist/schema/common/string.js
@@ -2099,9 +2099,9 @@ ${indent}${end}`;
     format: "EXP",
     test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
     resolve: (str2) => parseFloat(str2),
-    stringify(node) {
-      const num = Number(node.value);
-      return isFinite(num) ? num.toExponential() : stringifyNumber(node);
+    stringify(node2) {
+      const num = Number(node2.value);
+      return isFinite(num) ? num.toExponential() : stringifyNumber(node2);
     }
   };
   var float = {
@@ -2110,11 +2110,11 @@ ${indent}${end}`;
     tag: "tag:yaml.org,2002:float",
     test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
     resolve(str2) {
-      const node = new Scalar(parseFloat(str2));
+      const node2 = new Scalar(parseFloat(str2));
       const dot = str2.indexOf(".");
       if (dot !== -1 && str2[str2.length - 1] === "0")
-        node.minFractionDigits = str2.length - dot - 1;
-      return node;
+        node2.minFractionDigits = str2.length - dot - 1;
+      return node2;
     },
     stringify: stringifyNumber
   };
@@ -2122,11 +2122,11 @@ ${indent}${end}`;
   // node_modules/yaml/browser/dist/schema/core/int.js
   var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
   var intResolve = (str2, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2.substring(offset), radix);
-  function intStringify(node, radix, prefix) {
-    const { value } = node;
+  function intStringify(node2, radix, prefix) {
+    const { value } = node2;
     if (intIdentify(value) && value >= 0)
       return prefix + value.toString(radix);
-    return stringifyNumber(node);
+    return stringifyNumber(node2);
   }
   var intOct = {
     identify: (value) => intIdentify(value) && value >= 0,
@@ -2135,7 +2135,7 @@ ${indent}${end}`;
     format: "OCT",
     test: /^0o[0-7]+$/,
     resolve: (str2, _onError, opt) => intResolve(str2, 2, 8, opt),
-    stringify: (node) => intStringify(node, 8, "0o")
+    stringify: (node2) => intStringify(node2, 8, "0o")
   };
   var int = {
     identify: intIdentify,
@@ -2152,7 +2152,7 @@ ${indent}${end}`;
     format: "HEX",
     test: /^0x[0-9a-fA-F]+$/,
     resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
-    stringify: (node) => intStringify(node, 16, "0x")
+    stringify: (node2) => intStringify(node2, 16, "0x")
   };
 
   // node_modules/yaml/browser/dist/schema/core/schema.js
@@ -2453,9 +2453,9 @@ ${cn.comment}` : item2.comment;
     format: "EXP",
     test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
     resolve: (str2) => parseFloat(str2.replace(/_/g, "")),
-    stringify(node) {
-      const num = Number(node.value);
-      return isFinite(num) ? num.toExponential() : stringifyNumber(node);
+    stringify(node2) {
+      const num = Number(node2.value);
+      return isFinite(num) ? num.toExponential() : stringifyNumber(node2);
     }
   };
   var float2 = {
@@ -2464,14 +2464,14 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:float",
     test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
     resolve(str2) {
-      const node = new Scalar(parseFloat(str2.replace(/_/g, "")));
+      const node2 = new Scalar(parseFloat(str2.replace(/_/g, "")));
       const dot = str2.indexOf(".");
       if (dot !== -1) {
         const f = str2.substring(dot + 1).replace(/_/g, "");
         if (f[f.length - 1] === "0")
-          node.minFractionDigits = f.length;
+          node2.minFractionDigits = f.length;
       }
-      return node;
+      return node2;
     },
     stringify: stringifyNumber
   };
@@ -2501,13 +2501,13 @@ ${cn.comment}` : item2.comment;
     const n2 = parseInt(str2, radix);
     return sign === "-" ? -1 * n2 : n2;
   }
-  function intStringify2(node, radix, prefix) {
-    const { value } = node;
+  function intStringify2(node2, radix, prefix) {
+    const { value } = node2;
     if (intIdentify3(value)) {
       const str2 = value.toString(radix);
       return value < 0 ? "-" + prefix + str2.substr(1) : prefix + str2;
     }
-    return stringifyNumber(node);
+    return stringifyNumber(node2);
   }
   var intBin = {
     identify: intIdentify3,
@@ -2516,7 +2516,7 @@ ${cn.comment}` : item2.comment;
     format: "BIN",
     test: /^[-+]?0b[0-1_]+$/,
     resolve: (str2, _onError, opt) => intResolve2(str2, 2, 2, opt),
-    stringify: (node) => intStringify2(node, 2, "0b")
+    stringify: (node2) => intStringify2(node2, 2, "0b")
   };
   var intOct2 = {
     identify: intIdentify3,
@@ -2525,7 +2525,7 @@ ${cn.comment}` : item2.comment;
     format: "OCT",
     test: /^[-+]?0[0-7_]+$/,
     resolve: (str2, _onError, opt) => intResolve2(str2, 1, 8, opt),
-    stringify: (node) => intStringify2(node, 8, "0")
+    stringify: (node2) => intStringify2(node2, 8, "0")
   };
   var int2 = {
     identify: intIdentify3,
@@ -2542,7 +2542,7 @@ ${cn.comment}` : item2.comment;
     format: "HEX",
     test: /^[-+]?0x[0-9a-fA-F_]+$/,
     resolve: (str2, _onError, opt) => intResolve2(str2, 2, 16, opt),
-    stringify: (node) => intStringify2(node, 16, "0x")
+    stringify: (node2) => intStringify2(node2, 16, "0x")
   };
 
   // node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
@@ -2632,13 +2632,13 @@ ${cn.comment}` : item2.comment;
     const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
     return sign === "-" ? num(-1) * res : res;
   }
-  function stringifySexagesimal(node) {
-    let { value } = node;
+  function stringifySexagesimal(node2) {
+    let { value } = node2;
     let num = (n2) => n2;
     if (typeof value === "bigint")
       num = (n2) => BigInt(n2);
     else if (isNaN(value) || !isFinite(value))
-      return stringifyNumber(node);
+      return stringifyNumber(node2);
     let sign = "";
     if (value < 0) {
       sign = "-";
@@ -2968,13 +2968,13 @@ ${cn.comment}` : item2.comment;
      * `name` will be used as a prefix for a new unique anchor.
      * If `name` is undefined, the generated anchor will use 'a' as a prefix.
      */
-    createAlias(node, name) {
-      if (!node.anchor) {
+    createAlias(node2, name) {
+      if (!node2.anchor) {
         const prev = anchorNames(this);
-        node.anchor = // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        node2.anchor = // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         !name || prev.has(name) ? findNewAnchor(name || "a", prev) : name;
       }
-      return new Alias(node.anchor);
+      return new Alias(node2.anchor);
     }
     createNode(value, replacer, options) {
       let _replacer = void 0;
@@ -3006,11 +3006,11 @@ ${cn.comment}` : item2.comment;
         schema: this.schema,
         sourceObjects
       };
-      const node = createNode(value, tag, ctx);
-      if (flow && isCollection(node))
-        node.flow = true;
+      const node2 = createNode(value, tag, ctx);
+      if (flow && isCollection(node2))
+        node2.flow = true;
       setAnchors();
-      return node;
+      return node2;
     }
     /**
      * Convert a key and a value into a `Pair` using the current schema,
@@ -3551,11 +3551,11 @@ ${pointer2}
           continue;
         }
       }
-      const node = value ? composeNode2(ctx, value, props, onError) : composeEmptyNode2(ctx, props.end, start, null, props, onError);
+      const node2 = value ? composeNode2(ctx, value, props, onError) : composeEmptyNode2(ctx, props.end, start, null, props, onError);
       if (ctx.schema.compat)
         flowIndentCheck(bs.indent, value, onError);
-      offset = node.range[2];
-      seq2.items.push(node);
+      offset = node2.range[2];
+      seq2.items.push(node2);
     }
     seq2.range = [bs.offset, offset, commentEnd ?? offset];
     return seq2;
@@ -3822,12 +3822,12 @@ ${pointer2}
     }
     const coll = resolveCollection(CN2, ctx, token, onError, tagName, tag);
     const res = tag.resolve?.(coll, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg), ctx.options) ?? coll;
-    const node = isNode(res) ? res : new Scalar(res);
-    node.range = coll.range;
-    node.tag = tagName;
+    const node2 = isNode(res) ? res : new Scalar(res);
+    node2.range = coll.range;
+    node2.tag = tagName;
     if (tag?.format)
-      node.format = tag.format;
-    return node;
+      node2.format = tag.format;
+    return node2;
   }
 
   // node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
@@ -3840,8 +3840,8 @@ ${pointer2}
     const lines = scalar2.source ? splitLines(scalar2.source) : [];
     let chompStart = lines.length;
     for (let i2 = lines.length - 1; i2 >= 0; --i2) {
-      const content2 = lines[i2][1];
-      if (content2 === "" || content2 === "\r")
+      const content3 = lines[i2][1];
+      if (content3 === "" || content3 === "\r")
         chompStart = i2;
       else
         break;
@@ -3857,8 +3857,8 @@ ${pointer2}
     let offset = scalar2.offset + header.length;
     let contentStart = 0;
     for (let i2 = 0; i2 < chompStart; ++i2) {
-      const [indent, content2] = lines[i2];
-      if (content2 === "" || content2 === "\r") {
+      const [indent, content3] = lines[i2];
+      if (content3 === "" || content3 === "\r") {
         if (header.indent === 0 && indent.length > trimIndent)
           trimIndent = indent.length;
       } else {
@@ -3875,7 +3875,7 @@ ${pointer2}
         }
         break;
       }
-      offset += indent.length + content2.length + 1;
+      offset += indent.length + content3.length + 1;
     }
     for (let i2 = lines.length - 1; i2 >= chompStart; --i2) {
       if (lines[i2][0].length > trimIndent)
@@ -3887,35 +3887,35 @@ ${pointer2}
     for (let i2 = 0; i2 < contentStart; ++i2)
       value += lines[i2][0].slice(trimIndent) + "\n";
     for (let i2 = contentStart; i2 < chompStart; ++i2) {
-      let [indent, content2] = lines[i2];
-      offset += indent.length + content2.length + 1;
-      const crlf = content2[content2.length - 1] === "\r";
+      let [indent, content3] = lines[i2];
+      offset += indent.length + content3.length + 1;
+      const crlf = content3[content3.length - 1] === "\r";
       if (crlf)
-        content2 = content2.slice(0, -1);
-      if (content2 && indent.length < trimIndent) {
+        content3 = content3.slice(0, -1);
+      if (content3 && indent.length < trimIndent) {
         const src = header.indent ? "explicit indentation indicator" : "first line";
         const message = `Block scalar lines must not be less indented than their ${src}`;
-        onError(offset - content2.length - (crlf ? 2 : 1), "BAD_INDENT", message);
+        onError(offset - content3.length - (crlf ? 2 : 1), "BAD_INDENT", message);
         indent = "";
       }
       if (type === Scalar.BLOCK_LITERAL) {
-        value += sep + indent.slice(trimIndent) + content2;
+        value += sep + indent.slice(trimIndent) + content3;
         sep = "\n";
-      } else if (indent.length > trimIndent || content2[0] === "	") {
+      } else if (indent.length > trimIndent || content3[0] === "	") {
         if (sep === " ")
           sep = "\n";
         else if (!prevMoreIndented && sep === "\n")
           sep = "\n\n";
-        value += sep + indent.slice(trimIndent) + content2;
+        value += sep + indent.slice(trimIndent) + content3;
         sep = "\n";
         prevMoreIndented = true;
-      } else if (content2 === "") {
+      } else if (content3 === "") {
         if (sep === "\n")
           value += "\n";
         else
           sep = "\n";
       } else {
-        value += sep + content2;
+        value += sep + content3;
         sep = " ";
         prevMoreIndented = false;
       }
@@ -4319,11 +4319,11 @@ ${pointer2}
   function composeNode(ctx, token, props, onError) {
     const atKey = ctx.atKey;
     const { spaceBefore, comment, anchor, tag } = props;
-    let node;
+    let node2;
     let isSrcToken = true;
     switch (token.type) {
       case "alias":
-        node = composeAlias(ctx, token, onError);
+        node2 = composeAlias(ctx, token, onError);
         if (anchor || tag)
           onError(token, "ALIAS_PROPS", "An alias node must not specify any properties");
         break;
@@ -4331,17 +4331,17 @@ ${pointer2}
       case "single-quoted-scalar":
       case "double-quoted-scalar":
       case "block-scalar":
-        node = composeScalar(ctx, token, tag, onError);
+        node2 = composeScalar(ctx, token, tag, onError);
         if (anchor)
-          node.anchor = anchor.source.substring(1);
+          node2.anchor = anchor.source.substring(1);
         break;
       case "block-map":
       case "block-seq":
       case "flow-collection":
         try {
-          node = composeCollection(CN, ctx, token, props, onError);
+          node2 = composeCollection(CN, ctx, token, props, onError);
           if (anchor)
-            node.anchor = anchor.source.substring(1);
+            node2.anchor = anchor.source.substring(1);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           onError(token, "RESOURCE_EXHAUSTION", message);
@@ -4353,24 +4353,24 @@ ${pointer2}
         isSrcToken = false;
       }
     }
-    node ?? (node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
-    if (anchor && node.anchor === "")
+    node2 ?? (node2 = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
+    if (anchor && node2.anchor === "")
       onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
-    if (atKey && ctx.options.stringKeys && (!isScalar(node) || typeof node.value !== "string" || node.tag && node.tag !== "tag:yaml.org,2002:str")) {
+    if (atKey && ctx.options.stringKeys && (!isScalar(node2) || typeof node2.value !== "string" || node2.tag && node2.tag !== "tag:yaml.org,2002:str")) {
       const msg = "With stringKeys, all keys must be strings";
       onError(tag ?? token, "NON_STRING_KEY", msg);
     }
     if (spaceBefore)
-      node.spaceBefore = true;
+      node2.spaceBefore = true;
     if (comment) {
       if (token.type === "scalar" && token.source === "")
-        node.comment = comment;
+        node2.comment = comment;
       else
-        node.commentBefore = comment;
+        node2.commentBefore = comment;
     }
     if (ctx.options.keepSourceTokens && isSrcToken)
-      node.srcToken = token;
-    return node;
+      node2.srcToken = token;
+    return node2;
   }
   function composeEmptyNode(ctx, offset, before, pos, { spaceBefore, comment, anchor, tag, end }, onError) {
     const token = {
@@ -4379,19 +4379,19 @@ ${pointer2}
       indent: -1,
       source: ""
     };
-    const node = composeScalar(ctx, token, tag, onError);
+    const node2 = composeScalar(ctx, token, tag, onError);
     if (anchor) {
-      node.anchor = anchor.source.substring(1);
-      if (node.anchor === "")
+      node2.anchor = anchor.source.substring(1);
+      if (node2.anchor === "")
         onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
     }
     if (spaceBefore)
-      node.spaceBefore = true;
+      node2.spaceBefore = true;
     if (comment) {
-      node.comment = comment;
-      node.range[2] = end;
+      node2.comment = comment;
+      node2.range[2] = end;
     }
-    return node;
+    return node2;
   }
   function composeAlias({ options }, { offset, source, end }, onError) {
     const alias = new Alias(source.substring(1));
@@ -5362,15 +5362,15 @@ ${end.comment}` : end.comment;
   };
 
   // node_modules/yaml/browser/dist/parse/parser.js
-  function includesToken(list, type) {
-    for (let i2 = 0; i2 < list.length; ++i2)
-      if (list[i2].type === type)
+  function includesToken(list2, type) {
+    for (let i2 = 0; i2 < list2.length; ++i2)
+      if (list2[i2].type === type)
         return true;
     return false;
   }
-  function findNonEmptyIndex(list) {
-    for (let i2 = 0; i2 < list.length; ++i2) {
-      switch (list[i2].type) {
+  function findNonEmptyIndex(list2) {
+    for (let i2 = 0; i2 < list2.length; ++i2) {
+      switch (list2[i2].type) {
         case "space":
         case "comment":
         case "newline":
@@ -5426,12 +5426,12 @@ ${end.comment}` : end.comment;
     }
     return prev.splice(i2, prev.length);
   }
-  function arrayPushArray(target, source) {
+  function arrayPushArray(target2, source) {
     if (source.length < 1e5)
-      Array.prototype.push.apply(target, source);
+      Array.prototype.push.apply(target2, source);
     else
       for (let i2 = 0; i2 < source.length; ++i2)
-        target.push(source[i2]);
+        target2.push(source[i2]);
   }
   function fixFlowSeqItems(fc) {
     if (fc.start.type === "flow-seq-start") {
@@ -6293,16 +6293,16 @@ ${end.comment}` : end.comment;
       const { line, col } = lc.linePos(s2);
       return { line, from: col, to: col + e - s2 };
     };
-    const visit3 = (node, path) => {
-      if (isMap(node)) {
-        for (const p of node.items) {
+    const visit3 = (node2, path) => {
+      if (isMap(node2)) {
+        for (const p of node2.items) {
           if (!isScalar(p.key)) continue;
           const sub = [...path, String(p.key.value)];
           index.set(JSON.stringify(sub), { ...span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]), key: keyAt2(p.key.range) });
           visit3(p.value, sub);
         }
-      } else if (isSeq(node)) {
-        node.items.forEach((item2, i2) => {
+      } else if (isSeq(node2)) {
+        node2.items.forEach((item2, i2) => {
           const sub = [...path, i2];
           const name = isMap(item2) ? item2.items.find((q) => isScalar(q.key) && q.key.value === "name")?.value : item2;
           if (item2?.range) index.set(JSON.stringify(sub), { ...span(item2.range[0], item2.range[1], item2.range[1]), ...isScalar(name) && { key: keyAt2(name.range) } });
@@ -6578,18 +6578,18 @@ ${end.comment}` : end.comment;
     if (!ext && !(pureRef(l2) && !has(r, "$ref"))) return false;
     const ref = (ext ? r : l2).$ref;
     const segs = pointer(ref);
-    const target = segs && resolve(ext ? st.rData : st.lData, segs);
+    const target2 = segs && resolve(ext ? st.rData : st.lData, segs);
     let details;
     const sink = [];
     if (!segs) details = ["definition not compared (external $ref)"];
-    else if (!target) details = ["definition not compared (unresolved $ref)"];
+    else if (!target2) details = ["definition not compared (unresolved $ref)"];
     else {
-      walk(ext ? l2 : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
+      walk(ext ? l2 : target2, ext ? target2 : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
       details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
     }
     const text = `${label2 ?? restOf(ctx)}: ${ext ? "extracted to" : "inlined from"} ${(segs && compLabel(segs)) ?? ref}`;
     emit("changed", text, ext ? { ...ctx, pr: [...ctx.pr, "$ref"] } : ctx, "refactor", ownWhere(ctx), { details: sink }).details = details;
-    if (target && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
+    if (target2 && compLabel(segs)) (ext ? st.extracted : st.inlined).add(JSON.stringify(segs));
     return true;
   }
   var KW = ["allOf", "oneOf", "anyOf"];
@@ -6770,7 +6770,7 @@ ${end.comment}` : end.comment;
     const nm = (n2) => [...rest, n2].join(".");
     const ls = new Set(lArr);
     const rs = new Set(rArr);
-    const props = (obj) => isPlain(obj.properties) ? obj.properties : {};
+    const props = (obj2) => isPlain(obj2.properties) ? obj2.properties : {};
     const lProps = props(lObj);
     const rProps = props(rObj);
     const at2 = (n2, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n2)], pl, pr });
@@ -6787,13 +6787,13 @@ ${end.comment}` : end.comment;
     const use = /* @__PURE__ */ new Map();
     const direct = /* @__PURE__ */ new Map();
     const closure = /* @__PURE__ */ new Map();
-    const refsIn = (node, out = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set()) => {
-      if (node === null || typeof node !== "object" || seen.has(node)) return out;
-      seen.add(node);
-      const segs = isPlain(node) && typeof node.$ref === "string" ? pointer(node.$ref) : void 0;
+    const refsIn = (node2, out = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set()) => {
+      if (node2 === null || typeof node2 !== "object" || seen.has(node2)) return out;
+      seen.add(node2);
+      const segs = isPlain(node2) && typeof node2.$ref === "string" ? pointer(node2.$ref) : void 0;
       const i2 = segs ? nameAt(segs) : -1;
       if (i2 > 0) out.add(JSON.stringify(segs.slice(0, i2 + 1)));
-      for (const v2 of Object.values(node)) refsIn(v2, out, seen);
+      for (const v2 of Object.values(node2)) refsIn(v2, out, seen);
       return out;
     };
     const from = (start) => {
@@ -6810,9 +6810,9 @@ ${end.comment}` : end.comment;
       closure.set(start, seen);
       return seen;
     };
-    const reach = (node) => {
+    const reach = (node2) => {
       const out = /* @__PURE__ */ new Set();
-      for (const k of refsIn(node)) for (const x of from(k)) out.add(x);
+      for (const k of refsIn(node2)) for (const x of from(k)) out.add(x);
       return out;
     };
     for (const [p, item2] of Object.entries(isPlain(data?.paths) ? data.paths : {})) {
@@ -6827,8 +6827,8 @@ ${end.comment}` : end.comment;
         });
         if (op2.requestBody !== void 0) parts.push(["request body", "request", op2.requestBody]);
         for (const [code, r] of Object.entries(isPlain(op2.responses) ? op2.responses : {})) parts.push([`response ${code}`, "response", r]);
-        for (const [via, dir, node] of parts) {
-          for (const k of reach(node)) {
+        for (const [via, dir, node2] of parts) {
+          for (const k of reach(node2)) {
             if (!use.has(k)) use.set(k, /* @__PURE__ */ new Map());
             const m3 = use.get(k);
             const id = `${endpoint}|${via}`;
@@ -7319,15 +7319,15 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
   var kindsOf = (f, ver) => (f.tFrom && ver >= f.tFrom[0] ? f.tFrom[1] : f.t).split("|");
   var enumOf = (f, ver) => f.enum?.filter((e) => !Array.isArray(e) || active({ since: e[1], until: e[2] }, ver)).map((e) => Array.isArray(e) ? e[0] : e);
   function member(type, key, ver) {
-    const obj = OBJECTS[type];
-    if (!obj) return void 0;
-    if (Object.hasOwn(obj.fields, key)) {
-      const f = obj.fields[key];
+    const obj2 = OBJECTS[type];
+    if (!obj2) return void 0;
+    if (Object.hasOwn(obj2.fields, key)) {
+      const f = obj2.fields[key];
       return active(f, ver) ? { spec: f, via: "field" } : { spec: f, via: "field", gated: true };
     }
-    if (key === "$ref" && obj.ref) return { spec: REF, via: "field" };
+    if (key === "$ref" && obj2.ref) return { spec: REF, via: "field" };
     if (key.startsWith("x-")) return { spec: EXT, via: "pattern" };
-    const p = obj.patterns?.find((p2) => p2.re.test(key));
+    const p = obj2.patterns?.find((p2) => p2.re.test(key));
     return p ? { spec: p, via: "pattern" } : void 0;
   }
   var itemSpec = (f) => OBJECTS[f.of] ? { t: "obj", of: f.of, doc: OBJECTS[f.of].doc } : { t: f.of ?? "any", doc: f.doc, enum: f.enum };
@@ -7370,27 +7370,27 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
   var keyOf = (pair2) => isScalar(pair2.key) && pair2.key.value != null ? String(pair2.key.value) : null;
   var pairOf = (map2, key) => isMap(map2) ? map2.items.find((p) => keyOf(p) === key) : void 0;
   function lookup(root, segs) {
-    let node = root;
+    let node2 = root;
     let pair2;
     for (const seg of segs) {
-      if (isMap(node)) {
-        pair2 = pairOf(node, seg);
+      if (isMap(node2)) {
+        pair2 = pairOf(node2, seg);
         if (!pair2) return void 0;
-        node = pair2.value;
-      } else if (isSeq(node) && /^\d+$/.test(seg) && node.items[Number(seg)]) {
+        node2 = pair2.value;
+      } else if (isSeq(node2) && /^\d+$/.test(seg) && node2.items[Number(seg)]) {
         pair2 = void 0;
-        node = node.items[Number(seg)];
+        node2 = node2.items[Number(seg)];
       } else return void 0;
     }
-    return { pair: pair2, node };
+    return { pair: pair2, node: node2 };
   }
-  function deref(root, node) {
+  function deref(root, node2) {
     for (let hop = 0; hop <= 10; hop++) {
-      const ref = pairOf(node, "$ref")?.value;
-      if (!isScalar(ref) || typeof ref.value !== "string") return node;
+      const ref = pairOf(node2, "$ref")?.value;
+      if (!isScalar(ref) || typeof ref.value !== "string") return node2;
       const segs = pointer(ref.value);
-      node = segs && lookup(root, segs)?.node;
-      if (!node) return void 0;
+      node2 = segs && lookup(root, segs)?.node;
+      if (!node2) return void 0;
     }
     return void 0;
   }
@@ -7611,9 +7611,9 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
   var typeOf = (s2) => s2 && typeof s2 === "object" ? [s2.type].flat().filter(Boolean).join(" | ") || (typeof s2.$ref === "string" ? s2.$ref.split("/").pop() : "") : "";
   function refHover(text, line, col) {
     const r = resolveAt(text, line, col);
-    const node = r?.found && deref(r.p.root, r.found.node);
-    if (!node) return null;
-    const v2 = node.toJS(r.p.doc);
+    const node2 = r?.found && deref(r.p.root, r.found.node);
+    if (!node2) return null;
+    const v2 = node2.toJS(r.p.doc);
     const kind = r.segs[0] === "components" ? r.segs[1] : r.segs[0];
     const o2 = v2 && typeof v2 === "object" ? v2 : {};
     const str2 = (x) => typeof x === "string" ? x : "";
@@ -7725,17 +7725,17 @@ ${pad}  - ` : `${k}: `;
     };
     const ver = ctx.version;
     if (ctx.position === "key") {
-      const obj = OBJECTS[ctx.objectType];
+      const obj2 = OBJECTS[ctx.objectType];
       const keyItem = (key, spec, required) => {
         if (ctx.keysPresent.has(key)) return;
         add2(key, { insertText: insertKey(key, spec, ctx, rest, pad), kind: "key", doc: spec.doc, ...required && { required: true }, sortText: (required ? "0" : "1") + key });
       };
-      if (obj) {
-        for (const [key, f2] of Object.entries(obj.fields)) {
+      if (obj2) {
+        for (const [key, f2] of Object.entries(obj2.fields)) {
           if (active(f2, ver)) keyItem(key, f2, f2.req && !(f2.reqUntil && ver >= f2.reqUntil));
         }
-        for (const p of obj.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
-        if (obj.ref && !ctx.keysPresent.has("$ref")) {
+        for (const p of obj2.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
+        if (obj2.ref && !ctx.keysPresent.has("$ref")) {
           add2("$ref", { insertText: insertKey("$ref", member(ctx.objectType, "$ref", ver).spec, ctx, rest, pad), kind: "key", doc: "A reference to a component.", sortText: "1$ref", retrigger: true });
         }
       } else if (ctx.container?.kind === "map") {
@@ -7813,14 +7813,14 @@ ${pad}  - ` : `${k}: `;
   function outline(text) {
     const { root, lc } = parse3(text);
     if (!isMap(root)) return [];
-    const line = (node2) => lc.linePos(node2.range[0]).line;
+    const line = (node3) => lc.linePos(node3.range[0]).line;
     const str2 = (map2, key) => {
       const v2 = pairOf(map2, key)?.value;
       return isScalar(v2) && v2.value != null ? String(v2.value) : void 0;
     };
-    const node = (label2, kind, at2, extra) => ({ label: label2, kind, line: line(at2), ...extra, children: extra?.children ?? [] });
+    const node2 = (label2, kind, at2, extra) => ({ label: label2, kind, line: line(at2), ...extra, children: extra?.children ?? [] });
     const pairs2 = (map2) => isMap(map2) ? map2.items.filter((p) => keyOf(p) != null) : [];
-    const op2 = (p) => node(keyOf(p).toUpperCase(), "operation", p.key, { method: keyOf(p).toLowerCase(), ...str2(p.value, "summary") && { detail: str2(p.value, "summary") } });
+    const op2 = (p) => node2(keyOf(p).toUpperCase(), "operation", p.key, { method: keyOf(p).toLowerCase(), ...str2(p.value, "summary") && { detail: str2(p.value, "summary") } });
     const ops = (item2) => [
       ...pairs2(item2).filter((p) => METHODS2.includes(keyOf(p))).map(op2),
       ...pairs2(pairOf(item2, "additionalOperations")?.value).map(op2)
@@ -7831,15 +7831,15 @@ ${pad}  - ` : `${k}: `;
       const val = p.value;
       if (key === "info") {
         const detail = [str2(val, "title"), str2(val, "version")].filter(Boolean).join(" ");
-        out.push(node("Info", "info", p.key, detail ? { detail } : void 0));
+        out.push(node2("Info", "info", p.key, detail ? { detail } : void 0));
       } else if (key === "servers" && isSeq(val)) {
-        out.push(node("Servers", "servers", p.key, { children: val.items.filter(isMap).map((s2) => node(str2(s2, "url") ?? "(no url)", "server", s2)) }));
+        out.push(node2("Servers", "servers", p.key, { children: val.items.filter(isMap).map((s2) => node2(str2(s2, "url") ?? "(no url)", "server", s2)) }));
       } else if (key === "paths" || key === "webhooks") {
-        out.push(node(key === "paths" ? "Paths" : "Webhooks", key, p.key, { children: pairs2(val).map((q) => node(keyOf(q), "path", q.key, { children: ops(q.value) })) }));
+        out.push(node2(key === "paths" ? "Paths" : "Webhooks", key, p.key, { children: pairs2(val).map((q) => node2(keyOf(q), "path", q.key, { children: ops(q.value) })) }));
       } else if (key === "components") {
-        out.push(node("Components", "components", p.key, { children: pairs2(val).map((g) => node(keyOf(g), "group", g.key, { children: pairs2(g.value).map((c) => node(keyOf(c), "component", c.key)) })) }));
+        out.push(node2("Components", "components", p.key, { children: pairs2(val).map((g) => node2(keyOf(g), "group", g.key, { children: pairs2(g.value).map((c) => node2(keyOf(c), "component", c.key)) })) }));
       } else if (key === "tags" && isSeq(val)) {
-        out.push(node("Tags", "tags", p.key, { children: val.items.filter(isMap).map((t) => node(str2(t, "name") ?? "(no name)", "tag", t)) }));
+        out.push(node2("Tags", "tags", p.key, { children: val.items.filter(isMap).map((t) => node2(str2(t, "name") ?? "(no name)", "tag", t)) }));
       }
     }
     return out;
@@ -7870,10 +7870,10 @@ ${pad}  - ` : `${k}: `;
   function structureRule({ doc, lc, ver, root, text }) {
     if (doc.errors.length || !ver || !isMap(root)) return [];
     const out = [];
-    const at2 = (node) => range(lc, head(text, node.range));
+    const at2 = (node2) => range(lc, head(text, node2.range));
     const object = (map2, type, owner) => {
-      const obj = OBJECTS[type];
-      const hasRef = obj.ref && pairOf(map2, "$ref") && !(type === "Schema" && ver >= 31);
+      const obj2 = OBJECTS[type];
+      const hasRef = obj2.ref && pairOf(map2, "$ref") && !(type === "Schema" && ver >= 31);
       for (const pair2 of map2.items) {
         const key = keyOf(pair2);
         if (key == null || key.startsWith("x-") || key === "<<") continue;
@@ -7890,43 +7890,43 @@ ${pad}  - ` : `${k}: `;
         value(pair2.value, mm.spec, range(lc, pair2.key.range));
       }
       if (hasRef) return;
-      for (const [key, f] of Object.entries(obj.fields)) {
+      for (const [key, f] of Object.entries(obj2.fields)) {
         if (f.req && active(f, ver) && !(f.reqUntil && ver >= f.reqUntil) && !pairOf(map2, key)) {
           out.push(mark("error", `Missing required '${key}' in ${type}`, owner));
         }
       }
     };
-    const value = (node, spec, owner) => {
-      if (!node || isAlias(node) || isScalar(node) && node.value === null) return;
+    const value = (node2, spec, owner) => {
+      if (!node2 || isAlias(node2) || isScalar(node2) && node2.value === null) return;
       const kinds = kindsOf(spec, ver);
       if (kinds.includes("any")) return;
-      if (isMap(node)) {
-        if (kinds.includes("obj")) return object(node, spec.of, owner ?? at2(node));
-        if (kinds.includes("map")) return node.items.forEach((p) => value(p.value, itemSpec(spec), p.key && range(lc, p.key.range)));
-      } else if (isSeq(node)) {
-        if (kinds.includes("list")) return node.items.forEach((it) => value(it, itemSpec(spec)));
-      } else if (isScalar(node)) {
-        const x = node.value;
+      if (isMap(node2)) {
+        if (kinds.includes("obj")) return object(node2, spec.of, owner ?? at2(node2));
+        if (kinds.includes("map")) return node2.items.forEach((p) => value(p.value, itemSpec(spec), p.key && range(lc, p.key.range)));
+      } else if (isSeq(node2)) {
+        if (kinds.includes("list")) return node2.items.forEach((it) => value(it, itemSpec(spec)));
+      } else if (isScalar(node2)) {
+        const x = node2.value;
         const ok = typeof x === "string" ? kinds.includes("str") : typeof x === "number" ? kinds.includes("num") || kinds.includes("int") && Number.isInteger(x) : typeof x === "boolean" ? kinds.includes("bool") || ver >= 31 && spec.of === "Schema" : false;
-        if (ok) return scalar2(node, spec);
-        if (kinds.includes("str") && (typeof x === "number" || typeof x === "boolean")) return out.push(mark("warning", "Expected string; quote the value", at2(node)));
+        if (ok) return scalar2(node2, spec);
+        if (kinds.includes("str") && (typeof x === "number" || typeof x === "boolean")) return out.push(mark("warning", "Expected string; quote the value", at2(node2)));
       }
       const want = kinds.map((k) => k === "obj" ? `mapping (${spec.of})` : NAMES2[k]).join(" or ");
-      const found = isMap(node) ? "mapping" : isSeq(node) ? "list" : NAMES2[{ string: "str", number: "num", boolean: "bool" }[typeof node.value]] ?? typeof node.value;
-      out.push(mark("error", `Expected ${want}, found ${found}`, at2(node)));
+      const found = isMap(node2) ? "mapping" : isSeq(node2) ? "list" : NAMES2[{ string: "str", number: "num", boolean: "bool" }[typeof node2.value]] ?? typeof node2.value;
+      out.push(mark("error", `Expected ${want}, found ${found}`, at2(node2)));
     };
-    const scalar2 = (node, spec) => {
+    const scalar2 = (node2, spec) => {
       const allowed = enumOf(spec, ver);
-      const x = String(node.value);
+      const x = String(node2.value);
       if (!allowed || allowed.includes(x)) return;
       const gated = spec.enum.find((e) => Array.isArray(e) && e[0] === x);
-      if (gated) out.push(mark("warning", gated[2] && ver >= gated[2] ? `'${x}' was removed in OpenAPI ${v(gated[2])}` : `'${x}' needs OpenAPI ${v(gated[1])}+`, at2(node)));
-      else out.push(mark("error", `Invalid value '${x}'. Allowed: ${allowed.join(", ")}`, at2(node)));
+      if (gated) out.push(mark("warning", gated[2] && ver >= gated[2] ? `'${x}' was removed in OpenAPI ${v(gated[2])}` : `'${x}' needs OpenAPI ${v(gated[1])}+`, at2(node2)));
+      else out.push(mark("error", `Invalid value '${x}'. Allowed: ${allowed.join(", ")}`, at2(node2)));
     };
     object(root, "OpenAPI", START);
     return out;
   }
-  var at = (ctx, node) => range(ctx.lc, head(ctx.text, node.range));
+  var at = (ctx, node2) => range(ctx.lc, head(ctx.text, node2.range));
   var keyAt = (ctx, pair2) => range(ctx.lc, pair2.key.range);
   var str = (map2, key) => {
     const val = pairOf(map2, key)?.value;
@@ -7937,34 +7937,34 @@ ${pad}  - ` : `${k}: `;
   function collect({ doc, ver, root }) {
     if (doc.errors.length || !ver || !isMap(root)) return null;
     const sem = { sites: [], ops: [], items: [], servers: [], secUses: [], mapping: [], discs: /* @__PURE__ */ new Set(), alias: false };
-    const walk2 = (node, path) => {
-      if (isAlias(node)) sem.alias = true;
-      if (isSeq(node)) return node.items.forEach((it, i2) => walk2(it, [...path, i2]));
-      if (!isMap(node)) return;
+    const walk2 = (node2, path) => {
+      if (isAlias(node2)) sem.alias = true;
+      if (isSeq(node2)) return node2.items.forEach((it, i2) => walk2(it, [...path, i2]));
+      if (!isMap(node2)) return;
       const t = typeAt(path, ver);
       if (!t || t.kind === "prim") return;
       if (t.kind !== "obj") {
-        for (const p of node.items) {
+        for (const p of node2.items) {
           if (keyOf(p) === "<<") sem.alias = true;
           else if (keyOf(p) != null) walk2(p.value, [...path, keyOf(p)]);
         }
         return;
       }
       const type = t.type;
-      if (type === "Operation") sem.ops.push(node);
-      else if (type === "PathItem" && path.length === 2 && path[0] === "paths") sem.items.push({ node, key: path[1] });
-      else if (type === "Server") sem.servers.push(node);
-      else if (type === "SecurityRequirement") sem.secUses.push(...node.items.filter((p) => keyOf(p) != null));
+      if (type === "Operation") sem.ops.push(node2);
+      else if (type === "PathItem" && path.length === 2 && path[0] === "paths") sem.items.push({ node: node2, key: path[1] });
+      else if (type === "Server") sem.servers.push(node2);
+      else if (type === "SecurityRequirement") sem.secUses.push(...node2.items.filter((p) => keyOf(p) != null));
       else if (type === "Discriminator") {
-        const mp = pairOf(node, "mapping")?.value;
+        const mp = pairOf(node2, "mapping")?.value;
         if (isMap(mp)) {
           for (const p of mp.items) if (isScalar(p.value) && typeof p.value.value === "string") sem.mapping.push({ value: p.value.value, path });
         }
-        const dm = str(node, "defaultMapping");
+        const dm = str(node2, "defaultMapping");
         if (dm != null) sem.mapping.push({ value: dm, path });
         if (path.length === 4) sem.discs.add(compOf2(path));
       }
-      for (const p of node.items) {
+      for (const p of node2.items) {
         const key = keyOf(p);
         if (key === "<<") sem.alias = true;
         if (key == null || key === "<<") continue;
@@ -8011,11 +8011,11 @@ ${pad}  - ` : `${k}: `;
       const where = pairOf(it, "$ref") ? at(ctx, it) : at(ctx, pairOf(n2, "name").value);
       return [{ name, in: str(n2, "in"), required: pairOf(n2, "required")?.value?.value, where }];
     });
-    for (const { node, key } of sem.items) {
+    for (const { node: node2, key } of sem.items) {
       const names = [...key.matchAll(/\{([^}]+)\}/g)].map((mt) => mt[1]);
-      const check = (list) => {
+      const check = (list2) => {
         const seen = /* @__PURE__ */ new Map();
-        for (const p of list) {
+        for (const p of list2) {
           add(seen, `${p.in}:${p.name}`, p);
           if (p.in !== "path") continue;
           if (!names.includes(p.name)) err(`Path parameter '${p.name}' is not in the path '${key}'`, p.where);
@@ -8024,11 +8024,11 @@ ${pad}  - ` : `${k}: `;
         for (const dup of seen.values()) if (dup.length > 1) for (const p of dup) err(`Duplicate parameter '${p.name}' (in ${p.in})`, p.where);
       };
       const opaque = (seq2) => isSeq(seq2) && seq2.items.some((it) => pairOf(it, "$ref") && !isMap(deref(ctx.root, it)));
-      const sharedOpaque = opaque(pairOf(node, "parameters")?.value);
-      const shared = params(pairOf(node, "parameters")?.value);
+      const sharedOpaque = opaque(pairOf(node2, "parameters")?.value);
+      const shared = params(pairOf(node2, "parameters")?.value);
       check(shared);
-      const extra = pairOf(node, "additionalOperations")?.value;
-      const ops = [...node.items.filter((p) => METHODS2.includes(keyOf(p))), ...isMap(extra) ? extra.items : []].filter((p) => isMap(p.value));
+      const extra = pairOf(node2, "additionalOperations")?.value;
+      const ops = [...node2.items.filter((p) => METHODS2.includes(keyOf(p))), ...isMap(extra) ? extra.items : []].filter((p) => isMap(p.value));
       for (const op2 of ops) {
         const own = params(pairOf(op2.value, "parameters")?.value);
         check(own);
@@ -8063,8 +8063,8 @@ ${pad}  - ` : `${k}: `;
     const declared = new Set(isSeq(tags) ? tags.items.map((t) => str(t, "name")) : []);
     const out = [];
     for (const op2 of sem.ops) {
-      const list = pairOf(op2, "tags")?.value;
-      for (const t of isSeq(list) ? list.items : []) {
+      const list2 = pairOf(op2, "tags")?.value;
+      for (const t of isSeq(list2) ? list2.items : []) {
         if (isScalar(t) && typeof t.value === "string" && !declared.has(t.value)) out.push(mark("info", `Tag '${t.value}' is used but not declared in tags`, at(ctx, t)));
       }
     }
@@ -8094,11 +8094,11 @@ ${pad}  - ` : `${k}: `;
       for (const p of g.value.items) if (keyOf(p) != null) defined.set(`${keyOf(g)}/${keyOf(p)}`, p);
     }
     const edges = /* @__PURE__ */ new Map();
-    const edge = (owner, target) => target && add(edges, owner, target);
+    const edge = (owner, target2) => target2 && add(edges, owner, target2);
     for (const s2 of sem.sites) {
-      const target = compOf2(pointer(s2.node.value));
-      edge(compOf2(s2.path), target);
-      if (s2.path.length === 5 && s2.path[3] === "allOf" && sem.discs.has(target)) edge(target, compOf2(s2.path));
+      const target2 = compOf2(pointer(s2.node.value));
+      edge(compOf2(s2.path), target2);
+      if (s2.path.length === 5 && s2.path[3] === "allOf" && sem.discs.has(target2)) edge(target2, compOf2(s2.path));
     }
     for (const p of sem.secUses) edge(null, `securitySchemes/${keyOf(p)}`);
     for (const mp of sem.mapping) edge(compOf2(mp.path), mp.value.startsWith("#") ? compOf2(pointer(mp.value)) : `schemas/${mp.value}`);
@@ -8116,6 +8116,143 @@ ${pad}  - ` : `${k}: `;
   function validate(text) {
     const ctx = { ...parse3(text), text };
     return rules.flatMap((r) => r(ctx)).sort((a2, b2) => a2.startLine - b2.startLine || a2.startCol - b2.startCol);
+  }
+
+  // src/oas/preview.js
+  var obj = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : null;
+  var txt = (x) => x == null || typeof x === "object" ? void 0 : String(x);
+  var list = (x) => Array.isArray(x) ? x : [];
+  var MAX_DEPTH = 6;
+  var target = (js, ref) => pointer(ref)?.reduce((n2, s2) => n2 && typeof n2 === "object" && Object.hasOwn(n2, s2) ? n2[s2] : void 0, js);
+  var resolve2 = (js, v2) => {
+    for (let hop = 0; hop < 10 && typeof obj(v2)?.$ref === "string"; hop++) v2 = target(js, v2.$ref);
+    return v2;
+  };
+  var memos = /* @__PURE__ */ new WeakMap();
+  function node(s2, js, seen = [], depth = 0) {
+    if (typeof obj(s2)?.$ref === "string") {
+      const ref = pointer(s2.$ref)?.at(-1) ?? s2.$ref;
+      if (seen.includes(s2.$ref)) return { type: ref, ref, cycle: true };
+      const memo = memos.get(js) ?? memos.set(js, /* @__PURE__ */ new Map()).get(js);
+      const key = `${depth} ${s2.$ref}`;
+      if (!memo.has(key)) memo.set(key, { ...node(target(js, s2.$ref), js, [...seen, s2.$ref], depth), ref });
+      return memo.get(key);
+    }
+    if (s2 === false) return { type: "never" };
+    s2 = obj(s2);
+    if (!s2) return { type: "any" };
+    if (Array.isArray(s2.allOf)) {
+      const { allOf, ...own } = s2;
+      const parts = [...allOf, own].map((p) => node(p, js, seen, depth));
+      const req2 = [...new Set(parts.flatMap((p) => p.required ?? []))];
+      const kids = new Map(parts.flatMap((p) => p.children ?? []).map((c) => [c.name, c]));
+      const n3 = Object.assign({}, ...parts.map(({ children, required, ...p }) => p));
+      n3.type = parts.find((p) => p.type !== "any" && p.type !== "null")?.type ?? "object";
+      if (parts.some((p) => p.nullable)) {
+        n3.nullable = true;
+        if (!/(^| \| )null\b/.test(n3.type)) n3.type += " | null";
+      }
+      if (parts.filter((p) => p.ref).length !== 1) {
+        delete n3.ref;
+        delete n3.cycle;
+      }
+      const description = txt(s2.description) ?? parts.find((p) => p.description)?.description;
+      if (description) n3.description = description;
+      else delete n3.description;
+      if (req2.length) n3.required = req2;
+      if (kids.size) n3.children = [...kids.values()].map((c) => ({ ...c, required: req2.includes(c.name) }));
+      return n3;
+    }
+    const deeper = depth < MAX_DEPTH;
+    const n2 = {};
+    let types = [s2.type].flat().filter((t) => typeof t === "string");
+    if (!types.length) types = obj(s2.properties) ? ["object"] : s2.items ? ["array"] : [];
+    if (s2.nullable === true && !types.includes("null")) types.push("null");
+    if (types.includes("null")) n2.nullable = true;
+    if (types.includes("array") && deeper) {
+      n2.items = node(s2.items, js, seen, depth + 1);
+      types = types.map((t) => t === "array" ? `array of ${n2.items.ref ?? n2.items.type}` : t);
+    }
+    n2.type = types.join(" | ") || "any";
+    if (txt(s2.format)) {
+      n2.format = txt(s2.format);
+      n2.type += ` (${n2.format})`;
+    }
+    if (txt(s2.description)) n2.description = txt(s2.description);
+    if (Array.isArray(s2.enum)) n2.enum = s2.enum;
+    const req = list(s2.required).filter((r) => typeof r === "string");
+    if (req.length) n2.required = req;
+    if (obj(s2.properties) && deeper) {
+      n2.children = Object.entries(s2.properties).map(([name, p]) => ({ name, required: req.includes(name), node: node(p, js, seen, depth + 1) }));
+    }
+    for (const kind of ["oneOf", "anyOf"]) {
+      if (Array.isArray(s2[kind]) && deeper) {
+        n2.variants = { kind, list: s2[kind].map((p) => node(p, js, seen, depth + 1)) };
+        if (n2.type === "any") n2.type = kind;
+        break;
+      }
+    }
+    return n2;
+  }
+  var content2 = (c, js) => Object.entries(obj(c) ?? {}).map(([media, m2]) => ({ media, schema: obj(m2) && m2.schema !== void 0 ? node(m2.schema, js) : null }));
+  function preview(text) {
+    const { doc, root, lc } = parse3(text);
+    if (doc.errors.length || !isMap(root)) return null;
+    let js;
+    try {
+      js = doc.toJS();
+    } catch {
+      return null;
+    }
+    const groups = /* @__PURE__ */ new Map();
+    const group = (name, description) => groups.get(name) ?? groups.set(name, { name, description, ops: [] }).get(name);
+    for (const t of list(js.tags)) if (txt(obj(t)?.name)) group(txt(t.name), txt(t.description));
+    const op2 = (o2, method, segs, item2) => {
+      const params = /* @__PURE__ */ new Map();
+      for (const p of [...list(item2.parameters), ...list(o2.parameters)].map((p2) => obj(resolve2(js, p2))).filter(Boolean)) params.set(`${p.in}:${p.name}`, p);
+      const rb = obj(resolve2(js, o2.requestBody));
+      const found = lookup(root, segs) ?? lookup(root, segs.slice(0, 2));
+      return {
+        key: segs.join("/"),
+        method,
+        path: segs[1],
+        line: found?.pair ? lc.linePos(found.pair.key.range[0]).line : void 0,
+        summary: txt(o2.summary),
+        description: txt(o2.description),
+        operationId: txt(o2.operationId),
+        deprecated: o2.deprecated === true,
+        params: [...params.values()].map((p) => ({
+          name: txt(p.name),
+          in: txt(p.in),
+          required: p.required === true,
+          type: p.schema !== void 0 ? node(p.schema, js, [], MAX_DEPTH - 1).type : "any",
+          description: txt(p.description)
+        })),
+        body: rb && { required: rb.required === true, description: txt(rb.description), content: content2(rb.content, js) },
+        responses: Object.entries(obj(o2.responses) ?? {}).map(([code, r]) => (r = obj(resolve2(js, r)) ?? {}, { code, description: txt(r.description), content: content2(r.content, js) }))
+      };
+    };
+    const ops = (section) => Object.entries(obj(js[section]) ?? {}).flatMap(([name, raw]) => {
+      const item2 = obj(resolve2(js, raw)) ?? {};
+      return [
+        ...METHODS2.filter((m2) => obj(item2[m2])).map((m2) => [item2[m2], m2, [section, name, m2]]),
+        ...Object.entries(obj(item2.additionalOperations) ?? {}).filter(([, o2]) => obj(o2)).map(([m2, o2]) => [o2, m2.toLowerCase(), [section, name, "additionalOperations", m2]])
+      ].map(([o2, m2, segs]) => [txt(list(o2.tags)[0]), op2(o2, m2, segs, item2)]);
+    });
+    const untagged = [];
+    for (const [tag, o2] of ops("paths")) (tag ? group(tag).ops : untagged).push(o2);
+    const webhooks = ops("webhooks").map(([, o2]) => o2);
+    const out = [...groups.values()].filter((g) => g.ops.length);
+    if (untagged.length) out.push({ name: "default", ops: untagged });
+    if (webhooks.length) out.push({ name: "Webhooks", ops: webhooks });
+    const info = obj(js.info) ?? {};
+    return {
+      title: txt(info.title),
+      version: txt(info.version),
+      description: txt(info.description),
+      servers: list(js.servers).map((s2) => txt(obj(s2)?.url)).filter(Boolean),
+      groups: out
+    };
   }
 
   // src/editor.js
@@ -8224,10 +8361,14 @@ ${pad}  - ` : `${k}: `;
       }
     });
     const tabs = document.querySelectorAll("[data-tab]");
-    const showTab = (name) => tabs.forEach((t) => {
-      t.setAttribute("aria-selected", String(t.dataset.tab === name));
-      $2(`tab-${t.dataset.tab}`).hidden = t.dataset.tab !== name;
-    });
+    const showTab = (name) => {
+      tabs.forEach((t) => {
+        t.setAttribute("aria-selected", String(t.dataset.tab === name));
+        $2(`tab-${t.dataset.tab}`).hidden = t.dataset.tab !== name;
+      });
+      $2("edit").classList.toggle("wide", name === "preview");
+      if (name === "preview") renderPreview();
+    };
     tabs.forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
     const reveal = (line, col = 1) => {
       editor.setPosition({ lineNumber: line, column: col });
@@ -8256,7 +8397,7 @@ ${pad}  - ` : `${k}: `;
     let nodes = [];
     const renderOutline = () => {
       nodes = [];
-      const list = (items, depth) => {
+      const list2 = (items, depth) => {
         const ul = el2("ul", "tree");
         for (const it of items) {
           const b2 = el2("button");
@@ -8268,12 +8409,12 @@ ${pad}  - ` : `${k}: `;
           nodes.push({ line: it.line, btn: b2 });
           const li = el2("li");
           li.append(b2);
-          if (it.children.length) li.append(list(it.children, depth + 1));
+          if (it.children.length) li.append(list2(it.children, depth + 1));
           ul.append(li);
         }
         return ul;
       };
-      $2("outline").replaceChildren(...list(outline(model.getValue()), 0).children);
+      $2("outline").replaceChildren(...list2(outline(model.getValue()), 0).children);
       markCurrent();
     };
     let cur = null;
@@ -8289,6 +8430,99 @@ ${pad}  - ` : `${k}: `;
       }
     };
     editor.onDidChangeCursorPosition(markCurrent);
+    const opened = /* @__PURE__ */ new Set();
+    const h = (tag, cls, ...kids2) => {
+      const n2 = el2(tag, cls);
+      n2.append(...kids2.filter((k) => k != null && k !== false && k !== ""));
+      return n2;
+    };
+    const kids = (n2) => n2.children?.length || n2.variants ? n2 : n2.items && kids(n2.items);
+    const schemaTree = (n2, depth) => {
+      const at2 = kids(n2);
+      const ul = el2("ul", "pv-schema");
+      for (const c of at2.children ?? []) ul.append(field(c.name, c.required, c.node, depth));
+      at2.variants?.list.forEach((v2, i2) => ul.append(field(`${at2.variants.kind} ${i2 + 1}`, false, v2, depth)));
+      return ul;
+    };
+    const enumText = (e) => e.map((v2) => typeof v2 === "string" ? v2 : JSON.stringify(v2)).join(", ");
+    const field = (name, req, n2, depth) => {
+      const row = h(
+        "span",
+        "pv-field",
+        name != null && h("code", "pv-name", name, req && el2("span", "pv-req", "*")),
+        el2("span", "pv-type", n2.cycle ? `\u21BB ${n2.ref}` : n2.type),
+        n2.ref && !n2.cycle && !n2.type.includes(n2.ref) && el2("span", "pv-ref", n2.ref),
+        n2.description && el2("span", "pv-fdesc", `\u2014 ${n2.description}`),
+        n2.enum && el2("span", "pv-enum", `enum: ${enumText(n2.enum)}`)
+      );
+      const li = el2("li");
+      if (!kids(n2)) li.append(row);
+      else if (depth >= 1) {
+        const d = el2("details");
+        d.append(h("summary", null, row));
+        d.addEventListener("toggle", () => d.open && d.childElementCount === 1 && d.append(schemaTree(n2, depth + 1)));
+        li.append(d);
+      } else li.append(row, schemaTree(n2, depth + 1));
+      return li;
+    };
+    const media = (content3) => content3.map((c) => h("div", "pv-media", el2("span", "pv-mt", c.media), c.schema && h("ul", "pv-schema pv-root", field(null, false, c.schema, 0))));
+    const opBody = (o2) => {
+      const body = h("div", "pv-body", o2.description && el2("p", "pv-desc", o2.description), o2.operationId && el2("p", "pv-opid", `operationId: ${o2.operationId}`));
+      if (o2.params.length) {
+        const tr = (tag, cells) => h("tr", null, ...cells.map((c) => h(tag, null, c)));
+        const name = (p) => h("span", null, el2("code", "pv-name", p.name ?? ""), p.required && el2("span", "pv-req", "*"));
+        body.append(
+          el2("h4", null, "Parameters"),
+          h("table", "pv-table", h("thead", null, tr("th", ["Name", "In", "Type", "Description"])), h("tbody", null, ...o2.params.map((p) => tr("td", [name(p), p.in, el2("code", "pv-type", p.type), p.description]))))
+        );
+      }
+      if (o2.body) body.append(h("h4", null, "Request body", o2.body.required && el2("span", "pv-req", " *")), ...o2.body.description ? [el2("p", "pv-desc", o2.body.description)] : [], ...media(o2.body.content));
+      if (o2.responses.length) body.append(el2("h4", null, "Responses"), ...o2.responses.map((r) => h("div", "pv-resp", h("p", null, el2("span", "tag", r.code), r.description), ...media(r.content))));
+      return body;
+    };
+    const opEl = (o2) => {
+      const d = el2("details", "pv-op");
+      d.append(
+        h(
+          "summary",
+          null,
+          el2("span", `method m-${o2.method.replace(/[^a-z]/g, "")}`, o2.method.toUpperCase()),
+          el2("span", "pv-path", o2.path),
+          o2.summary && el2("span", "pv-sum", o2.summary),
+          o2.deprecated && el2("span", "tag pv-dep", "deprecated")
+        )
+      );
+      const open = () => d.childElementCount === 1 && d.append(opBody(o2));
+      if (opened.has(o2.key)) {
+        d.open = true;
+        open();
+      }
+      d.addEventListener("toggle", () => d.open ? (opened.add(o2.key), open()) : opened.delete(o2.key));
+      const w = h("div", "pv-opw", d);
+      if (o2.line) {
+        const go = el2("button", "tbtn pv-go", "Go to");
+        go.type = "button";
+        go.title = `Line ${o2.line}`;
+        go.setAttribute("aria-label", `Go to ${o2.method.toUpperCase()} ${o2.path} (line ${o2.line})`);
+        go.addEventListener("click", () => reveal(o2.line));
+        w.append(go);
+      }
+      return w;
+    };
+    const renderPreview = () => {
+      const p = preview(model.getValue());
+      const box = $2("preview");
+      if (!p) {
+        for (const b2 of box.querySelectorAll(".pv-go")) b2.disabled = true;
+        if (!box.querySelector(".pv-stale")) box.prepend(el2("p", "pv-stale", box.childElementCount ? "Showing the last valid version" : "Fix the YAML/JSON errors to see a preview"));
+        return;
+      }
+      box.replaceChildren(
+        h("header", "pv-head", h("h2", null, p.title ?? "Untitled API", p.version && el2("span", "tag", p.version)), p.description && el2("p", "pv-desc", p.description), p.servers.length > 0 && h("ul", "pv-servers", ...p.servers.map((u) => el2("li", null, u)))),
+        ...p.groups.map((g) => h("section", "pv-group", el2("h3", null, g.name), g.description && el2("p", "pv-desc", g.description), ...g.ops.map(opEl)))
+      );
+      if (!p.groups.length) box.append(el2("p", "none", "No operations"));
+    };
     const head2 = () => {
       $2("ed-file").textContent = file ?? "Untitled";
       const v2 = specOf(model.getValue());
@@ -8305,6 +8539,7 @@ ${pad}  - ` : `${k}: `;
       );
       renderProblems();
       renderOutline();
+      if (!$2("tab-preview").hidden) renderPreview();
     };
     let checkTimer, draftTimer;
     const saveDraft = () => store.set("sc.draft", JSON.stringify({ text: model.getValue(), name: file }));
@@ -8346,11 +8581,11 @@ ${pad}  - ` : `${k}: `;
         if (discardOk()) load(text, f.name);
       }
     });
-    const node = $2("edit-editor");
+    const node2 = $2("edit-editor");
     const drop = el2("div", "drop", "Drop to open");
-    node.append(drop);
+    node2.append(drop);
     let dropTimer;
-    node.addEventListener(
+    node2.addEventListener(
       "dragover",
       (e) => {
         if (!e.dataTransfer.types.includes("Files")) return;
@@ -8361,7 +8596,7 @@ ${pad}  - ` : `${k}: `;
       },
       true
     );
-    node.addEventListener(
+    node2.addEventListener(
       "drop",
       async (e) => {
         if (!e.dataTransfer.types.includes("Files")) return;
@@ -8527,7 +8762,7 @@ ${pad}  - ` : `${k}: `;
     diff.setModel({ original: models.left, modified: models.right });
     const editors = { left: diff.getOriginalEditor(), right: diff.getModifiedEditor() };
     const files = { left: null, right: null };
-    const list = $("list");
+    const list2 = $("list");
     const state = $("state");
     let result = null;
     let liveTimer;
@@ -8570,13 +8805,13 @@ ${pad}  - ` : `${k}: `;
       refreshHead(side);
     };
     for (const side of ["left", "right"]) {
-      const node = editors[side].getContainerDomNode();
+      const node2 = editors[side].getContainerDomNode();
       const hint = el("div", "hint");
       hint.append(el("b", null, side === "left" ? "Paste the original spec" : "Paste the modified spec"), el("span", null, "or drop a YAML or JSON file here"));
       const drop = el("div", "drop", `Drop to load as ${SIDE[side].toLowerCase()}`);
-      node.append(hint, drop);
+      node2.append(hint, drop);
       let dropTimer;
-      node.addEventListener(
+      node2.addEventListener(
         "dragover",
         (e) => {
           if (!e.dataTransfer.types.includes("Files")) return;
@@ -8587,7 +8822,7 @@ ${pad}  - ` : `${k}: `;
         },
         true
       );
-      node.addEventListener(
+      node2.addEventListener(
         "drop",
         async (e) => {
           if (!e.dataTransfer.types.includes("Files")) return;
@@ -8725,7 +8960,7 @@ ${pad}  - ` : `${k}: `;
       if (result?.changes.length && !rows.some((r) => r.show)) {
         const none = el("li", "none", "No changes match the filter.");
         none.id = "list-none";
-        list.append(none);
+        list2.append(none);
       }
       updatePos();
     };
@@ -8758,9 +8993,9 @@ ${pad}  - ` : `${k}: `;
     function run(openSelected = false) {
       clearHl();
       clearTimeout(liveTimer);
-      if (result) lastScroll = list.scrollTop;
+      if (result) lastScroll = list2.scrollTop;
       selected = null;
-      list.replaceChildren();
+      list2.replaceChildren();
       rows = [];
       groups = [];
       result = null;
@@ -8808,7 +9043,7 @@ ${pad}  - ` : `${k}: `;
           g.li.append(g.head, g.ol);
           byKey.set(key, g);
           groups.push(g);
-          list.append(g.li);
+          list2.append(g.li);
         }
         const li = el("li");
         li._change = c;
@@ -8885,14 +9120,14 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
         }
         updatePos();
       }
-      list.scrollTop = lastScroll;
+      list2.scrollTop = lastScroll;
     }
     const setView = (v2) => {
       view = v2;
       document.querySelectorAll("[data-view]").forEach((b2) => b2.setAttribute("aria-pressed", String(b2.dataset.view === v2)));
       run(true);
       if (selected) selected.scrollIntoView({ block: "center" });
-      else list.scrollTop = 0;
+      else list2.scrollTop = 0;
     };
     const copyText = async (text) => {
       try {
@@ -8939,10 +9174,10 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
       if (focusEditor) ed.focus();
       updatePos();
     };
-    list.addEventListener("keydown", (e) => {
+    list2.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       e.preventDefault();
-      const btns = [...list.querySelectorAll(".ghead, .item")].filter((b2) => b2.offsetParent);
+      const btns = [...list2.querySelectorAll(".ghead, .item")].filter((b2) => b2.offsetParent);
       const a2 = document.activeElement;
       const i2 = btns.indexOf(a2.closest(".ghead") ?? a2.closest("li")?.querySelector(".item"));
       const next = btns[Math.max(0, Math.min(btns.length - 1, i2 + (e.key === "ArrowDown" ? 1 : -1)))];

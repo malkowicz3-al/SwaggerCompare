@@ -409,6 +409,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 /* Edit mode; section.edit, since body.edit carries the same class name */
 section.edit { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) 380px; gap: 10px; min-height: 0; }
 section.edit[hidden] { display: none; }
+section.edit.wide { grid-template-columns: minmax(0, 1fr) minmax(380px, 45%); }
 .edwrap { display: flex; flex-direction: column; }
 .edbar { display: flex; align-items: center; gap: 6px; height: 52px; flex: none; padding: 0 12px; border-bottom: 1px solid var(--line); }
 .edbar .tbtn { margin-left: 0; min-width: 0; }
@@ -435,6 +436,44 @@ section.edit[hidden] { display: none; }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--focus); }
 .dot.error { background: var(--removed); }
 .dot.warning { background: var(--changed); }
+
+/* Preview tab */
+.preview { padding: 0 14px 12px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.pv-stale { margin: 0 0 8px; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: var(--changed); background: rgba(242, 184, 75, .1); }
+.pv-head h2 { margin: 4px 0; font-size: 17px; font-weight: 600; }
+.pv-head h2 .tag { margin-left: 8px; vertical-align: 3px; }
+.pv-desc { margin: 4px 0; white-space: pre-line; color: var(--muted); }
+.pv-servers { margin: 6px 0; padding: 0; list-style: none; font: 400 12px var(--mono); color: var(--faint); }
+.pv-group h3 { margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+.pv-op { margin: 6px 0; border: 1px solid var(--line); border-radius: 8px; }
+.pv-op > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 70px 6px 8px; cursor: pointer; border-radius: 8px; }
+.pv-op[open] > summary { background: var(--raised); border-radius: 8px 8px 0 0; }
+.pv-op > summary .method { margin-right: 0; }
+.pv-path { font: 500 12px var(--mono); }
+.pv-sum { color: var(--muted); font-size: 12px; }
+.pv-opw { position: relative; }
+.pv-go { position: absolute; top: 5px; right: 8px; height: 22px; padding: 0 8px; }
+.pv-body { padding: 4px 10px 10px; }
+.pv-body h4 { margin: 12px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.pv-opid { margin: 4px 0; font: 400 11.5px var(--mono); color: var(--faint); }
+.pv-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pv-table th, .pv-table td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.pv-table th { font-weight: 500; color: var(--faint); }
+.pv-resp > p { margin: 6px 0 2px; }
+.pv-mt { font: 400 11.5px var(--mono); color: var(--faint); }
+.pv-schema { margin: 2px 0; padding-left: 14px; list-style: none; border-left: 1px solid var(--line); }
+.pv-schema.pv-root { padding-left: 0; border-left: 0; }
+.pv-schema summary { cursor: pointer; }
+.pv-field { display: inline; }
+.pv-field > * + * { margin-left: 6px; }
+.pv-name, .pv-type, .pv-ref { font: 400 12px var(--mono); }
+.pv-name { color: var(--text); }
+.pv-type { color: var(--focus); }
+.pv-ref { color: var(--faint); }
+.pv-req { color: var(--removed); }
+.pv-fdesc { color: var(--muted); }
+.pv-enum { display: block; margin-left: 0; font: 400 11.5px var(--mono); color: var(--faint); }
+.preview summary:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 /* selected change in the editors; z-index keeps it above the diff's green/red line backgrounds */
 .monaco-editor .cdr.hl { background: rgba(141, 180, 255, .14); box-shadow: inset 0 0 0 1px rgba(141, 180, 255, .25); z-index: 1; }

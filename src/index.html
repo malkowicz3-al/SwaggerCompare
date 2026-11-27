@@ -110,13 +110,15 @@
       </div>
       <div id="edit-editor"></div>
     </div>
-    <aside class="side" aria-label="Outline and problems">
+    <aside class="side" aria-label="Outline, problems and preview">
       <div class="tabs seg" role="tablist">
         <button type="button" role="tab" data-tab="outline" aria-selected="true">Outline</button>
         <button type="button" role="tab" data-tab="problems" aria-selected="false">Problems <b id="n-problems">0</b></button>
+        <button type="button" role="tab" data-tab="preview" aria-selected="false">Preview</button>
       </div>
       <div class="tabpane" id="tab-outline" role="tabpanel"><ul class="tree" id="outline"></ul></div>
       <div class="tabpane" id="tab-problems" role="tabpanel" hidden><ul class="tree" id="problems"></ul></div>
+      <div class="tabpane" id="tab-preview" role="tabpanel" hidden><div id="preview" class="preview"></div></div>
     </aside>
   </section>
 </main>

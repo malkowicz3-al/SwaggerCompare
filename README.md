@@ -116,6 +116,12 @@ Switch the title bar toggle to **Edit** to write or fix a single OpenAPI spec. T
 - **Compare with…** opens Compare mode with the version as opened or last saved on the left and the current text on the right. If nothing changed since then, only the right side is replaced. Ctrl+Z in a pane brings back what was there.
 - **Version-aware.** A key from another version is flagged: `nullable` was removed in 3.1, `webhooks` needs 3.1. 3.1 adds `webhooks`, `jsonSchemaDialect`, `type` lists with `null` and the JSON Schema keywords (`const`, `examples`, `$defs`, `prefixItems`…). 3.2 adds the `query` method and `additionalOperations`, `in: querystring`, `itemSchema`, tag `summary`/`parent`/`kind`, `$self`, `components.mediaTypes` and the OAuth device flow.
 - **Outline.** Info, servers, paths with their methods, webhooks, components and tags. Click to jump; the node at the cursor is highlighted.
+- **Preview.** The **Preview** tab shows the spec as readable API docs: title, version, servers, then the operations grouped by their first tag (untagged ones under *default*, webhooks last). Open an operation for its parameters, request body and responses, with `$ref`s, `allOf`, `oneOf`/`anyOf` and recursive schemas resolved into a field tree. **Go to** jumps to the operation in the editor. The side panel gets wider while the tab is open. While the text has syntax errors the last valid preview stays, with a note.
+
+<p align="center">
+  <img src="docs/images/preview.png" alt="Edit mode with the Preview tab: the Orders API spec on the left, and on the right its docs with GET /orders open showing the limit and cursor parameters and a 200 response whose array of Order is expanded into fields" width="900">
+</p>
+
 - **New / Open / Save / Format.** New starts from a small valid template for the chosen version (it asks first if you have unsaved changes). Open takes a file (or drop one on the editor). Save downloads the spec. Format reindents YAML with 2 spaces or pretty-prints JSON; it refuses while the document has syntax errors. Ctrl+Z undoes each of them.
 - **Your draft stays.** The text is kept in the browser's local storage and comes back next time, together with the last mode.
 

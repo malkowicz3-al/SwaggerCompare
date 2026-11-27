@@ -9,6 +9,7 @@ import { outline } from '../src/oas/outline.js';
 import { starter, SNIPPETS } from '../src/oas/templates.js';
 import { formatJson } from '../src/oas/ast.js';
 import { definitionAt, refHover } from '../src/oas/refs.js';
+import { preview } from '../src/oas/preview.js';
 import { parseDocument } from 'yaml';
 
 // `mark` (default '|') is the cursor -> {text, line, col}
@@ -243,6 +244,10 @@ test('perf on a ~3000-line spec', () => {
   assert.ok(tc < 50, `contextAt ${tc}`);
   assert.ok(tk < 50, `complete ${tk}`);
   assert.ok(tr < 50, `complete $ref ${tr}`);
+  preview(text); // warm up
+  const tp = time(() => assert.equal(preview(text).groups[0].ops.length, 130));
+  console.log(`perf: preview ${tp.toFixed(1)} ms`);
+  assert.ok(tp < 200, `preview ${tp}`);
 });
 
 test('review fixes: no-space value, dash pad, bare JSON token, JSON format guard', () => {
@@ -484,4 +489,169 @@ test('snippets: offered only in their context', () => {
   assert.deepEqual(snips(OP + '      parameters:\n        |\n'), params);
   assert.match(ins(OP + '      parameters:\n        |\n', 'parameter: query'), /^- name: \$\{1:limit\}\n {2}in: query\n/);
   assert.deepEqual(snips('{"openapi": "3.1.0", "paths": {|}}'), []);
+});
+
+test('preview: example spec', () => {
+  const p = preview(read(new URL('../examples/orders-api-v1.yaml', import.meta.url)));
+  assert.equal(p.title, 'Orders API');
+  assert.equal(p.version, '1.4.0');
+  assert.deepEqual(p.servers, ['https://api.example.com/v1']);
+  assert.deepEqual(p.groups.map((g) => [g.name, g.ops.length]), [['default', 5]]);
+  const ops = p.groups[0].ops;
+  assert.deepEqual(ops.map((o) => `${o.method} ${o.path}@${o.line}`), ['get /orders@9', 'post /orders@29', 'get /orders/{id}@40', 'delete /orders/{id}@51', 'get /legacy/export@63']);
+  assert.deepEqual(ops[2].params, [{ name: 'id', in: 'path', required: true, type: 'string', description: undefined }]);
+  const list = ops[0].responses[0].content[0].schema;
+  assert.equal(list.type, 'array of Order');
+  assert.equal(list.items.ref, 'Order');
+  assert.deepEqual(list.items.children.map((c) => `${c.name}${c.required ? '*' : ''}:${c.node.type}`), ['id*:string', 'requestId:string (uuid)', 'total*:number', 'note:string']);
+  assert.equal(ops[1].body.content[0].schema.ref, 'NewOrder');
+});
+
+test('preview: params, allOf, oneOf, cycles, nullable, tags, webhooks', () => {
+  const doc = (ver, body) => `openapi: ${ver}\ninfo: {title: T, version: '1'}\n${body}`;
+  const p = preview(
+    doc(
+      '3.1.0',
+      `tags:
+  - name: b
+    description: Bees
+  - name: a
+paths:
+  /x/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string}
+      - $ref: '#/components/parameters/Q'
+    get:
+      tags: [a]
+      parameters:
+        - name: q
+          in: query
+          description: own
+          schema: {type: [string, 'null']}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tree'}
+    post:
+      tags: [b]
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Base'
+                - type: object
+                  required: [extra]
+                  properties: {extra: {type: integer}}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                oneOf: [{$ref: '#/components/schemas/Base'}, {type: string}]
+  /y:
+    get:
+      responses: {}
+webhooks:
+  ping:
+    post:
+      responses: {}
+components:
+  parameters:
+    Q: {name: q, in: query, schema: {type: integer}}
+  schemas:
+    Base:
+      description: base
+      required: [id]
+      properties: {id: {type: string}, extra: {type: number}}
+    Tree:
+      properties:
+        kids: {type: array, items: {$ref: '#/components/schemas/Tree'}}
+`,
+    ),
+  );
+  assert.deepEqual(p.groups.map((g) => [g.name, g.description, g.ops.map((o) => `${o.method} ${o.path}`)]), [
+    ['b', 'Bees', ['post /x/{id}']],
+    ['a', undefined, ['get /x/{id}']],
+    ['default', undefined, ['get /y']],
+    ['Webhooks', undefined, ['post ping']],
+  ]);
+  const [post] = p.groups[0].ops;
+  const [get] = p.groups[1].ops;
+  assert.deepEqual(get.params.map((x) => [x.name, x.in, x.required, x.type, x.description]), [['id', 'path', true, 'string', undefined], ['q', 'query', false, 'string | null', 'own']]);
+  const tree = get.responses[0].content[0].schema;
+  assert.equal(tree.ref, 'Tree');
+  assert.deepEqual(tree.children[0].node.items, { type: 'Tree', ref: 'Tree', cycle: true });
+  assert.equal(post.deprecated, true);
+  assert.equal(post.body.required, true);
+  const merged = post.body.content[0].schema;
+  assert.equal(merged.description, 'base');
+  assert.deepEqual(merged.children.map((c) => `${c.name}${c.required ? '*' : ''}:${c.node.type}`), ['id*:string', 'extra*:integer']);
+  const v = post.responses[0].content[0].schema.variants;
+  assert.equal(v.kind, 'oneOf');
+  assert.deepEqual(v.list.map((n) => n.ref ?? n.type), ['Base', 'string']);
+  const p30 = preview(doc('3.0.3', 'paths:\n  /a:\n    get:\n      parameters:\n        - {name: d, in: query, schema: {type: string, format: date, nullable: true}}\n      responses: {}\n'));
+  assert.equal(p30.groups[0].ops[0].params[0].type, 'string | null (date)');
+  assert.equal(preview('openapi: 3.0.3\npaths:\n  /a:\n    get: [\n'), null);
+  assert.equal(preview('- just\n- a list\n'), null);
+});
+
+test('preview: allOf keeps part details, path-item $ref line, false schema, op keys', () => {
+  const p = preview(`openapi: 3.1.0
+info: {title: T, version: '1'}
+paths:
+  /a:
+    get:
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                properties:
+                  status: {allOf: [{$ref: '#/components/schemas/Status'}]}
+                  maybe: {allOf: [{$ref: '#/components/schemas/X'}], nullable: true}
+                  list: {allOf: [{$ref: '#/components/schemas/OrderList'}]}
+                  no: false
+    additionalOperations:
+      GET: {responses: {}}
+  /b: {$ref: '#/components/pathItems/B'}
+components:
+  pathItems:
+    B: {get: {responses: {}}}
+  schemas:
+    Status: {type: string, enum: [a, b]}
+    X: {type: object, properties: {id: {type: string}}}
+    OrderList: {type: array, items: {$ref: '#/components/schemas/X'}}
+`);
+  const ops = p.groups[0].ops;
+  const f = Object.fromEntries(ops[0].responses[0].content[0].schema.children.map((c) => [c.name, c.node]));
+  assert.deepEqual([f.status.enum, f.status.ref, f.status.type], [['a', 'b'], 'Status', 'string']);
+  assert.deepEqual([f.maybe.type, f.maybe.ref, f.maybe.children.map((c) => c.name)], ['object | null', 'X', ['id']]);
+  assert.deepEqual([f.list.type, f.list.items.ref], ['array of X', 'X']);
+  assert.equal(f.no.type, 'never');
+  assert.deepEqual(ops.map((o) => `${o.key}@${o.line}`), ['paths//a/get@5', 'paths//a/additionalOperations/GET@18', 'paths//b/get@19']);
+});
+
+test('perf: preview of deep, wide $ref schemas', () => {
+  const parts = ['openapi: 3.0.3', "info: {title: T, version: '1'}", 'paths:', '  /a:', '    get:', '      responses:', "        '200':", '          description: ok', '          content:', '            application/json:', "              schema: {$ref: '#/components/schemas/S0'}", 'components:', '  schemas:'];
+  for (let i = 0; i < 30; i++) {
+    parts.push(`    S${i}:`, '      properties:');
+    for (let j = 0; j < 10; j++) parts.push(`        f${j}: {$ref: '#/components/schemas/S${Math.min(i + 1, 29)}'}`);
+  }
+  const text = parts.join('\n') + '\n';
+  const t = performance.now();
+  const p = preview(text);
+  const tp = performance.now() - t;
+  assert.equal(p.groups[0].ops[0].responses[0].content[0].schema.children.length, 10);
+  console.log(`perf: preview deep $ref ${tp.toFixed(1)} ms`);
+  assert.ok(tp < 200, `preview ${tp}`);
 });
