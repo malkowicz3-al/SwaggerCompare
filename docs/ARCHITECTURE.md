@@ -7,17 +7,27 @@ Windows desktop app. Electron, Monaco diff editor, `yaml` parser. esbuild bundle
 ```
 package.json            "type": "module", scripts, electron-builder config ("build" key)
 main.js                 app:// protocol handler, BrowserWindow + security settings, blocks navigation
-src/index.html          CSP, Monaco AMD loader, bundled renderer, layout (title bar, pane headers, editor, change list); relative paths only
+src/index.html          CSP, Monaco AMD loader, bundled renderer, layout (title bar with mode toggle, pane headers, editor, change list, edit section); relative paths only
 src/style.css
 src/icon.svg            app logo (favicon, README); src/icon.png (256 px, window icon), build/icon.ico (exe icon)
 src/renderer.js         Monaco setup, drag&drop/open/clear/swap, live compare (300 ms debounce), title/version bar, grouped list (objects or endpoints), filters, tag bar, F8 navigation, highlight + name flash of the selected change in both editors, Copy report
 src/report.js           ES module, pure, no DOM: heading(meta), summary(changes), byEndpoint(changes), markdown(res)
-src/gen/renderer.js     esbuild output (committed): renderer + compare + report + yaml as one IIFE
+src/editor.js           Edit mode: initEditor({ $, el }) called at the end of renderer init(); mode toggle, standalone Monaco editor, completion + hover providers, markers, Problems, Outline, New/Open/Save/Format, draft autosave
+src/oas/model.js        OpenAPI 3.0/3.1/3.2 knowledge as data (OBJECTS, TEMPLATES) + verOf, active, kindsOf, enumOf, member, itemSpec, typeAt
+src/oas/ast.js          parse(text) -> {doc, lc, ver, json, root} via yaml parseDocument; range, head, keyOf, pairOf helpers
+src/oas/context.js      contextAt(text, line, col): where the cursor is in the OpenAPI tree, no parser
+src/oas/complete.js     complete(text, line, col) -> suggestions; fieldDoc(text, line, col) -> hover info
+src/oas/validate.js     rules list + validate(text) -> markers
+src/oas/outline.js      outline(text) -> tree of info, servers, paths/methods, webhooks, components, tags
+src/oas/templates.js    starter(ver): a small valid document per template version
+src/gen/renderer.js     esbuild output (committed): renderer + compare + report + editor + oas + yaml as one IIFE
 vendor/                 Monaco core + YAML highlighting and used font weights, copied from node_modules by scripts/vendor.mjs (committed)
 scripts/build-web.mjs   builds dist/SwaggerCompare-web.zip with the repo-root layout (bat, src/, vendor/)
+index.html              entry page for a web server: a script-free meta refresh to src/index.html, so `/` or any sub-path opens the app (static hosting needs no server config)
 SwaggerCompare.bat      checks the app files exist (else explains: extract the zip), opens src/index.html in `msedge --app` or `chrome --app`, else the default browser with a note; needs no Node; CRLF, `-text` in .gitattributes
 src/compare.js          ES module, pure, no DOM: compare(leftText, rightText) -> result (see below)
 test/compare.test.js    node:test + node:assert; test/report.test.js for report.js
+test/oas.test.js        table-driven tests of src/oas/* (context, completion, hover, rules, no false positives on examples/fixtures/templates, outline, perf)
 test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml, openapi3-new.json
 ```
 
@@ -42,6 +52,19 @@ test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml,
    - Copy report: `markdown(res)` gives `# heading`, the summary, a `## Breaking` list, one `## <endpoint>` section per group (details as a nested list, ⚠ on breaking rows), then `## Other`. It is written with `navigator.clipboard.writeText`; if that is missing or refused (some file:// windows), a hidden `textarea` + `document.execCommand('copy')` is used. The button shows "Copied" (or "Copy failed") for 1.5 s.
 6. Each group is a `li.group` with a header button (chevron, `where` with a leading HTTP method as a pill, count of visible entries, coloured +a −r ~c, distinct tags below) and an `ol` of entries. Groups start collapsed; expanded ones are remembered by `where` in `open` across re-runs (one set for both views), and any active filter (kind chips, Breaking chip, tag bar, search) expands every matching group. A Collapse all / Expand all button at the right end of the tag bar expands every group if all are collapsed, otherwise collapses them; it is disabled while filtering. Breaking entries get a `⚠` marker (`role="img"`, label "Breaking") and the `breaking` class; the search also matches "breaking", the affected endpoints and `via`. The tag bar under the header has one chip per tag ("property **5**", sorted by count); pressed chips restrict the list to those tags. Navigation: ↑/↓ inside the list walk visible headers and entries; the ▲/▼ buttons and F8 / Shift+F8 step through visible entries (wrapping, opening the entry's group) and the header shows "3 / 17". F8 is caught by a capture-phase `keydown` listener on `document`, which runs before Monaco's own F8 (next marker) handler on the editor node. Each entry renders `kind`, `tag` (a small chip), `text` and `details` as an indented sub-list behind a collapsed "Details (n)" toggle (a sibling button; it only toggles, open state survives live re-runs). The tooltip shows `path.join(' › ')` and side/line; the search also matches `tag`, `where`, `path` and `details`. A click on an item (or ↑/↓, F8) sets the cursor on `line` in the original editor (side `left`, for removals) or the modified editor (side `right`, for added/changed items) and highlights the change in both editors with a decorations collection per editor: an exact range as whole-line `hl` background plus an `hl-bar` gutter bar, an inexact one (fragment missing on that side) as a dashed `hl-anchor` line at the nearest ancestor. Only the primary side (`side`) is revealed (`revealLinesInCenterIfOutsideViewport`, or `revealLineNearTop` of its first line when the fragment is taller than the viewport); the other editor follows through the diff editor's synced scroll. Each re-run clears the highlight; a restored selection is re-highlighted without scrolling.
    Name flash: a second decorations collection per editor marks `flash.left`/`flash.right` with `inlineClassName: 'name-flash'` (a 1.5 s CSS fade from the focus colour; a static mark under `prefers-reduced-motion`). It is applied only when the change is revealed (click, ↑/↓, F8, the ▲/▼ buttons), never on a restore after typing, and removed by a 1.6 s timeout and by `clearHl`.
+
+## Modes
+
+The title bar `Compare | Edit` toggle (`#mode`, `aria-pressed`) puts class `edit` on `body` and unhides `section#edit`; CSS then hides `.diff` and `.changes`. The diff editor stays alive underneath, so switching back loses nothing. In edit mode the F8 capture listener in renderer.js lets the key through, so Monaco's own F8 (next problem) works. `localStorage` keys (every access in try/catch, storage may be disabled): `sc.mode` (`'compare'|'edit'`, restored at start) and `sc.draft` (`{text, name}`, written 500 ms after the last edit). The edit model is `inmemory://edit/spec.yaml`; the completion and hover providers are registered for `yaml` and return early for any other model (the compare panes are `yaml` too). Every replace (New, Open, drop, Format) goes through `executeEdits` between `pushUndoStop`s, so Ctrl+Z works. Validation, Problems and Outline run 300 ms after the last edit.
+
+## src/oas
+
+Pure modules, no DOM and no Monaco; Node runs them directly in tests.
+
+- **Model** (`model.js`): versions are numbers, `30 + minor` of `openapi: 3.M.x` (`verOf`). `OBJECTS` maps an object name to `{doc, fields, patterns?, ref?}`. A field is `{t, of?, doc, req?, reqUntil?, since?, until?, enum?, hints?, keyHints?, tFrom?}`: `t` is a type or alternatives joined with `|` (`str num int bool any obj map list`; `obj`/`map`/`list` take `of`, an object name or `'str'`); `since` is inclusive and `until` exclusive; `tFrom: [31, 'str|list']` switches the type from that version on; an `enum` element `[value, since, until]` is version-gated; `hints` are suggestions only, never validated. `patterns: [{re, t, of, doc, keyHints}]` cover map-like objects (Paths, Responses, Callback…). `x-*` keys are always allowed. Adding a version means data and a template only.
+- **contextAt** (`context.js`): an O(n) indentation scanner, the same path for valid and half-typed YAML. A pre-pass maps each line to `null` (blank/comment), `false` (block scalar body) or `{dash, kc, key, hasVal}`; a walk upward builds the path of keys and list indexes, and the keys around the cursor give `keysPresent`. `typeAt(path)` gives the object type or a free container. JSON uses one token pass with a `{`/`[` stack. Limits: no flow style, no multi-line plain or quoted scalars, no nested `- - x`; inside a block scalar it returns `null`.
+- **Rules** (`validate.js`): `rules = [syntaxRule, versionRule, structureRule]`, each `(ctx) => marker[]`, run in order and sorted by position. `syntaxRule` reports yaml errors and warnings; `versionRule` rejects `swagger`, a missing `openapi` and versions outside 3.0-3.2; `structureRule` walks the AST against the model (unknown key and version-gated key: warning; wrong type, invalid enum value, missing required field: error; a number or boolean where a string is expected: warning; `$ref` maps skip unknown/required checks, except Schema from 3.1). New rules are appended to the list.
+- **No Ajv / JSON Schema validator:** Ajv compiles schemas with `new Function`, which the CSP (`script-src 'self'`) forbids, and the official schemas give poor positions and messages. The model-driven walk is small and gives exact ranges.
 
 ## compare.js internals
 

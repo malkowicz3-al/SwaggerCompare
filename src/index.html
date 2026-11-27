@@ -20,6 +20,10 @@
     <span>SwaggerCompare</span>
   </div>
   <div class="versions" id="versions" hidden></div>
+  <div class="seg" id="mode" role="group" aria-label="Mode">
+    <button type="button" data-mode="compare" aria-pressed="true">Compare</button>
+    <button type="button" data-mode="edit" aria-pressed="false">Edit</button>
+  </div>
 </header>
 
 <main class="workspace">
@@ -90,6 +94,30 @@
     </div>
     <ol class="list" id="list"></ol>
   </aside>
+
+  <section class="edit" id="edit" hidden>
+    <div class="edwrap">
+      <div class="edbar">
+        <select id="new-ver" aria-label="OpenAPI version for New"></select>
+        <button type="button" class="tbtn" id="ed-new" title="Start a new spec from a template">New</button>
+        <button type="button" class="tbtn" id="ed-open" title="Open a YAML or JSON file">Open</button>
+        <button type="button" class="tbtn" id="ed-save" title="Download the spec">Save</button>
+        <button type="button" class="tbtn" id="ed-format" title="Reformat the document">Format</button>
+        <span class="pane-file" id="ed-file">Untitled</span>
+        <span class="spec" id="ed-spec" hidden></span>
+        <input type="file" id="edit-input" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
+      </div>
+      <div id="edit-editor"></div>
+    </div>
+    <aside class="side" aria-label="Outline and problems">
+      <div class="tabs seg" role="tablist">
+        <button type="button" role="tab" data-tab="outline" aria-selected="true">Outline</button>
+        <button type="button" role="tab" data-tab="problems" aria-selected="false">Problems <b id="n-problems">0</b></button>
+      </div>
+      <div class="tabpane" id="tab-outline" role="tabpanel"><ul class="tree" id="outline"></ul></div>
+      <div class="tabpane" id="tab-problems" role="tabpanel" hidden><ul class="tree" id="problems"></ul></div>
+    </aside>
+  </section>
 </main>
 
 <script src="../vendor/monaco/vs/loader.js"></script>

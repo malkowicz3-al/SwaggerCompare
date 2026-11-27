@@ -3,7 +3,8 @@
 
 <p align="center">
   What changed between two versions of your API, and what will it break?<br>
-  Swagger 2.0 and OpenAPI 3.x, YAML or JSON. Windows, offline, nothing to install.
+  Swagger 2.0 and OpenAPI 3.x, YAML or JSON. Windows, offline, nothing to install.<br>
+  Plus an OpenAPI 3.x editor with completion, live problems and an outline.
 </p>
 
 <p align="center">
@@ -70,6 +71,9 @@ Your specs never leave your machine: no server, no upload, no account. It works 
 - **Filters and search.** Toggle added, removed or changed entries, pick tags in the tag bar (property **4**, required **3**…), or search by endpoint, schema, field or tag.
 - **Edit live.** Paste, drop or open files on either side, swap them, or edit the text. The list updates as you type.
 
+**Writing a spec**
+- **Edit mode.** The **Compare | Edit** toggle in the title bar opens an OpenAPI 3.x editor with completion, hover docs, live problems and an outline. See [Edit mode](#edit-mode).
+
 ## What it recognises
 
 | Area | Examples from the change list |
@@ -92,6 +96,24 @@ Nothing is dropped: anything that doesn't match a pattern above still appears as
 - **Not judged yet:** `security` and `basePath` changes.
 - **Each spec is compared on its own.** `$ref`s to other files are listed but not followed.
 
+## Edit mode
+
+Switch the title bar toggle to **Edit** to write or fix a single OpenAPI spec. The editor knows OpenAPI 3.0, 3.1 and 3.2 and follows the document's `openapi:` version. A document without one gets 3.2.
+
+<p align="center">
+  <img src="docs/images/edit.png" alt="Edit mode: an OpenAPI 3.2 spec in the editor, completion offering 'deprecated' and 'description' under a GET operation, and the outline of info, servers, paths and components on the right" width="900">
+</p>
+
+- **Completion (Ctrl+Space, or as you type).** Suggests the keys allowed at the cursor, with required ones first and keys already present left out. It also suggests values: enums such as `in:` and `type:`, `true`/`false`, `openapi:` versions, status codes under `responses` and media types under `content`.
+- **Hover.** Point at a key to see what it is, its type, whether it is required, and since which version it exists.
+- **Live problems.** YAML/JSON syntax errors, a missing or unsupported `openapi` version, unknown keys, wrong types, invalid enum values and missing required fields are underlined and listed under **Problems**, with a count on the tab. Click a problem to jump to it.
+- **Version-aware.** A key from another version is flagged: `nullable` was removed in 3.1, `webhooks` needs 3.1. 3.1 adds `webhooks`, `jsonSchemaDialect`, `type` lists with `null` and the JSON Schema keywords (`const`, `examples`, `$defs`, `prefixItems`…). 3.2 adds the `query` method and `additionalOperations`, `in: querystring`, `itemSchema`, tag `summary`/`parent`/`kind`, `$self`, `components.mediaTypes` and the OAuth device flow.
+- **Outline.** Info, servers, paths with their methods, webhooks, components and tags. Click to jump; the node at the cursor is highlighted.
+- **New / Open / Save / Format.** New starts from a small valid template for the chosen version (it asks first if you have unsaved changes). Open takes a file (or drop one on the editor). Save downloads the spec. Format reindents YAML with 2 spaces or pretty-prints JSON; it refuses while the document has syntax errors. Ctrl+Z undoes each of them.
+- **Your draft stays.** The text is kept in the browser's local storage and comes back next time, together with the last mode.
+
+**Limits.** Completion reads YAML by indentation, so flow style (`{a: 1}`) and multi-line scalars get no suggestions. Swagger 2.0 can be compared but not edited.
+
 ## Try it in a minute
 
 **You need:** Windows 10 or 11 with Microsoft Edge (built in) or Google Chrome. No Node.js, no npm, no admin rights, no internet.
@@ -109,6 +131,15 @@ If something is missing, `SwaggerCompare.bat` says what and how to fix it:
 | Windows asks whether to run the `.bat` | Choose **Run**. To skip the prompt, right-click the zip → **Properties** → **Unblock** before extracting. |
 
 If `.bat` files are blocked on your machine, open `src\index.html` in Edge or Chrome.
+
+## Host it on a web server
+
+The app is plain static files with no server-side code, so it runs from nginx, Apache, IIS or any static host. Your team can then open it from a URL without downloading anything.
+
+1. Unzip `SwaggerCompare-web.zip` into the web root, or into any sub-folder of it.
+2. Open `https://your-server/`, or `https://your-server/sub-folder/`. The `index.html` at the top opens the app.
+
+The server needs no rules, rewrites or configuration; any static file server works. Specs are still processed only in the browser and never sent to the server. The files under `vendor/` stay the same for a given version and can be cached for a long time; `src/` should not be cached long, so an upgrade shows up at once.
 
 **Prefer a standalone app?** Download `SwaggerCompare-win.zip` from the [releases](https://github.com/malkowicz3-al/SwaggerCompare/releases/latest), unzip it and run `SwaggerCompare.exe`. It is unsigned, so SmartScreen may warn: choose **More info** → **Run anyway**.
 

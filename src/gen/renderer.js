@@ -60,15 +60,15 @@
     if (typeof ctrl !== "symbol") {
       if (isCollection(node)) {
         path = Object.freeze(path.concat(node));
-        for (let i = 0; i < node.items.length; ++i) {
-          const ci = visit_(i, node.items[i], visitor, path);
+        for (let i2 = 0; i2 < node.items.length; ++i2) {
+          const ci = visit_(i2, node.items[i2], visitor, path);
           if (typeof ci === "number")
-            i = ci - 1;
+            i2 = ci - 1;
           else if (ci === BREAK)
             return BREAK;
           else if (ci === REMOVE) {
-            node.items.splice(i, 1);
-            i -= 1;
+            node.items.splice(i2, 1);
+            i2 -= 1;
           }
         }
       } else if (isPair(node)) {
@@ -108,15 +108,15 @@
     if (typeof ctrl !== "symbol") {
       if (isCollection(node)) {
         path = Object.freeze(path.concat(node));
-        for (let i = 0; i < node.items.length; ++i) {
-          const ci = await visitAsync_(i, node.items[i], visitor, path);
+        for (let i2 = 0; i2 < node.items.length; ++i2) {
+          const ci = await visitAsync_(i2, node.items[i2], visitor, path);
           if (typeof ci === "number")
-            i = ci - 1;
+            i2 = ci - 1;
           else if (ci === BREAK)
             return BREAK;
           else if (ci === REMOVE) {
-            node.items.splice(i, 1);
-            i -= 1;
+            node.items.splice(i2, 1);
+            i2 -= 1;
           }
         }
       } else if (isPair(node)) {
@@ -368,8 +368,8 @@
     return anchors;
   }
   function findNewAnchor(prefix, exclude) {
-    for (let i = 1; true; ++i) {
-      const name = `${prefix}${i}`;
+    for (let i2 = 1; true; ++i2) {
+      const name = `${prefix}${i2}`;
       if (!exclude.has(name))
         return name;
     }
@@ -411,13 +411,13 @@
   function applyReviver(reviver, obj, key, val) {
     if (val && typeof val === "object") {
       if (Array.isArray(val)) {
-        for (let i = 0, len = val.length; i < len; ++i) {
-          const v0 = val[i];
-          const v1 = applyReviver(reviver, val, String(i), v0);
+        for (let i2 = 0, len = val.length; i2 < len; ++i2) {
+          const v0 = val[i2];
+          const v1 = applyReviver(reviver, val, String(i2), v0);
           if (v1 === void 0)
-            delete val[i];
+            delete val[i2];
           else if (v1 !== v0)
-            val[i] = v1;
+            val[i2] = v1;
         }
       } else if (val instanceof Map) {
         for (const k of Array.from(val.keys())) {
@@ -454,7 +454,7 @@
   // node_modules/yaml/browser/dist/nodes/toJS.js
   function toJS(value, arg, ctx) {
     if (Array.isArray(value))
-      return value.map((v, i) => toJS(v, String(i), ctx));
+      return value.map((v2, i2) => toJS(v2, String(i2), ctx));
     if (value && typeof value.toJSON === "function") {
       if (!ctx || !hasAnchor(value))
         return value.toJSON(arg, ctx);
@@ -701,18 +701,18 @@
 
   // node_modules/yaml/browser/dist/nodes/Collection.js
   function collectionFromPath(schema4, path, value) {
-    let v = value;
-    for (let i = path.length - 1; i >= 0; --i) {
-      const k = path[i];
+    let v2 = value;
+    for (let i2 = path.length - 1; i2 >= 0; --i2) {
+      const k = path[i2];
       if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
-        const a = [];
-        a[k] = v;
-        v = a;
+        const a2 = [];
+        a2[k] = v2;
+        v2 = a2;
       } else {
-        v = /* @__PURE__ */ new Map([[k, v]]);
+        v2 = /* @__PURE__ */ new Map([[k, v2]]);
       }
     }
-    return createNode(v, void 0, {
+    return createNode(v2, void 0, {
       aliasDuplicateObjects: false,
       keepUndefined: false,
       onAnchor: () => {
@@ -797,8 +797,8 @@
       return this.items.every((node) => {
         if (!isPair(node))
           return false;
-        const n = node.value;
-        return n == null || allowScalar && isScalar(n) && n.value == null && !n.commentBefore && !n.comment && !n.tag;
+        const n2 = node.value;
+        return n2 == null || allowScalar && isScalar(n2) && n2.value == null && !n2.commentBefore && !n2.comment && !n2.tag;
       });
     }
     /**
@@ -864,44 +864,44 @@
     let split = void 0;
     let prev = void 0;
     let overflow = false;
-    let i = -1;
+    let i2 = -1;
     let escStart = -1;
     let escEnd = -1;
     if (mode === FOLD_BLOCK) {
-      i = consumeMoreIndentedLines(text, i, indent.length);
-      if (i !== -1)
-        end = i + endStep;
+      i2 = consumeMoreIndentedLines(text, i2, indent.length);
+      if (i2 !== -1)
+        end = i2 + endStep;
     }
-    for (let ch; ch = text[i += 1]; ) {
+    for (let ch; ch = text[i2 += 1]; ) {
       if (mode === FOLD_QUOTED && ch === "\\") {
-        escStart = i;
-        switch (text[i + 1]) {
+        escStart = i2;
+        switch (text[i2 + 1]) {
           case "x":
-            i += 3;
+            i2 += 3;
             break;
           case "u":
-            i += 5;
+            i2 += 5;
             break;
           case "U":
-            i += 9;
+            i2 += 9;
             break;
           default:
-            i += 1;
+            i2 += 1;
         }
-        escEnd = i;
+        escEnd = i2;
       }
       if (ch === "\n") {
         if (mode === FOLD_BLOCK)
-          i = consumeMoreIndentedLines(text, i, indent.length);
-        end = i + indent.length + endStep;
+          i2 = consumeMoreIndentedLines(text, i2, indent.length);
+        end = i2 + indent.length + endStep;
         split = void 0;
       } else {
         if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-          const next = text[i + 1];
+          const next = text[i2 + 1];
           if (next && next !== " " && next !== "\n" && next !== "	")
-            split = i;
+            split = i2;
         }
-        if (i >= end) {
+        if (i2 >= end) {
           if (split) {
             folds.push(split);
             end = split + endStep;
@@ -909,10 +909,10 @@
           } else if (mode === FOLD_QUOTED) {
             while (prev === " " || prev === "	") {
               prev = ch;
-              ch = text[i += 1];
+              ch = text[i2 += 1];
               overflow = true;
             }
-            const j = i > escEnd + 1 ? i - 2 : escStart - 1;
+            const j = i2 > escEnd + 1 ? i2 - 2 : escStart - 1;
             if (escapedFolds[j])
               return text;
             folds.push(j);
@@ -933,9 +933,9 @@
     if (onFold)
       onFold();
     let res = text.slice(0, folds[0]);
-    for (let i2 = 0; i2 < folds.length; ++i2) {
-      const fold = folds[i2];
-      const end2 = folds[i2 + 1] || text.length;
+    for (let i3 = 0; i3 < folds.length; ++i3) {
+      const fold = folds[i3];
+      const end2 = folds[i3 + 1] || text.length;
       if (fold === 0)
         res = `
 ${indent}${text.slice(0, end2)}`;
@@ -948,19 +948,19 @@ ${indent}${text.slice(fold + 1, end2)}`;
     }
     return res;
   }
-  function consumeMoreIndentedLines(text, i, indent) {
-    let end = i;
-    let start = i + 1;
+  function consumeMoreIndentedLines(text, i2, indent) {
+    let end = i2;
+    let start = i2 + 1;
     let ch = text[start];
     while (ch === " " || ch === "	") {
-      if (i < start + indent) {
-        ch = text[++i];
+      if (i2 < start + indent) {
+        ch = text[++i2];
       } else {
         do {
-          ch = text[++i];
+          ch = text[++i2];
         } while (ch && ch !== "\n");
-        end = i;
-        start = i + 1;
+        end = i2;
+        start = i2 + 1;
         ch = text[start];
       }
     }
@@ -981,11 +981,11 @@ ${indent}${text.slice(fold + 1, end2)}`;
     const strLen = str.length;
     if (strLen <= limit)
       return false;
-    for (let i = 0, start = 0; i < strLen; ++i) {
-      if (str[i] === "\n") {
-        if (i - start > limit)
+    for (let i2 = 0, start = 0; i2 < strLen; ++i2) {
+      if (str[i2] === "\n") {
+        if (i2 - start > limit)
           return true;
-        start = i + 1;
+        start = i2 + 1;
         if (strLen - start <= limit)
           return false;
       }
@@ -1001,19 +1001,19 @@ ${indent}${text.slice(fold + 1, end2)}`;
     const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
     let str = "";
     let start = 0;
-    for (let i = 0, ch = json[i]; ch; ch = json[++i]) {
-      if (ch === " " && json[i + 1] === "\\" && json[i + 2] === "n") {
-        str += json.slice(start, i) + "\\ ";
-        i += 1;
-        start = i;
+    for (let i2 = 0, ch = json[i2]; ch; ch = json[++i2]) {
+      if (ch === " " && json[i2 + 1] === "\\" && json[i2 + 2] === "n") {
+        str += json.slice(start, i2) + "\\ ";
+        i2 += 1;
+        start = i2;
         ch = "\\";
       }
       if (ch === "\\")
-        switch (json[i + 1]) {
+        switch (json[i2 + 1]) {
           case "u":
             {
-              str += json.slice(start, i);
-              const code = json.substr(i + 2, 4);
+              str += json.slice(start, i2);
+              const code = json.substr(i2 + 2, 4);
               switch (code) {
                 case "0000":
                   str += "\\0";
@@ -1043,30 +1043,30 @@ ${indent}${text.slice(fold + 1, end2)}`;
                   if (code.substr(0, 2) === "00")
                     str += "\\x" + code.substr(2);
                   else
-                    str += json.substr(i, 6);
+                    str += json.substr(i2, 6);
               }
-              i += 5;
-              start = i + 1;
+              i2 += 5;
+              start = i2 + 1;
             }
             break;
           case "n":
-            if (implicitKey || json[i + 2] === '"' || json.length < minMultiLineLength) {
-              i += 1;
+            if (implicitKey || json[i2 + 2] === '"' || json.length < minMultiLineLength) {
+              i2 += 1;
             } else {
-              str += json.slice(start, i) + "\n\n";
-              while (json[i + 2] === "\\" && json[i + 3] === "n" && json[i + 4] !== '"') {
+              str += json.slice(start, i2) + "\n\n";
+              while (json[i2 + 2] === "\\" && json[i2 + 3] === "n" && json[i2 + 4] !== '"') {
                 str += "\n";
-                i += 2;
+                i2 += 2;
               }
               str += indent;
-              if (json[i + 2] === " ")
+              if (json[i2 + 2] === " ")
                 str += "\\";
-              i += 1;
-              start = i + 1;
+              i2 += 1;
+              start = i2 + 1;
             }
             break;
           default:
-            i += 1;
+            i2 += 1;
         }
     }
     str = start ? str + json.slice(start) : json;
@@ -1343,7 +1343,7 @@ ${indent}`);
       }
     }
     let tagObj = void 0;
-    const node = isNode(item2) ? item2 : ctx.doc.createNode(item2, { onTagObj: (o) => tagObj = o });
+    const node = isNode(item2) ? item2 : ctx.doc.createNode(item2, { onTagObj: (o2) => tagObj = o2 });
     tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
     const props = stringifyProps(node, tagObj, ctx);
     if (props.length > 0)
@@ -1591,8 +1591,8 @@ ${ctx.indent}`;
   // node_modules/yaml/browser/dist/nodes/Pair.js
   function createPair(key, value, ctx) {
     const k = createNode(key, void 0, ctx);
-    const v = createNode(value, void 0, ctx);
-    return new Pair(k, v);
+    const v2 = createNode(value, void 0, ctx);
+    return new Pair(k, v2);
   }
   var Pair = class _Pair {
     constructor(key, value = null) {
@@ -1628,8 +1628,8 @@ ${ctx.indent}`;
     const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
     let chompKeep = false;
     const lines = [];
-    for (let i = 0; i < items.length; ++i) {
-      const item2 = items[i];
+    for (let i2 = 0; i2 < items.length; ++i2) {
+      const item2 = items[i2];
       let comment2 = null;
       if (isNode(item2)) {
         if (!chompKeep && item2.spaceBefore)
@@ -1658,8 +1658,8 @@ ${ctx.indent}`;
       str = flowChars.start + flowChars.end;
     } else {
       str = lines[0];
-      for (let i = 1; i < lines.length; ++i) {
-        const line = lines[i];
+      for (let i2 = 1; i2 < lines.length; ++i2) {
+        const line = lines[i2];
         str += line ? `
 ${indent}${line}` : "\n";
       }
@@ -1683,8 +1683,8 @@ ${indent}${line}` : "\n";
     let reqNewline = false;
     let linesAtValue = 0;
     const lines = [];
-    for (let i = 0; i < items.length; ++i) {
-      const item2 = items[i];
+    for (let i2 = 0; i2 < items.length; ++i2) {
+      const item2 = items[i2];
       let comment = null;
       if (isNode(item2)) {
         if (item2.spaceBefore)
@@ -1715,7 +1715,7 @@ ${indent}${line}` : "\n";
         reqNewline = true;
       let str = stringify(item2, itemCtx, () => comment = null);
       reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
-      if (i < items.length - 1) {
+      if (i2 < items.length - 1) {
         str += ",";
       } else if (ctx.options.trailingComma) {
         if (ctx.options.lineWidth > 0) {
@@ -1831,11 +1831,11 @@ ${indent}${end}`;
         else
           prev.value = _pair.value;
       } else if (sortEntries) {
-        const i = this.items.findIndex((item2) => sortEntries(_pair, item2) < 0);
-        if (i === -1)
+        const i2 = this.items.findIndex((item2) => sortEntries(_pair, item2) < 0);
+        if (i2 === -1)
           this.items.push(_pair);
         else
-          this.items.splice(i, 0, _pair);
+          this.items.splice(i2, 0, _pair);
       } else {
         this.items.push(_pair);
       }
@@ -1969,9 +1969,9 @@ ${indent}${end}`;
       const seq2 = [];
       if (ctx?.onCreate)
         ctx.onCreate(seq2);
-      let i = 0;
+      let i2 = 0;
       for (const item2 of this.items)
-        seq2.push(toJS(item2, String(i++), ctx));
+        seq2.push(toJS(item2, String(i2++), ctx));
       return seq2;
     }
     toString(ctx, onComment, onChompKeep) {
@@ -1989,10 +1989,10 @@ ${indent}${end}`;
       const { replacer } = ctx;
       const seq2 = new this(schema4);
       if (obj && Symbol.iterator in Object(obj)) {
-        let i = 0;
+        let i2 = 0;
         for (let it of obj) {
           if (typeof replacer === "function") {
-            const key = obj instanceof Set ? it : String(i++);
+            const key = obj instanceof Set ? it : String(i2++);
             it = replacer.call(obj, key, it);
           }
           seq2.items.push(createNode(it, void 0, ctx));
@@ -2069,18 +2069,18 @@ ${indent}${end}`;
     const num = typeof value === "number" ? value : Number(value);
     if (!isFinite(num))
       return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
-    let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
-    if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
-      let i = n.indexOf(".");
-      if (i < 0) {
-        i = n.length;
-        n += ".";
+    let n2 = Object.is(value, -0) ? "-0" : JSON.stringify(value);
+    if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n2) && !n2.includes("e")) {
+      let i2 = n2.indexOf(".");
+      if (i2 < 0) {
+        i2 = n2.length;
+        n2 += ".";
       }
-      let d = minFractionDigits - (n.length - i - 1);
+      let d = minFractionDigits - (n2.length - i2 - 1);
       while (d-- > 0)
-        n += "0";
+        n2 += "0";
     }
-    return n;
+    return n2;
   }
 
   // node_modules/yaml/browser/dist/schema/core/float.js
@@ -2246,8 +2246,8 @@ ${indent}${end}`;
       if (typeof atob === "function") {
         const str = atob(src.replace(/[\n\r]/g, ""));
         const buffer = new Uint8Array(str.length);
-        for (let i = 0; i < str.length; ++i)
-          buffer[i] = str.charCodeAt(i);
+        for (let i2 = 0; i2 < str.length; ++i2)
+          buffer[i2] = str.charCodeAt(i2);
         return buffer;
       } else {
         onError("This environment does not support reading binary tags; either Buffer or atob is required");
@@ -2260,20 +2260,20 @@ ${indent}${end}`;
       const buf = value;
       let str;
       if (typeof btoa === "function") {
-        let s = "";
-        for (let i = 0; i < buf.length; ++i)
-          s += String.fromCharCode(buf[i]);
-        str = btoa(s);
+        let s2 = "";
+        for (let i2 = 0; i2 < buf.length; ++i2)
+          s2 += String.fromCharCode(buf[i2]);
+        str = btoa(s2);
       } else {
         throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
       }
       type ?? (type = Scalar.BLOCK_LITERAL);
       if (type !== Scalar.QUOTE_DOUBLE) {
         const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
-        const n = Math.ceil(str.length / lineWidth);
-        const lines = new Array(n);
-        for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
-          lines[i] = str.substr(o, lineWidth);
+        const n2 = Math.ceil(str.length / lineWidth);
+        const lines = new Array(n2);
+        for (let i2 = 0, o2 = 0; i2 < n2; ++i2, o2 += lineWidth) {
+          lines[i2] = str.substr(o2, lineWidth);
         }
         str = lines.join(type === Scalar.BLOCK_LITERAL ? "\n" : " ");
       }
@@ -2284,8 +2284,8 @@ ${indent}${end}`;
   // node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
   function resolvePairs(seq2, onError) {
     if (isSeq(seq2)) {
-      for (let i = 0; i < seq2.items.length; ++i) {
-        let item2 = seq2.items[i];
+      for (let i2 = 0; i2 < seq2.items.length; ++i2) {
+        let item2 = seq2.items[i2];
         if (isPair(item2))
           continue;
         else if (isMap(item2)) {
@@ -2302,7 +2302,7 @@ ${cn.comment}` : item2.comment;
           }
           item2 = pair2;
         }
-        seq2.items[i] = isPair(item2) ? item2 : new Pair(item2);
+        seq2.items[i2] = isPair(item2) ? item2 : new Pair(item2);
       }
     } else
       onError("Expected a sequence for this tag");
@@ -2312,11 +2312,11 @@ ${cn.comment}` : item2.comment;
     const { replacer } = ctx;
     const pairs2 = new YAMLSeq(schema4);
     pairs2.tag = "tag:yaml.org,2002:pairs";
-    let i = 0;
+    let i2 = 0;
     if (iterable && Symbol.iterator in Object(iterable))
       for (let it of iterable) {
         if (typeof replacer === "function")
-          it = replacer.call(iterable, String(i++), it);
+          it = replacer.call(iterable, String(i2++), it);
         let key, value;
         if (Array.isArray(it)) {
           if (it.length === 2) {
@@ -2495,11 +2495,11 @@ ${cn.comment}` : item2.comment;
           str = `0x${str}`;
           break;
       }
-      const n2 = BigInt(str);
-      return sign === "-" ? BigInt(-1) * n2 : n2;
+      const n3 = BigInt(str);
+      return sign === "-" ? BigInt(-1) * n3 : n3;
     }
-    const n = parseInt(str, radix);
-    return sign === "-" ? -1 * n : n;
+    const n2 = parseInt(str, radix);
+    return sign === "-" ? -1 * n2 : n2;
   }
   function intStringify2(node, radix, prefix) {
     const { value } = node;
@@ -2628,15 +2628,15 @@ ${cn.comment}` : item2.comment;
   function parseSexagesimal(str, asBigInt) {
     const sign = str[0];
     const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
-    const num = (n) => asBigInt ? BigInt(n) : Number(n);
+    const num = (n2) => asBigInt ? BigInt(n2) : Number(n2);
     const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
     return sign === "-" ? num(-1) * res : res;
   }
   function stringifySexagesimal(node) {
     let { value } = node;
-    let num = (n) => n;
+    let num = (n2) => n2;
     if (typeof value === "bigint")
-      num = (n) => BigInt(n);
+      num = (n2) => BigInt(n2);
     else if (isNaN(value) || !isFinite(value))
       return stringifyNumber(node);
     let sign = "";
@@ -2656,7 +2656,7 @@ ${cn.comment}` : item2.comment;
         parts.unshift(value);
       }
     }
-    return sign + parts.map((n) => String(n).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
+    return sign + parts.map((n2) => String(n2).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
   }
   var intTime = {
     identify: (value) => typeof value === "bigint" || Number.isInteger(value),
@@ -2800,7 +2800,7 @@ ${cn.comment}` : item2.comment;
   }
 
   // node_modules/yaml/browser/dist/schema/Schema.js
-  var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  var sortMapEntriesByKey = (a2, b2) => a2.key < b2.key ? -1 : a2.key > b2.key ? 1 : 0;
   var Schema = class _Schema {
     constructor({ compat, customTags, merge: merge3, resolveKnownTags, schema: schema4, sortMapEntries, toStringDefaults }) {
       this.compat = Array.isArray(compat) ? getTags(compat, "compat") : compat ? getTags(null, compat) : null;
@@ -2982,7 +2982,7 @@ ${cn.comment}` : item2.comment;
         value = replacer.call({ "": value }, "", value);
         _replacer = replacer;
       } else if (Array.isArray(replacer)) {
-        const keyToStr = (v) => typeof v === "number" || v instanceof String || v instanceof Number;
+        const keyToStr = (v2) => typeof v2 === "number" || v2 instanceof String || v2 instanceof Number;
         const asStr = replacer.filter(keyToStr).map(String);
         if (asStr.length > 0)
           replacer = replacer.concat(asStr);
@@ -3018,8 +3018,8 @@ ${cn.comment}` : item2.comment;
      */
     createPair(key, value, options = {}) {
       const k = this.createNode(key, null, options);
-      const v = this.createNode(value, null, options);
-      return new Pair(k, v);
+      const v2 = this.createNode(value, null, options);
+      return new Pair(k, v2);
     }
     /**
      * Removes a value from the document.
@@ -3171,8 +3171,8 @@ ${cn.comment}` : item2.comment;
       if (this.errors.length > 0)
         throw new Error("Document with errors cannot be stringified");
       if ("indent" in options && (!Number.isInteger(options.indent) || Number(options.indent) <= 0)) {
-        const s = JSON.stringify(options.indent);
-        throw new Error(`"indent" option must be a positive integer, not ${s}`);
+        const s2 = JSON.stringify(options.indent);
+        throw new Error(`"indent" option must be a positive integer, not ${s2}`);
       }
       return stringifyDocument(this, options);
     }
@@ -3419,7 +3419,7 @@ ${pointer2}
     const { uniqueKeys } = ctx.options;
     if (uniqueKeys === false)
       return false;
-    const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || isScalar(a) && isScalar(b) && a.value === b.value;
+    const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a2, b2) => a2 === b2 || isScalar(a2) && isScalar(b2) && a2.value === b2.value;
     return items.some((pair2) => isEqual(pair2.key, search));
   }
 
@@ -3613,8 +3613,8 @@ ${pointer2}
     if (ctx.atKey)
       ctx.atKey = false;
     let offset = fc.offset + fc.start.source.length;
-    for (let i = 0; i < fc.items.length; ++i) {
-      const collItem = fc.items[i];
+    for (let i2 = 0; i2 < fc.items.length; ++i2) {
+      const collItem = fc.items[i2];
       const { start, key, sep, value } = collItem;
       const props = resolveProps(start, {
         flow: fcName,
@@ -3627,9 +3627,9 @@ ${pointer2}
       });
       if (!props.found) {
         if (!props.anchor && !props.tag && !sep && !value) {
-          if (i === 0 && props.comma)
+          if (i2 === 0 && props.comma)
             onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
-          else if (i < fc.items.length - 1)
+          else if (i2 < fc.items.length - 1)
             onError(props.start, "UNEXPECTED_TOKEN", `Unexpected empty item in ${fcName}`);
           if (props.comment) {
             if (coll.comment)
@@ -3648,7 +3648,7 @@ ${pointer2}
             "Implicit keys of flow sequence pairs need to be on a single line"
           );
       }
-      if (i === 0) {
+      if (i2 === 0) {
         if (props.comma)
           onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
       } else {
@@ -3839,10 +3839,10 @@ ${pointer2}
     const type = header.mode === ">" ? Scalar.BLOCK_FOLDED : Scalar.BLOCK_LITERAL;
     const lines = scalar2.source ? splitLines(scalar2.source) : [];
     let chompStart = lines.length;
-    for (let i = lines.length - 1; i >= 0; --i) {
-      const content = lines[i][1];
-      if (content === "" || content === "\r")
-        chompStart = i;
+    for (let i2 = lines.length - 1; i2 >= 0; --i2) {
+      const content2 = lines[i2][1];
+      if (content2 === "" || content2 === "\r")
+        chompStart = i2;
       else
         break;
     }
@@ -3856,9 +3856,9 @@ ${pointer2}
     let trimIndent = scalar2.indent + header.indent;
     let offset = scalar2.offset + header.length;
     let contentStart = 0;
-    for (let i = 0; i < chompStart; ++i) {
-      const [indent, content] = lines[i];
-      if (content === "" || content === "\r") {
+    for (let i2 = 0; i2 < chompStart; ++i2) {
+      const [indent, content2] = lines[i2];
+      if (content2 === "" || content2 === "\r") {
         if (header.indent === 0 && indent.length > trimIndent)
           trimIndent = indent.length;
       } else {
@@ -3868,54 +3868,54 @@ ${pointer2}
         }
         if (header.indent === 0)
           trimIndent = indent.length;
-        contentStart = i;
+        contentStart = i2;
         if (trimIndent === 0 && !ctx.atRoot) {
           const message = "Block scalar values in collections must be indented";
           onError(offset, "BAD_INDENT", message);
         }
         break;
       }
-      offset += indent.length + content.length + 1;
+      offset += indent.length + content2.length + 1;
     }
-    for (let i = lines.length - 1; i >= chompStart; --i) {
-      if (lines[i][0].length > trimIndent)
-        chompStart = i + 1;
+    for (let i2 = lines.length - 1; i2 >= chompStart; --i2) {
+      if (lines[i2][0].length > trimIndent)
+        chompStart = i2 + 1;
     }
     let value = "";
     let sep = "";
     let prevMoreIndented = false;
-    for (let i = 0; i < contentStart; ++i)
-      value += lines[i][0].slice(trimIndent) + "\n";
-    for (let i = contentStart; i < chompStart; ++i) {
-      let [indent, content] = lines[i];
-      offset += indent.length + content.length + 1;
-      const crlf = content[content.length - 1] === "\r";
+    for (let i2 = 0; i2 < contentStart; ++i2)
+      value += lines[i2][0].slice(trimIndent) + "\n";
+    for (let i2 = contentStart; i2 < chompStart; ++i2) {
+      let [indent, content2] = lines[i2];
+      offset += indent.length + content2.length + 1;
+      const crlf = content2[content2.length - 1] === "\r";
       if (crlf)
-        content = content.slice(0, -1);
-      if (content && indent.length < trimIndent) {
+        content2 = content2.slice(0, -1);
+      if (content2 && indent.length < trimIndent) {
         const src = header.indent ? "explicit indentation indicator" : "first line";
         const message = `Block scalar lines must not be less indented than their ${src}`;
-        onError(offset - content.length - (crlf ? 2 : 1), "BAD_INDENT", message);
+        onError(offset - content2.length - (crlf ? 2 : 1), "BAD_INDENT", message);
         indent = "";
       }
       if (type === Scalar.BLOCK_LITERAL) {
-        value += sep + indent.slice(trimIndent) + content;
+        value += sep + indent.slice(trimIndent) + content2;
         sep = "\n";
-      } else if (indent.length > trimIndent || content[0] === "	") {
+      } else if (indent.length > trimIndent || content2[0] === "	") {
         if (sep === " ")
           sep = "\n";
         else if (!prevMoreIndented && sep === "\n")
           sep = "\n\n";
-        value += sep + indent.slice(trimIndent) + content;
+        value += sep + indent.slice(trimIndent) + content2;
         sep = "\n";
         prevMoreIndented = true;
-      } else if (content === "") {
+      } else if (content2 === "") {
         if (sep === "\n")
           value += "\n";
         else
           sep = "\n";
       } else {
-        value += sep + content;
+        value += sep + content2;
         sep = " ";
         prevMoreIndented = false;
       }
@@ -3924,8 +3924,8 @@ ${pointer2}
       case "-":
         break;
       case "+":
-        for (let i = chompStart; i < lines.length; ++i)
-          value += "\n" + lines[i][0].slice(trimIndent);
+        for (let i2 = chompStart; i2 < lines.length; ++i2)
+          value += "\n" + lines[i2][0].slice(trimIndent);
         if (value[value.length - 1] !== "\n")
           value += "\n";
         break;
@@ -3945,16 +3945,16 @@ ${pointer2}
     let indent = 0;
     let chomp = "";
     let error = -1;
-    for (let i = 1; i < source.length; ++i) {
-      const ch = source[i];
+    for (let i2 = 1; i2 < source.length; ++i2) {
+      const ch = source[i2];
       if (!chomp && (ch === "-" || ch === "+"))
         chomp = ch;
       else {
-        const n = Number(ch);
-        if (!indent && n)
-          indent = n;
+        const n2 = Number(ch);
+        if (!indent && n2)
+          indent = n2;
         else if (error === -1)
-          error = offset + i;
+          error = offset + i2;
       }
     }
     if (error !== -1)
@@ -3962,8 +3962,8 @@ ${pointer2}
     let hasSpace = false;
     let comment = "";
     let length = source.length;
-    for (let i = 1; i < props.length; ++i) {
-      const token = props[i];
+    for (let i2 = 1; i2 < props.length; ++i2) {
+      const token = props[i2];
       switch (token.type) {
         case "space":
           hasSpace = true;
@@ -3998,11 +3998,11 @@ ${pointer2}
   function splitLines(source) {
     const split = source.split(/\n( *)/);
     const first = split[0];
-    const m = first.match(/^( *)/);
-    const line0 = m?.[1] ? [m[1], first.slice(m[1].length)] : ["", first];
+    const m2 = first.match(/^( *)/);
+    const line0 = m2?.[1] ? [m2[1], first.slice(m2[1].length)] : ["", first];
     const lines = [line0];
-    for (let i = 1; i < split.length; i += 2)
-      lines.push([split[i], split[i + 1]]);
+    for (let i2 = 1; i2 < split.length; i2 += 2)
+      lines.push([split[i2], split[i2 + 1]]);
     return lines;
   }
 
@@ -4113,43 +4113,43 @@ ${pointer2}
   }
   function doubleQuotedValue(source, onError) {
     let res = "";
-    for (let i = 1; i < source.length - 1; ++i) {
-      const ch = source[i];
-      if (ch === "\r" && source[i + 1] === "\n")
+    for (let i2 = 1; i2 < source.length - 1; ++i2) {
+      const ch = source[i2];
+      if (ch === "\r" && source[i2 + 1] === "\n")
         continue;
       if (ch === "\n") {
-        const { fold, offset } = foldNewline(source, i);
+        const { fold, offset } = foldNewline(source, i2);
         res += fold;
-        i = offset;
+        i2 = offset;
       } else if (ch === "\\") {
-        let next = source[++i];
+        let next = source[++i2];
         const cc = escapeCodes[next];
         if (cc)
           res += cc;
         else if (next === "\n") {
-          next = source[i + 1];
+          next = source[i2 + 1];
           while (next === " " || next === "	")
-            next = source[++i + 1];
-        } else if (next === "\r" && source[i + 1] === "\n") {
-          next = source[++i + 1];
+            next = source[++i2 + 1];
+        } else if (next === "\r" && source[i2 + 1] === "\n") {
+          next = source[++i2 + 1];
           while (next === " " || next === "	")
-            next = source[++i + 1];
+            next = source[++i2 + 1];
         } else if (next === "x" || next === "u" || next === "U") {
           const length = next === "x" ? 2 : next === "u" ? 4 : 8;
-          res += parseCharCode(source, i + 1, length, onError);
-          i += length;
+          res += parseCharCode(source, i2 + 1, length, onError);
+          i2 += length;
         } else {
-          const raw = source.substr(i - 1, 2);
-          onError(i - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
+          const raw = source.substr(i2 - 1, 2);
+          onError(i2 - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
           res += raw;
         }
       } else if (ch === " " || ch === "	") {
-        const wsStart = i;
-        let next = source[i + 1];
+        const wsStart = i2;
+        let next = source[i2 + 1];
         while (next === " " || next === "	")
-          next = source[++i + 1];
-        if (next !== "\n" && !(next === "\r" && source[i + 2] === "\n"))
-          res += i > wsStart ? source.slice(wsStart, i + 1) : ch;
+          next = source[++i2 + 1];
+        if (next !== "\n" && !(next === "\r" && source[i2 + 2] === "\n"))
+          res += i2 > wsStart ? source.slice(wsStart, i2 + 1) : ch;
       } else {
         res += ch;
       }
@@ -4221,7 +4221,7 @@ ${pointer2}
 
   // node_modules/yaml/browser/dist/compose/compose-scalar.js
   function composeScalar(ctx, token, tagToken, onError) {
-    const { value, type, comment, range } = token.type === "block-scalar" ? resolveBlockScalar(ctx, token, onError) : resolveFlowScalar(token, ctx.options.strict, onError);
+    const { value, type, comment, range: range2 } = token.type === "block-scalar" ? resolveBlockScalar(ctx, token, onError) : resolveFlowScalar(token, ctx.options.strict, onError);
     const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
     let tag;
     if (ctx.options.stringKeys && ctx.atKey) {
@@ -4241,7 +4241,7 @@ ${pointer2}
       onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
       scalar2 = new Scalar(value);
     }
-    scalar2.range = range;
+    scalar2.range = range2;
     scalar2.source = value;
     if (type)
       scalar2.type = type;
@@ -4294,8 +4294,8 @@ ${pointer2}
   function emptyScalarPosition(offset, before, pos) {
     if (before) {
       pos ?? (pos = before.length);
-      for (let i = pos - 1; i >= 0; --i) {
-        let st = before[i];
+      for (let i2 = pos - 1; i2 >= 0; --i2) {
+        let st = before[i2];
         switch (st.type) {
           case "space":
           case "comment":
@@ -4303,10 +4303,10 @@ ${pointer2}
             offset -= st.source.length;
             continue;
         }
-        st = before[++i];
+        st = before[++i2];
         while (st?.type === "space") {
           offset += st.source.length;
-          st = before[++i];
+          st = before[++i2];
         }
         break;
       }
@@ -4453,8 +4453,8 @@ ${pointer2}
     let comment = "";
     let atComment = false;
     let afterEmptyLine = false;
-    for (let i = 0; i < prelude.length; ++i) {
-      const source = prelude[i];
+    for (let i2 = 0; i2 < prelude.length; ++i2) {
+      const source = prelude[i2];
       switch (source[0]) {
         case "#":
           comment += (comment === "" ? "" : afterEmptyLine ? "\n\n" : "\n") + (source.substring(1) || " ");
@@ -4462,8 +4462,8 @@ ${pointer2}
           afterEmptyLine = false;
           break;
         case "%":
-          if (prelude[i + 1]?.[0] !== "#")
-            i += 1;
+          if (prelude[i2 + 1]?.[0] !== "#")
+            i2 += 1;
           atComment = false;
           break;
         default:
@@ -4514,10 +4514,10 @@ ${cb}` : comment;
         }
       }
       if (afterDoc) {
-        for (let i = 0; i < this.errors.length; ++i)
-          doc.errors.push(this.errors[i]);
-        for (let i = 0; i < this.warnings.length; ++i)
-          doc.warnings.push(this.warnings[i]);
+        for (let i2 = 0; i2 < this.errors.length; ++i2)
+          doc.errors.push(this.errors[i2]);
+        for (let i2 = 0; i2 < this.warnings.length; ++i2)
+          doc.warnings.push(this.warnings[i2]);
       } else {
         doc.errors = this.errors;
         doc.warnings = this.warnings;
@@ -4671,15 +4671,15 @@ ${end.comment}` : end.comment;
     for (const field of ["key", "value"]) {
       const token = item2[field];
       if (token && "items" in token) {
-        for (let i = 0; i < token.items.length; ++i) {
-          const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
+        for (let i2 = 0; i2 < token.items.length; ++i2) {
+          const ci = _visit(Object.freeze(path.concat([[field, i2]])), token.items[i2], visitor);
           if (typeof ci === "number")
-            i = ci - 1;
+            i2 = ci - 1;
           else if (ci === BREAK2)
             return BREAK2;
           else if (ci === REMOVE2) {
-            token.items.splice(i, 1);
-            i -= 1;
+            token.items.splice(i2, 1);
+            i2 -= 1;
           }
         }
         if (typeof ctrl === "function" && field === "key")
@@ -4805,18 +4805,18 @@ ${end.comment}` : end.comment;
         next = yield* this.parseNext(next);
     }
     atLineEnd() {
-      let i = this.pos;
-      let ch = this.buffer[i];
+      let i2 = this.pos;
+      let ch = this.buffer[i2];
       while (ch === " " || ch === "	")
-        ch = this.buffer[++i];
+        ch = this.buffer[++i2];
       if (!ch || ch === "#" || ch === "\n")
         return true;
       if (ch === "\r")
-        return this.buffer[i + 1] === "\n";
+        return this.buffer[i2 + 1] === "\n";
       return false;
     }
-    charAt(n) {
-      return this.buffer[this.pos + n];
+    charAt(n2) {
+      return this.buffer[this.pos + n2];
     }
     continueScalar(offset) {
       let ch = this.buffer[offset];
@@ -4850,8 +4850,8 @@ ${end.comment}` : end.comment;
         end -= 1;
       return this.buffer.substring(this.pos, end);
     }
-    hasChars(n) {
-      return this.pos + n <= this.buffer.length;
+    hasChars(n2) {
+      return this.pos + n2 <= this.buffer.length;
     }
     setNext(state) {
       this.buffer = this.buffer.substring(this.pos);
@@ -4860,8 +4860,8 @@ ${end.comment}` : end.comment;
       this.next = state;
       return null;
     }
-    peek(n) {
-      return this.buffer.substr(this.pos, n);
+    peek(n2) {
+      return this.buffer.substr(this.pos, n2);
     }
     *parseNext(next) {
       switch (next) {
@@ -4910,8 +4910,8 @@ ${end.comment}` : end.comment;
           else
             break;
         }
-        const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
-        yield* this.pushCount(line.length - n);
+        const n2 = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
+        yield* this.pushCount(line.length - n2);
         this.pushNewline();
         return "stream";
       }
@@ -4931,12 +4931,12 @@ ${end.comment}` : end.comment;
       if (ch === "-" || ch === ".") {
         if (!this.atEnd && !this.hasChars(4))
           return this.setNext("line-start");
-        const s = this.peek(3);
-        if ((s === "---" || s === "...") && isEmpty(this.charAt(3))) {
+        const s2 = this.peek(3);
+        if ((s2 === "---" || s2 === "...") && isEmpty(this.charAt(3))) {
           yield* this.pushCount(3);
           this.indentValue = 0;
           this.indentNext = 0;
-          return s === "---" ? "doc" : "stream";
+          return s2 === "---" ? "doc" : "stream";
         }
       }
       this.indentValue = yield* this.pushSpaces(false);
@@ -4949,9 +4949,9 @@ ${end.comment}` : end.comment;
       if (!ch1 && !this.atEnd)
         return this.setNext("block-start");
       if ((ch0 === "-" || ch0 === "?" || ch0 === ":") && isEmpty(ch1)) {
-        const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
+        const n2 = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
         this.indentNext = this.indentValue + 1;
-        this.indentValue += n;
+        this.indentValue += n2;
         return "block-start";
       }
       return "doc";
@@ -4961,10 +4961,10 @@ ${end.comment}` : end.comment;
       const line = this.getLine();
       if (line === null)
         return this.setNext("doc");
-      let n = yield* this.pushIndicators();
-      switch (line[n]) {
+      let n2 = yield* this.pushIndicators();
+      switch (line[n2]) {
         case "#":
-          yield* this.pushCount(line.length - n);
+          yield* this.pushCount(line.length - n2);
         // fallthrough
         case void 0:
           yield* this.pushNewline();
@@ -4987,9 +4987,9 @@ ${end.comment}` : end.comment;
           return yield* this.parseQuotedScalar();
         case "|":
         case ">":
-          n += yield* this.parseBlockScalarHeader();
-          n += yield* this.pushSpaces(true);
-          yield* this.pushCount(line.length - n);
+          n2 += yield* this.parseBlockScalarHeader();
+          n2 += yield* this.pushSpaces(true);
+          yield* this.pushCount(line.length - n2);
           yield* this.pushNewline();
           return yield* this.parseBlockScalar();
         default:
@@ -5020,18 +5020,18 @@ ${end.comment}` : end.comment;
           return yield* this.parseLineStart();
         }
       }
-      let n = 0;
-      while (line[n] === ",") {
-        n += yield* this.pushCount(1);
-        n += yield* this.pushSpaces(true);
+      let n2 = 0;
+      while (line[n2] === ",") {
+        n2 += yield* this.pushCount(1);
+        n2 += yield* this.pushSpaces(true);
         this.flowKey = false;
       }
-      n += yield* this.pushIndicators();
-      switch (line[n]) {
+      n2 += yield* this.pushIndicators();
+      switch (line[n2]) {
         case void 0:
           return "flow";
         case "#":
-          yield* this.pushCount(line.length - n);
+          yield* this.pushCount(line.length - n2);
           return "flow";
         case "{":
         case "[":
@@ -5075,10 +5075,10 @@ ${end.comment}` : end.comment;
           end = this.buffer.indexOf("'", end + 2);
       } else {
         while (end !== -1) {
-          let n = 0;
-          while (this.buffer[end - 1 - n] === "\\")
-            n += 1;
-          if (n % 2 === 0)
+          let n2 = 0;
+          while (this.buffer[end - 1 - n2] === "\\")
+            n2 += 1;
+          if (n2 % 2 === 0)
             break;
           end = this.buffer.indexOf('"', end + 1);
         }
@@ -5107,9 +5107,9 @@ ${end.comment}` : end.comment;
     *parseBlockScalarHeader() {
       this.blockScalarIndent = -1;
       this.blockScalarKeep = false;
-      let i = this.pos;
+      let i2 = this.pos;
       while (true) {
-        const ch = this.buffer[++i];
+        const ch = this.buffer[++i2];
         if (ch === "+")
           this.blockScalarKeep = true;
         else if (ch > "0" && ch <= "9")
@@ -5123,17 +5123,17 @@ ${end.comment}` : end.comment;
       let nl = this.pos - 1;
       let indent = 0;
       let ch;
-      loop: for (let i2 = this.pos; ch = this.buffer[i2]; ++i2) {
+      loop: for (let i3 = this.pos; ch = this.buffer[i3]; ++i3) {
         switch (ch) {
           case " ":
             indent += 1;
             break;
           case "\n":
-            nl = i2;
+            nl = i3;
             indent = 0;
             break;
           case "\r": {
-            const next = this.buffer[i2 + 1];
+            const next = this.buffer[i3 + 1];
             if (!next && !this.atEnd)
               return this.setNext("block-scalar");
             if (next === "\n")
@@ -5164,25 +5164,25 @@ ${end.comment}` : end.comment;
           nl = this.buffer.length;
         }
       }
-      let i = nl + 1;
-      ch = this.buffer[i];
+      let i2 = nl + 1;
+      ch = this.buffer[i2];
       while (ch === " ")
-        ch = this.buffer[++i];
+        ch = this.buffer[++i2];
       if (ch === "	") {
         while (ch === "	" || ch === " " || ch === "\r" || ch === "\n")
-          ch = this.buffer[++i];
-        nl = i - 1;
+          ch = this.buffer[++i2];
+        nl = i2 - 1;
       } else if (!this.blockScalarKeep) {
         do {
-          let i2 = nl - 1;
-          let ch2 = this.buffer[i2];
+          let i3 = nl - 1;
+          let ch2 = this.buffer[i3];
           if (ch2 === "\r")
-            ch2 = this.buffer[--i2];
-          const lastChar = i2;
+            ch2 = this.buffer[--i3];
+          const lastChar = i3;
           while (ch2 === " ")
-            ch2 = this.buffer[--i2];
-          if (ch2 === "\n" && i2 >= this.pos && i2 + 1 + indent > lastChar)
-            nl = i2;
+            ch2 = this.buffer[--i3];
+          if (ch2 === "\n" && i3 >= this.pos && i3 + 1 + indent > lastChar)
+            nl = i3;
           else
             break;
         } while (true);
@@ -5194,36 +5194,36 @@ ${end.comment}` : end.comment;
     *parsePlainScalar() {
       const inFlow = this.flowLevel > 0;
       let end = this.pos - 1;
-      let i = this.pos - 1;
+      let i2 = this.pos - 1;
       let ch;
-      while (ch = this.buffer[++i]) {
+      while (ch = this.buffer[++i2]) {
         if (ch === ":") {
-          const next = this.buffer[i + 1];
+          const next = this.buffer[i2 + 1];
           if (isEmpty(next) || inFlow && flowIndicatorChars.has(next))
             break;
-          end = i;
+          end = i2;
         } else if (isEmpty(ch)) {
-          let next = this.buffer[i + 1];
+          let next = this.buffer[i2 + 1];
           if (ch === "\r") {
             if (next === "\n") {
-              i += 1;
+              i2 += 1;
               ch = "\n";
-              next = this.buffer[i + 1];
+              next = this.buffer[i2 + 1];
             } else
-              end = i;
+              end = i2;
           }
           if (next === "#" || inFlow && flowIndicatorChars.has(next))
             break;
           if (ch === "\n") {
-            const cs = this.continueScalar(i + 1);
+            const cs = this.continueScalar(i2 + 1);
             if (cs === -1)
               break;
-            i = Math.max(i, cs - 2);
+            i2 = Math.max(i2, cs - 2);
           }
         } else {
           if (inFlow && flowIndicatorChars.has(ch))
             break;
-          end = i;
+          end = i2;
         }
       }
       if (!ch && !this.atEnd)
@@ -5232,35 +5232,35 @@ ${end.comment}` : end.comment;
       yield* this.pushToIndex(end + 1, true);
       return inFlow ? "flow" : "doc";
     }
-    *pushCount(n) {
-      if (n > 0) {
-        yield this.buffer.substr(this.pos, n);
-        this.pos += n;
-        return n;
+    *pushCount(n2) {
+      if (n2 > 0) {
+        yield this.buffer.substr(this.pos, n2);
+        this.pos += n2;
+        return n2;
       }
       return 0;
     }
-    *pushToIndex(i, allowEmpty) {
-      const s = this.buffer.slice(this.pos, i);
-      if (s) {
-        yield s;
-        this.pos += s.length;
-        return s.length;
+    *pushToIndex(i2, allowEmpty) {
+      const s2 = this.buffer.slice(this.pos, i2);
+      if (s2) {
+        yield s2;
+        this.pos += s2.length;
+        return s2.length;
       } else if (allowEmpty)
         yield "";
       return 0;
     }
     *pushIndicators() {
-      let n = 0;
+      let n2 = 0;
       loop: while (true) {
         switch (this.charAt(0)) {
           case "!":
-            n += yield* this.pushTag();
-            n += yield* this.pushSpaces(true);
+            n2 += yield* this.pushTag();
+            n2 += yield* this.pushSpaces(true);
             continue loop;
           case "&":
-            n += yield* this.pushUntil(isNotAnchorChar);
-            n += yield* this.pushSpaces(true);
+            n2 += yield* this.pushUntil(isNotAnchorChar);
+            n2 += yield* this.pushSpaces(true);
             continue loop;
           case "-":
           // this is an error
@@ -5274,35 +5274,35 @@ ${end.comment}` : end.comment;
                 this.indentNext = this.indentValue + 1;
               else if (this.flowKey)
                 this.flowKey = false;
-              n += yield* this.pushCount(1);
-              n += yield* this.pushSpaces(true);
+              n2 += yield* this.pushCount(1);
+              n2 += yield* this.pushSpaces(true);
               continue loop;
             }
           }
         }
         break loop;
       }
-      return n;
+      return n2;
     }
     *pushTag() {
       if (this.charAt(1) === "<") {
-        let i = this.pos + 2;
-        let ch = this.buffer[i];
+        let i2 = this.pos + 2;
+        let ch = this.buffer[i2];
         while (!isEmpty(ch) && ch !== ">")
-          ch = this.buffer[++i];
-        return yield* this.pushToIndex(ch === ">" ? i + 1 : i, false);
+          ch = this.buffer[++i2];
+        return yield* this.pushToIndex(ch === ">" ? i2 + 1 : i2, false);
       } else {
-        let i = this.pos + 1;
-        let ch = this.buffer[i];
+        let i2 = this.pos + 1;
+        let ch = this.buffer[i2];
         while (ch) {
           if (tagChars.has(ch))
-            ch = this.buffer[++i];
-          else if (ch === "%" && hexDigits.has(this.buffer[i + 1]) && hexDigits.has(this.buffer[i + 2])) {
-            ch = this.buffer[i += 3];
+            ch = this.buffer[++i2];
+          else if (ch === "%" && hexDigits.has(this.buffer[i2 + 1]) && hexDigits.has(this.buffer[i2 + 2])) {
+            ch = this.buffer[i2 += 3];
           } else
             break;
         }
-        return yield* this.pushToIndex(i, false);
+        return yield* this.pushToIndex(i2, false);
       }
     }
     *pushNewline() {
@@ -5315,24 +5315,24 @@ ${end.comment}` : end.comment;
         return 0;
     }
     *pushSpaces(allowTabs) {
-      let i = this.pos - 1;
+      let i2 = this.pos - 1;
       let ch;
       do {
-        ch = this.buffer[++i];
+        ch = this.buffer[++i2];
       } while (ch === " " || allowTabs && ch === "	");
-      const n = i - this.pos;
-      if (n > 0) {
-        yield this.buffer.substr(this.pos, n);
-        this.pos = i;
+      const n2 = i2 - this.pos;
+      if (n2 > 0) {
+        yield this.buffer.substr(this.pos, n2);
+        this.pos = i2;
       }
-      return n;
+      return n2;
     }
     *pushUntil(test) {
-      let i = this.pos;
-      let ch = this.buffer[i];
+      let i2 = this.pos;
+      let ch = this.buffer[i2];
       while (!test(ch))
-        ch = this.buffer[++i];
-      return yield* this.pushToIndex(i, false);
+        ch = this.buffer[++i2];
+      return yield* this.pushToIndex(i2, false);
     }
   };
 
@@ -5363,20 +5363,20 @@ ${end.comment}` : end.comment;
 
   // node_modules/yaml/browser/dist/parse/parser.js
   function includesToken(list, type) {
-    for (let i = 0; i < list.length; ++i)
-      if (list[i].type === type)
+    for (let i2 = 0; i2 < list.length; ++i2)
+      if (list[i2].type === type)
         return true;
     return false;
   }
   function findNonEmptyIndex(list) {
-    for (let i = 0; i < list.length; ++i) {
-      switch (list[i].type) {
+    for (let i2 = 0; i2 < list.length; ++i2) {
+      switch (list[i2].type) {
         case "space":
         case "comment":
         case "newline":
           break;
         default:
-          return i;
+          return i2;
       }
     }
     return -1;
@@ -5411,9 +5411,9 @@ ${end.comment}` : end.comment;
   function getFirstKeyStartProps(prev) {
     if (prev.length === 0)
       return [];
-    let i = prev.length;
-    loop: while (--i >= 0) {
-      switch (prev[i].type) {
+    let i2 = prev.length;
+    loop: while (--i2 >= 0) {
+      switch (prev[i2].type) {
         case "doc-start":
         case "explicit-key-ind":
         case "map-value-ind":
@@ -5422,16 +5422,16 @@ ${end.comment}` : end.comment;
           break loop;
       }
     }
-    while (prev[++i]?.type === "space") {
+    while (prev[++i2]?.type === "space") {
     }
-    return prev.splice(i, prev.length);
+    return prev.splice(i2, prev.length);
   }
   function arrayPushArray(target, source) {
     if (source.length < 1e5)
       Array.prototype.push.apply(target, source);
     else
-      for (let i = 0; i < source.length; ++i)
-        target.push(source[i]);
+      for (let i2 = 0; i2 < source.length; ++i2)
+        target.push(source[i2]);
   }
   function fixFlowSeqItems(fc) {
     if (fc.start.type === "flow-seq-start") {
@@ -5583,8 +5583,8 @@ ${end.comment}` : end.comment;
       }
       yield* this.pop();
     }
-    peek(n) {
-      return this.stack[this.stack.length - n];
+    peek(n2) {
+      return this.stack[this.stack.length - n2];
     }
     *pop(error) {
       const token = error ?? this.stack.pop();
@@ -5815,11 +5815,11 @@ ${end.comment}` : end.comment;
         let start = [];
         if (atNextItem && it.sep && !it.value) {
           const nl = [];
-          for (let i = 0; i < it.sep.length; ++i) {
-            const st = it.sep[i];
+          for (let i2 = 0; i2 < it.sep.length; ++i2) {
+            const st = it.sep[i2];
             switch (st.type) {
               case "newline":
-                nl.push(i);
+                nl.push(i2);
                 break;
               case "space":
                 break;
@@ -6264,7 +6264,7 @@ ${end.comment}` : end.comment;
     const covered = (c) => (c.kind === "added" ? st.extracted : c.kind === "removed" ? st.inlined : /* @__PURE__ */ new Set()).has(JSON.stringify(c.path));
     return { changes: changes.filter((c) => !covered(c)), meta };
   }
-  var scalar = (v) => typeof v === "string" || typeof v === "number" ? String(v) : void 0;
+  var scalar = (v2) => typeof v2 === "string" || typeof v2 === "number" ? String(v2) : void 0;
   var metaOf = (d) => ({ title: scalar(d?.info?.title), version: scalar(d?.info?.version), spec: scalar(d?.openapi ?? d?.swagger) });
   function parse2(text, side) {
     const lc = new LineCounter();
@@ -6289,9 +6289,9 @@ ${end.comment}` : end.comment;
       while (off > from && /\s/.test(text[off])) off--;
       return { start: lc.linePos(from).line, end: lc.linePos(off).line };
     };
-    const keyAt = ([s, e]) => {
-      const { line, col } = lc.linePos(s);
-      return { line, from: col, to: col + e - s };
+    const keyAt = ([s2, e]) => {
+      const { line, col } = lc.linePos(s2);
+      return { line, from: col, to: col + e - s2 };
     };
     const visit3 = (node, path) => {
       if (isMap(node)) {
@@ -6302,8 +6302,8 @@ ${end.comment}` : end.comment;
           visit3(p.value, sub);
         }
       } else if (isSeq(node)) {
-        node.items.forEach((item2, i) => {
-          const sub = [...path, i];
+        node.items.forEach((item2, i2) => {
+          const sub = [...path, i2];
           const name = isMap(item2) ? item2.items.find((q) => isScalar(q.key) && q.key.value === "name")?.value : item2;
           if (item2?.range) index.set(JSON.stringify(sub), { ...span(item2.range[0], item2.range[1], item2.range[1]), ...isScalar(name) && { key: keyAt(name.range) } });
           visit3(item2, sub);
@@ -6314,9 +6314,9 @@ ${end.comment}` : end.comment;
     return index;
   }
   function nearest(index, path) {
-    for (let i = path.length; i >= 0; i--) {
-      const r = index.get(JSON.stringify(path.slice(0, i)));
-      if (r) return { r, exact: i === path.length };
+    for (let i2 = path.length; i2 >= 0; i2--) {
+      const r = index.get(JSON.stringify(path.slice(0, i2)));
+      if (r) return { r, exact: i2 === path.length };
     }
     return { r: { start: 1, end: 1 }, exact: false };
   }
@@ -6325,21 +6325,21 @@ ${end.comment}` : end.comment;
     const { r, exact } = nearest(index, path);
     return exact ? { start: r.start, end: r.end, exact } : { start: r.start, end: r.start, exact };
   }
-  var isPlain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-  var has = (o, k) => Object.hasOwn(o, k);
-  var get = (o, k) => has(o, k) ? o[k] : void 0;
-  function eq(a, b) {
-    if (a === b) return true;
-    if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => eq(v, b[i]));
-    if (isPlain(a) && isPlain(b)) {
-      const ka = Object.keys(a);
-      return ka.length === Object.keys(b).length && ka.every((k) => has(b, k) && eq(a[k], b[k]));
+  var isPlain = (v2) => v2 !== null && typeof v2 === "object" && !Array.isArray(v2);
+  var has = (o2, k) => Object.hasOwn(o2, k);
+  var get = (o2, k) => has(o2, k) ? o2[k] : void 0;
+  function eq(a2, b2) {
+    if (a2 === b2) return true;
+    if (Array.isArray(a2) && Array.isArray(b2)) return a2.length === b2.length && a2.every((v2, i2) => eq(v2, b2[i2]));
+    if (isPlain(a2) && isPlain(b2)) {
+      const ka = Object.keys(a2);
+      return ka.length === Object.keys(b2).length && ka.every((k) => has(b2, k) && eq(a2[k], b2[k]));
     }
     return false;
   }
-  var fmt = (v) => isPlain(v) ? "{\u2026}" : Array.isArray(v) ? "[\u2026]" : JSON.stringify(v);
-  function child(ctx, k, { l = k, r = k, shown = k } = {}) {
-    return { ...ctx, path: [...ctx.path, shown], pl: [...ctx.pl, l], pr: [...ctx.pr, r] };
+  var fmt = (v2) => isPlain(v2) ? "{\u2026}" : Array.isArray(v2) ? "[\u2026]" : JSON.stringify(v2);
+  function child(ctx, k, { l: l2 = k, r = k, shown = k } = {}) {
+    return { ...ctx, path: [...ctx.path, shown], pl: [...ctx.pl, l2], pr: [...ctx.pr, r] };
   }
   var SINGULAR = {
     definitions: "schema",
@@ -6359,21 +6359,21 @@ ${end.comment}` : end.comment;
     return ["definitions", "parameters", "responses", "securityDefinitions"].includes(P[0]) && P.length > 1 ? 1 : -1;
   }
   function compLabel(segs) {
-    const i = nameAt(segs);
-    return i > 0 && segs.length === i + 1 ? `${SINGULAR[segs[i - 1]] ?? segs[i - 1]} ${segs[i]}` : void 0;
+    const i2 = nameAt(segs);
+    return i2 > 0 && segs.length === i2 + 1 ? `${SINGULAR[segs[i2 - 1]] ?? segs[i2 - 1]} ${segs[i2]}` : void 0;
   }
-  var noProps = (segs) => segs.filter((s, i) => s !== "properties" || i === segs.length - 1);
+  var noProps = (segs) => segs.filter((s2, i2) => s2 !== "properties" || i2 === segs.length - 1);
   function pretty(R) {
     if (R[0] === "requestBody") {
       if (R[1] !== "content" || R.length < 3) return ["request body", ...R.slice(1)];
       return R[3] === "schema" ? ["request body", ...R.slice(4)] : [`request body (${R[2]})`, ...R.slice(3)];
     }
     if (R[0] === "responses" && R.length > 1) {
-      const n = R[2] === "content" && R.length > 4 && R[4] === "schema" ? 5 : R[2] === "schema" ? 3 : 2;
-      return [`response ${R[1]}`, ...R.slice(n)];
+      const n2 = R[2] === "content" && R.length > 4 && R[4] === "schema" ? 5 : R[2] === "schema" ? 3 : 2;
+      return [`response ${R[1]}`, ...R.slice(n2)];
     }
-    const m = R[0] === "parameters" && /^[^:/#]+:(.*)$/.exec(R[1] ?? "");
-    if (m) return [m[1], ...R.slice(R[2] === "schema" ? 3 : 2)];
+    const m2 = R[0] === "parameters" && /^[^:/#]+:(.*)$/.exec(R[1] ?? "");
+    if (m2) return [m2[1], ...R.slice(R[2] === "schema" ? 3 : 2)];
     return R;
   }
   function locate(ctx, asObject = false) {
@@ -6384,15 +6384,15 @@ ${end.comment}` : end.comment;
       if (METHODS.includes(P[2])) return { where: `${P[2].toUpperCase()} ${P[1]}`, rest: pretty(noProps(P.slice(3))) };
       return { where: P[1], rest: pretty(noProps(P.slice(2))) };
     }
-    const i = nameAt(P);
-    if (i < 0) return { where: P[0], rest: noProps(P.slice(1)) };
-    const sec = P[i - 1];
+    const i2 = nameAt(P);
+    if (i2 < 0) return { where: P[0], rest: noProps(P.slice(1)) };
+    const sec = P[i2 - 1];
     const isSchema = sec === "definitions" || sec === "schemas";
-    if (P.length === i + 1 && !asObject) return { where: isSchema ? "schemas" : sec, rest: [P[i]] };
-    if (!isSchema) return { where: compLabel(P.slice(0, i + 1)), rest: noProps(P.slice(i + 1)) };
-    const parts = [P[i]];
+    if (P.length === i2 + 1 && !asObject) return { where: isSchema ? "schemas" : sec, rest: [P[i2]] };
+    if (!isSchema) return { where: compLabel(P.slice(0, i2 + 1)), rest: noProps(P.slice(i2 + 1)) };
+    const parts = [P[i2]];
     let lastPair;
-    for (let j = i + 1; j < P.length; j++) {
+    for (let j = i2 + 1; j < P.length; j++) {
       if (P[j] === "properties" && j + 1 < P.length) {
         lastPair = parts.length;
         parts.push(P[++j]);
@@ -6402,7 +6402,7 @@ ${end.comment}` : end.comment;
     const cut = lastPair ?? 1;
     return { where: parts.slice(0, cut).join("."), rest: parts.slice(cut) };
   }
-  var tagOf = (p) => [...p].map(String).reverse().find((s) => !/^\d+$/.test(s)) ?? "other";
+  var tagOf = (p) => [...p].map(String).reverse().find((s2) => !/^\d+$/.test(s2)) ?? "other";
   function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where, vals) {
     const st = ctx.st;
     const side = kind === "removed" ? "left" : "right";
@@ -6413,36 +6413,36 @@ ${end.comment}` : end.comment;
     st.changes.push(ch);
     return ch;
   }
-  var dirsOf = (affects) => new Set(affects.map((a) => a.dir));
+  var dirsOf = (affects) => new Set(affects.map((a2) => a2.dir));
   function affectsOf(ctx) {
     const P = ctx.path.map(String);
     const st = ctx.st;
     if (P[0] === "paths" && P.length > 1) {
-      const op = METHODS.includes(P[2]);
-      const k = op ? P[3] : P[2];
+      const op2 = METHODS.includes(P[2]);
+      const k = op2 ? P[3] : P[2];
       const dir = k === "parameters" || k === "requestBody" ? "request" : k === "responses" ? "response" : "endpoint";
       const item2 = (d) => isPlain(d?.paths) && isPlain(get(d.paths, P[1])) ? d.paths[P[1]] : {};
-      const methods = op ? [P[2]] : METHODS.filter((m) => has(item2(st.lData), m) || has(item2(st.rData), m));
-      return methods.map((m) => ({ endpoint: `${m.toUpperCase()} ${P[1]}`, dir }));
+      const methods = op2 ? [P[2]] : METHODS.filter((m2) => has(item2(st.lData), m2) || has(item2(st.rData), m2));
+      return methods.map((m2) => ({ endpoint: `${m2.toUpperCase()} ${P[1]}`, dir }));
     }
-    const i = nameAt(P);
-    if (i < 0) return [];
-    const key = JSON.stringify(P.slice(0, i + 1));
+    const i2 = nameAt(P);
+    if (i2 < 0) return [];
+    const key = JSON.stringify(P.slice(0, i2 + 1));
     if (!st.affects.has(key)) st.affects.set(key, componentAffects(st.useL.get(key) ?? [], st.useR.get(key) ?? []));
     return st.affects.get(key);
   }
   function componentAffects(useL, useR) {
     const out = /* @__PURE__ */ new Map();
-    for (const a of [...useL, ...useR]) {
-      const k = `${a.endpoint}|${a.dir}`;
-      if (!out.has(k)) out.set(k, { endpoint: a.endpoint, dir: a.dir, vias: [] });
+    for (const a2 of [...useL, ...useR]) {
+      const k = `${a2.endpoint}|${a2.dir}`;
+      if (!out.has(k)) out.set(k, { endpoint: a2.endpoint, dir: a2.dir, vias: [] });
       const vias = out.get(k).vias;
-      if (!vias.includes(a.via)) vias.push(a.via);
+      if (!vias.includes(a2.via)) vias.push(a2.via);
     }
-    const head = (v) => /^(response|parameter) /.exec(v)?.[0];
+    const head2 = (v2) => /^(response|parameter) /.exec(v2)?.[0];
     return [...out.values()].map(({ endpoint, dir, vias }) => ({
       endpoint,
-      via: vias.map((v, j) => j && head(v) && head(v) === head(vias[j - 1]) ? v.slice(head(v).length) : v).join(", "),
+      via: vias.map((v2, j) => j && head2(v2) && head2(v2) === head2(vias[j - 1]) ? v2.slice(head2(v2).length) : v2).join(", "),
       dir
     }));
   }
@@ -6476,10 +6476,10 @@ ${end.comment}` : end.comment;
     if (tag === "property") return kind === "removed" && res;
     if (tag === "enum") {
       const whole = c.path.at(-1) === "enum";
-      const [l, r] = enums ?? [[], []];
-      const missing = (a, b) => a.some((v) => !b.some((w) => eq(v, w)));
-      const narrowed = whole ? kind === "added" : missing(l, r);
-      const widened = whole ? kind === "removed" : missing(r, l);
+      const [l2, r] = enums ?? [[], []];
+      const missing = (a2, b2) => a2.some((v2) => !b2.some((w) => eq(v2, w)));
+      const narrowed = whole ? kind === "added" : missing(l2, r);
+      const widened = whole ? kind === "removed" : missing(r, l2);
       return narrowed && req || widened && res;
     }
     if (tag === "pattern" || MINS.includes(tag) || MAXS.includes(tag)) {
@@ -6491,36 +6491,36 @@ ${end.comment}` : end.comment;
   var NAMES = ["properties", "headers", "definitions", "schemas", "parameters", "responses", "required"];
   var VALUES = ["example", "examples", "default"];
   var inValue = (path) => path.some(
-    (s, i) => !NAMES.includes(path[i - 1]) && (VALUES.includes(s) || s.startsWith("x-") || s === "enum" && i < path.length - 2)
+    (s2, i2) => !NAMES.includes(path[i2 - 1]) && (VALUES.includes(s2) || s2.startsWith("x-") || s2 === "enum" && i2 < path.length - 2)
   );
   var restOf = (ctx) => locate(ctx).rest.join(".");
   var ownWhere = (ctx) => compLabel(ctx.path.map(String)) ? locate(ctx, true).where : void 0;
-  function walk(l, r, ctx) {
-    if (eq(l, r)) return;
-    const vals = { lv: l, rv: r, enums: ctx.enums };
-    if (l === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx, void 0, void 0, vals);
+  function walk(l2, r, ctx) {
+    if (eq(l2, r)) return;
+    const vals = { lv: l2, rv: r, enums: ctx.enums };
+    if (l2 === void 0) return emit("added", restOf(ctx) ? `${restOf(ctx)} added` : "Added", ctx, void 0, void 0, vals);
     if (r === void 0) return emit("removed", restOf(ctx) ? `${restOf(ctx)} removed` : "Removed", ctx, void 0, void 0, vals);
-    if (extract(l, r, ctx)) return;
-    if (compose(l, r, ctx)) return;
-    if (isPlain(l) && isPlain(r)) return walkObject(l, r, ctx);
-    if (Array.isArray(l) && Array.isArray(r)) {
-      const ac = ctx.path.at(-1) === "enum" ? { ...ctx, enums: [l, r] } : ctx;
-      for (let i = 0; i < Math.max(l.length, r.length); i++) walk(l[i], r[i], child(ac, i));
+    if (extract(l2, r, ctx)) return;
+    if (compose(l2, r, ctx)) return;
+    if (isPlain(l2) && isPlain(r)) return walkObject(l2, r, ctx);
+    if (Array.isArray(l2) && Array.isArray(r)) {
+      const ac = ctx.path.at(-1) === "enum" ? { ...ctx, enums: [l2, r] } : ctx;
+      for (let i2 = 0; i2 < Math.max(l2.length, r.length); i2++) walk(l2[i2], r[i2], child(ac, i2));
       return;
     }
     const p = restOf(ctx);
-    emit("changed", `${p ? `${p}: ` : ""}${fmt(l)} \u2192 ${fmt(r)}`, ctx, void 0, void 0, vals);
+    emit("changed", `${p ? `${p}: ` : ""}${fmt(l2)} \u2192 ${fmt(r)}`, ctx, void 0, void 0, vals);
   }
-  function walkObject(l, r, ctx) {
+  function walkObject(l2, r, ctx) {
     const P = ctx.st.detail ? [] : ctx.path;
     const isPaths = P.length === 1 && P[0] === "paths";
     const isPathItem = P.length === 2 && P[0] === "paths";
     const isOp = P.length === 3 && P[0] === "paths";
     const isResponses = P.length === 4 && P[0] === "paths" && P[3] === "responses";
     const isSchemas = P.length === 1 && P[0] === "definitions" || P.length === 2 && P[0] === "components" && P[1] === "schemas";
-    const keys = [...Object.keys(r), ...Object.keys(l).filter((k) => !has(r, k))];
+    const keys = [...Object.keys(r), ...Object.keys(l2).filter((k) => !has(r, k))];
     for (const k of keys) {
-      const lv = get(l, k);
+      const lv = get(l2, k);
       const rv = get(r, k);
       const oneSided = lv === void 0 || rv === void 0;
       const kind = lv === void 0 ? "added" : "removed";
@@ -6528,12 +6528,12 @@ ${end.comment}` : end.comment;
       const c = child(ctx, k);
       if (isPaths && oneSided) {
         const item2 = lv ?? rv;
-        const methods = isPlain(item2) ? METHODS.filter((m) => has(item2, m)) : [];
+        const methods = isPlain(item2) ? METHODS.filter((m2) => has(item2, m2)) : [];
         if (!methods.length) walk(lv, rv, c);
-        for (const m of methods) emit(kind, `${verb} endpoint`, child(c, m), "endpoint");
+        for (const m2 of methods) emit(kind, `${verb} endpoint`, child(c, m2), "endpoint");
       } else if (isPathItem && oneSided && METHODS.includes(k)) {
         emit(kind, `${verb} endpoint`, c, "endpoint");
-      } else if ((isPathItem || isOp) && k === "parameters" && [lv, rv].every((v) => v === void 0 || Array.isArray(v))) {
+      } else if ((isPathItem || isOp) && k === "parameters" && [lv, rv].every((v2) => v2 === void 0 || Array.isArray(v2))) {
         walkParams(lv ?? [], rv ?? [], ctx);
       } else if (isResponses && oneSided) {
         emit(kind, `${verb} response ${k}`, c, "response");
@@ -6541,42 +6541,42 @@ ${end.comment}` : end.comment;
         emit(kind, `${verb} schema ${k}`, c, "schema");
       } else if (isSchemas) {
         walk(lv, rv, c);
-      } else if (k === "properties" && [lv, rv].every((v) => v === void 0 || isPlain(v))) {
+      } else if (k === "properties" && [lv, rv].every((v2) => v2 === void 0 || isPlain(v2))) {
         walkProps(lv ?? {}, rv ?? {}, ctx);
-      } else if (k === "required" && [lv, rv].every((v) => v === void 0 || Array.isArray(v))) {
-        walkRequired(lv ?? [], rv ?? [], ctx, l, r);
+      } else if (k === "required" && [lv, rv].every((v2) => v2 === void 0 || Array.isArray(v2))) {
+        walkRequired(lv ?? [], rv ?? [], ctx, l2, r);
       } else {
         walk(lv, rv, c);
       }
     }
   }
-  var pureRef = (v) => isPlain(v) && typeof v.$ref === "string" && Object.keys(v).length === 1;
+  var pureRef = (v2) => isPlain(v2) && typeof v2.$ref === "string" && Object.keys(v2).length === 1;
   function pointer(ref) {
     if (!ref.startsWith("#/")) return void 0;
-    return ref.slice(2).split("/").map((s) => {
-      s = s.replace(/~1/g, "/").replace(/~0/g, "~");
+    return ref.slice(2).split("/").map((s2) => {
+      s2 = s2.replace(/~1/g, "/").replace(/~0/g, "~");
       try {
-        return decodeURIComponent(s);
+        return decodeURIComponent(s2);
       } catch {
-        return s;
+        return s2;
       }
     });
   }
   function resolve(doc, segs) {
     for (let hop = 0; hop < 10 && segs; hop++) {
-      let v = doc;
-      for (const s of segs) v = v !== null && typeof v === "object" && has(v, s) ? v[s] : void 0;
-      if (!pureRef(v)) return isPlain(v) ? v : void 0;
-      segs = pointer(v.$ref);
+      let v2 = doc;
+      for (const s2 of segs) v2 = v2 !== null && typeof v2 === "object" && has(v2, s2) ? v2[s2] : void 0;
+      if (!pureRef(v2)) return isPlain(v2) ? v2 : void 0;
+      segs = pointer(v2.$ref);
     }
     return void 0;
   }
-  function extract(l, r, ctx, label2) {
+  function extract(l2, r, ctx, label2) {
     const st = ctx.st;
-    if (st.detail || !isPlain(l) || !isPlain(r)) return false;
-    const ext = pureRef(r) && !has(l, "$ref");
-    if (!ext && !(pureRef(l) && !has(r, "$ref"))) return false;
-    const ref = (ext ? r : l).$ref;
+    if (st.detail || !isPlain(l2) || !isPlain(r)) return false;
+    const ext = pureRef(r) && !has(l2, "$ref");
+    if (!ext && !(pureRef(l2) && !has(r, "$ref"))) return false;
+    const ref = (ext ? r : l2).$ref;
     const segs = pointer(ref);
     const target = segs && resolve(ext ? st.rData : st.lData, segs);
     let details;
@@ -6584,7 +6584,7 @@ ${end.comment}` : end.comment;
     if (!segs) details = ["definition not compared (external $ref)"];
     else if (!target) details = ["definition not compared (unresolved $ref)"];
     else {
-      walk(ext ? l : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
+      walk(ext ? l2 : target, ext ? target : r, { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } });
       details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
     }
     const text = `${label2 ?? restOf(ctx)}: ${ext ? "extracted to" : "inlined from"} ${(segs && compLabel(segs)) ?? ref}`;
@@ -6593,58 +6593,58 @@ ${end.comment}` : end.comment;
     return true;
   }
   var KW = ["allOf", "oneOf", "anyOf"];
-  var compOf = (s) => KW.find((k) => Array.isArray(s[k]));
-  var refsOf = (arr) => [...new Set(arr.filter(pureRef).map((m) => m.$ref))].sort();
+  var compOf = (s2) => KW.find((k) => Array.isArray(s2[k]));
+  var refsOf = (arr) => [...new Set(arr.filter(pureRef).map((m2) => m2.$ref))].sort();
   var refName = (ref) => {
     const segs = pointer(ref);
     return (segs && compLabel(segs)) ?? ref;
   };
-  var isUnion = (s, k) => k !== void 0 && k !== "allOf" && s[k].length > 1;
-  function merge2(a, b) {
-    const out = { ...a };
-    for (const [k, v] of Object.entries(b)) {
-      if (k === "properties" && isPlain(v) && isPlain(out.properties)) {
+  var isUnion = (s2, k) => k !== void 0 && k !== "allOf" && s2[k].length > 1;
+  function merge2(a2, b2) {
+    const out = { ...a2 };
+    for (const [k, v2] of Object.entries(b2)) {
+      if (k === "properties" && isPlain(v2) && isPlain(out.properties)) {
         out.properties = { ...out.properties };
-        for (const [n, p] of Object.entries(v)) {
-          const q = out.properties[n];
-          out.properties[n] = has(out.properties, n) && isPlain(q) && isPlain(p) ? merge2(q, p) : p;
+        for (const [n2, p] of Object.entries(v2)) {
+          const q = out.properties[n2];
+          out.properties[n2] = has(out.properties, n2) && isPlain(q) && isPlain(p) ? merge2(q, p) : p;
         }
-      } else if (k === "required" && Array.isArray(v) && Array.isArray(out.required)) {
-        out.required = [.../* @__PURE__ */ new Set([...out.required, ...v])];
-      } else out[k] = v;
+      } else if (k === "required" && Array.isArray(v2) && Array.isArray(out.required)) {
+        out.required = [.../* @__PURE__ */ new Set([...out.required, ...v2])];
+      } else out[k] = v2;
     }
     return out;
   }
-  function flat(s, doc, seen = /* @__PURE__ */ new Set()) {
-    if (!isPlain(s)) return {};
-    if (pureRef(s)) {
-      const segs = pointer(s.$ref);
+  function flat(s2, doc, seen = /* @__PURE__ */ new Set()) {
+    if (!isPlain(s2)) return {};
+    if (pureRef(s2)) {
+      const segs = pointer(s2.$ref);
       const key = JSON.stringify(segs);
       if (!segs || seen.has(key) || seen.size >= 32) return {};
       return flat(resolve(doc, segs), doc, /* @__PURE__ */ new Set([...seen, key]));
     }
-    const k = compOf(s);
-    if (!k || k !== "allOf" && s[k].length !== 1) return s;
-    return merge2(s[k].reduce((acc, m) => merge2(acc, flat(m, doc, seen)), {}), omit(s, k));
+    const k = compOf(s2);
+    if (!k || k !== "allOf" && s2[k].length !== 1) return s2;
+    return merge2(s2[k].reduce((acc, m2) => merge2(acc, flat(m2, doc, seen)), {}), omit(s2, k));
   }
-  function compose(l, r, ctx, label2) {
+  function compose(l2, r, ctx, label2) {
     const st = ctx.st;
-    if (st.detail || !isPlain(l) || !isPlain(r)) return false;
-    const cl = compOf(l);
+    if (st.detail || !isPlain(l2) || !isPlain(r)) return false;
+    const cl = compOf(l2);
     const cr = compOf(r);
     if (!cl && !cr) return false;
-    if (cl === cr && eq(refsOf(l[cl]), refsOf(r[cr]))) return false;
+    if (cl === cr && eq(refsOf(l2[cl]), refsOf(r[cr]))) return false;
     const sink = [];
     const dctx = { path: [], pl: [], pr: [], st: { ...st, changes: sink, detail: true, dirs: dirsOf(affectsOf(ctx)) } };
-    const union = isUnion(l, cl) || isUnion(r, cr);
-    if (union) walk(l, r, dctx);
-    else walk(flat(l, st.lData), flat(r, st.rData), dctx);
+    const union = isUnion(l2, cl) || isUnion(r, cr);
+    if (union) walk(l2, r, dctx);
+    else walk(flat(l2, st.lData), flat(r, st.rData), dctx);
     const details = sink.length ? sink.map((c) => c.text) : ["definition unchanged"];
-    const desc = (m) => pureRef(m) ? refName(m.$ref) : "inline";
+    const desc = (m2) => pureRef(m2) ? refName(m2.$ref) : "inline";
     let what;
     if (!cr) what = `${cl} flattened`;
     else if (cl === cr) {
-      const [lr, rr] = [refsOf(l[cl]), refsOf(r[cr])];
+      const [lr, rr] = [refsOf(l2[cl]), refsOf(r[cr])];
       const ch2 = [...rr.filter((x) => !lr.includes(x)).map((x) => `+ ${refName(x)}`), ...lr.filter((x) => !rr.includes(x)).map((x) => `\u2212 ${refName(x)}`)];
       what = `${cr} members changed: ${ch2.join(", ")}`;
     } else what = `now ${cr} [${r[cr].map(desc).join(cr === "allOf" ? " + " : ", ")}]`;
@@ -6656,11 +6656,11 @@ ${end.comment}` : end.comment;
       ch.left = rangeOf(st.left, [...ctx.pl, cl]);
     }
     if (union) return true;
-    for (const [s, k, doc, other, set2] of [
-      [l, cl, st.lData, st.rData, st.inlined],
+    for (const [s2, k, doc, other, set2] of [
+      [l2, cl, st.lData, st.rData, st.inlined],
       [r, cr, st.rData, st.lData, st.extracted]
     ]) {
-      for (const ref of k ? refsOf(s[k]) : []) {
+      for (const ref of k ? refsOf(s2[k]) : []) {
         const segs = pointer(ref);
         if (segs && compLabel(segs) && resolve(doc, segs) && !resolve(other, segs)) set2.add(JSON.stringify(segs));
       }
@@ -6670,8 +6670,8 @@ ${end.comment}` : end.comment;
   var label = (p) => !isPlain(p) ? void 0 : p.$ref ? `$ref ${p.$ref}` : p.in != null && p.name != null ? `${p.in} '${p.name}'` : void 0;
   var fromSchema = (p) => isPlain(p?.schema) && stype(p.schema) !== void 0;
   var ptype = (p) => fromSchema(p) ? stype(p.schema) : p?.type;
-  var omit = (o, k) => {
-    const { [k]: _, ...rest } = o;
+  var omit = (o2, k) => {
+    const { [k]: _, ...rest } = o2;
     return rest;
   };
   function stripParam(p) {
@@ -6686,27 +6686,27 @@ ${end.comment}` : end.comment;
     return rest;
   }
   function byLabel(arr) {
-    const m = /* @__PURE__ */ new Map();
+    const m2 = /* @__PURE__ */ new Map();
     const rest = [];
-    arr.forEach((p, i) => {
+    arr.forEach((p, i2) => {
       const lab = label(p);
-      if (lab === void 0) return rest.push(i);
+      if (lab === void 0) return rest.push(i2);
       let key = lab;
-      let n = "";
-      for (let k = 2; m.has(key); k++) key = lab + (n = `#${k}`);
-      m.set(key, { i, n });
+      let n2 = "";
+      for (let k = 2; m2.has(key); k++) key = lab + (n2 = `#${k}`);
+      m2.set(key, { i: i2, n: n2 });
     });
-    return { m, rest };
+    return { m: m2, rest };
   }
-  function pairRefs(m, arr, doc, other) {
-    for (const [k, v] of [...m]) {
-      const p = arr[v.i];
+  function pairRefs(m2, arr, doc, other) {
+    for (const [k, v2] of [...m2]) {
+      const p = arr[v2.i];
       if (other.has(k) || !pureRef(p)) continue;
       const t = pointer(p.$ref) && resolve(doc, pointer(p.$ref));
       const key = t?.in != null && t.name != null ? `${t.in} '${t.name}'` : void 0;
-      if (key === void 0 || m.has(key) || !other.has(key)) continue;
-      m.delete(k);
-      m.set(key, { i: v.i, n: "" });
+      if (key === void 0 || m2.has(key) || !other.has(key)) continue;
+      m2.delete(k);
+      m2.set(key, { i: v2.i, n: "" });
     }
   }
   function walkParams(lArr, rArr, ctx) {
@@ -6717,12 +6717,12 @@ ${end.comment}` : end.comment;
     const pc = child(ctx, "parameters");
     const labels = [...rm.keys(), ...[...lm.keys()].filter((k) => !rm.has(k))];
     for (const lab of labels) {
-      const { i: il, n } = lm.get(lab) ?? {};
+      const { i: il, n: n2 } = lm.get(lab) ?? {};
       const { i: ir } = rm.get(lab) ?? {};
       const lp = lArr[il];
       const rp = rArr[ir];
       const p = [lp, rp].find((q) => q && !q.$ref) ?? lp ?? rp;
-      const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n ?? rm.get(lab).n);
+      const shown = (p.$ref ? p.$ref : `${p.in}:${p.name}`) + (n2 ?? rm.get(lab).n);
       const c = child(pc, shown, { l: il, r: ir });
       const nm = p.name ?? lab;
       if (il === void 0) emit("added", `Added parameter ${lab}`, c, "parameter", void 0, { rv: pureRef(rp) ? resolve(ctx.st.rData, pointer(rp.$ref)) : rp });
@@ -6743,17 +6743,17 @@ ${end.comment}` : end.comment;
       walk(lArr[il], rArr[ir], child(pc, il ?? ir, { l: il, r: ir }));
     }
   }
-  var tkey = (s) => isPlain(s) && s.type !== void 0 ? "type" : "$ref";
-  var stype = (s) => isPlain(s) ? s[tkey(s)] : void 0;
+  var tkey = (s2) => isPlain(s2) && s2.type !== void 0 ? "type" : "$ref";
+  var stype = (s2) => isPlain(s2) ? s2[tkey(s2)] : void 0;
   var tfmt = (t) => typeof t === "string" || t === void 0 ? String(t) : JSON.stringify(t);
-  var stripSchema = (s) => isPlain(s) ? omit(s, tkey(s)) : s;
+  var stripSchema = (s2) => isPlain(s2) ? omit(s2, tkey(s2)) : s2;
   function walkProps(lProps, rProps, ctx) {
     const pc = child(ctx, "properties");
     const names = [...Object.keys(rProps), ...Object.keys(lProps).filter((k) => !has(rProps, k))];
-    for (const n of names) {
-      const lv = get(lProps, n);
-      const rv = get(rProps, n);
-      const c = child(pc, n);
+    for (const n2 of names) {
+      const lv = get(lProps, n2);
+      const rv = get(rProps, n2);
+      const c = child(pc, n2);
       const p = restOf(c);
       const t = stype(lv ?? rv);
       const suffix = t === void 0 ? "" : ` (${tfmt(t)})`;
@@ -6767,20 +6767,20 @@ ${end.comment}` : end.comment;
   }
   function walkRequired(lArr, rArr, ctx, lObj, rObj) {
     const { where, rest } = locate(ctx, true);
-    const nm = (n) => [...rest, n].join(".");
+    const nm = (n2) => [...rest, n2].join(".");
     const ls = new Set(lArr);
     const rs = new Set(rArr);
     const props = (obj) => isPlain(obj.properties) ? obj.properties : {};
     const lProps = props(lObj);
     const rProps = props(rObj);
-    const at = (n, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n)], pl, pr });
-    rArr.forEach((n, i) => {
-      if (!ls.has(n) && rArr.indexOf(n) === i) emit("changed", `${nm(n)}: now required`, at(n, [...ctx.pl, "required"], [...ctx.pr, "required", i]), "required", where);
+    const at = (n2, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n2)], pl, pr });
+    rArr.forEach((n2, i2) => {
+      if (!ls.has(n2) && rArr.indexOf(n2) === i2) emit("changed", `${nm(n2)}: now required`, at(n2, [...ctx.pl, "required"], [...ctx.pr, "required", i2]), "required", where);
     });
-    for (const n of ls) {
-      if (rs.has(n) || has(lProps, n) && !has(rProps, n)) continue;
-      const pr = has(rProps, n) ? [...ctx.pr, "properties", n] : [...ctx.pr, "required"];
-      emit("changed", `${nm(n)}: no longer required`, at(n, [...ctx.pl, "required", lArr.indexOf(n)], pr), "required", where);
+    for (const n2 of ls) {
+      if (rs.has(n2) || has(lProps, n2) && !has(rProps, n2)) continue;
+      const pr = has(rProps, n2) ? [...ctx.pr, "properties", n2] : [...ctx.pr, "required"];
+      emit("changed", `${nm(n2)}: no longer required`, at(n2, [...ctx.pl, "required", lArr.indexOf(n2)], pr), "required", where);
     }
   }
   function usage(data) {
@@ -6791,9 +6791,9 @@ ${end.comment}` : end.comment;
       if (node === null || typeof node !== "object" || seen.has(node)) return out;
       seen.add(node);
       const segs = isPlain(node) && typeof node.$ref === "string" ? pointer(node.$ref) : void 0;
-      const i = segs ? nameAt(segs) : -1;
-      if (i > 0) out.add(JSON.stringify(segs.slice(0, i + 1)));
-      for (const v of Object.values(node)) refsIn(v, out, seen);
+      const i2 = segs ? nameAt(segs) : -1;
+      if (i2 > 0) out.add(JSON.stringify(segs.slice(0, i2 + 1)));
+      for (const v2 of Object.values(node)) refsIn(v2, out, seen);
       return out;
     };
     const from = (start) => {
@@ -6804,7 +6804,7 @@ ${end.comment}` : end.comment;
         const k = todo.pop();
         if (seen.has(k)) continue;
         seen.add(k);
-        if (!direct.has(k)) direct.set(k, refsIn(JSON.parse(k).reduce((v, s) => isPlain(v) ? get(v, s) : void 0, data)));
+        if (!direct.has(k)) direct.set(k, refsIn(JSON.parse(k).reduce((v2, s2) => isPlain(v2) ? get(v2, s2) : void 0, data)));
         todo.push(...direct.get(k));
       }
       closure.set(start, seen);
@@ -6818,43 +6818,43 @@ ${end.comment}` : end.comment;
     for (const [p, item2] of Object.entries(isPlain(data?.paths) ? data.paths : {})) {
       if (!isPlain(item2)) continue;
       const shared = Array.isArray(item2.parameters) ? item2.parameters : [];
-      for (const m of METHODS.filter((m2) => isPlain(get(item2, m2)))) {
-        const op = item2[m];
-        const endpoint = `${m.toUpperCase()} ${p}`;
-        const parts = [...shared, ...Array.isArray(op.parameters) ? op.parameters : []].map((prm) => {
+      for (const m2 of METHODS.filter((m3) => isPlain(get(item2, m3)))) {
+        const op2 = item2[m2];
+        const endpoint = `${m2.toUpperCase()} ${p}`;
+        const parts = [...shared, ...Array.isArray(op2.parameters) ? op2.parameters : []].map((prm) => {
           const t = pureRef(prm) ? resolve(data, pointer(prm.$ref)) : prm;
           return [`parameter ${t?.name ?? prm?.$ref ?? "?"}`, "request", prm];
         });
-        if (op.requestBody !== void 0) parts.push(["request body", "request", op.requestBody]);
-        for (const [code, r] of Object.entries(isPlain(op.responses) ? op.responses : {})) parts.push([`response ${code}`, "response", r]);
+        if (op2.requestBody !== void 0) parts.push(["request body", "request", op2.requestBody]);
+        for (const [code, r] of Object.entries(isPlain(op2.responses) ? op2.responses : {})) parts.push([`response ${code}`, "response", r]);
         for (const [via, dir, node] of parts) {
           for (const k of reach(node)) {
             if (!use.has(k)) use.set(k, /* @__PURE__ */ new Map());
-            const m2 = use.get(k);
+            const m3 = use.get(k);
             const id = `${endpoint}|${via}`;
-            if (!m2.has(id)) m2.set(id, { endpoint, via, dir });
+            if (!m3.has(id)) m3.set(id, { endpoint, via, dir });
           }
         }
       }
     }
-    return new Map([...use].map(([k, m]) => [k, [...m.values()]]));
+    return new Map([...use].map(([k, m2]) => [k, [...m2.values()]]));
   }
 
   // src/report.js
-  var pair = (a, b) => a == null || a === b ? b ?? "" : b == null ? a : `${a} \u2192 ${b}`;
+  var pair = (a2, b2) => a2 == null || a2 === b2 ? b2 ?? "" : b2 == null ? a2 : `${a2} \u2192 ${b2}`;
   function heading(meta) {
-    const l = meta?.left ?? {};
+    const l2 = meta?.left ?? {};
     const r = meta?.right ?? {};
-    const ver = (v) => v?.replace(/^v/i, "");
-    return [pair(l.title, r.title), pair(ver(l.version), ver(r.version))].filter(Boolean).join("  ");
+    const ver = (v2) => v2?.replace(/^v/i, "");
+    return [pair(l2.title, r.title), pair(ver(l2.version), ver(r.version))].filter(Boolean).join("  ");
   }
   var schemaOf = (p) => p[0] === "definitions" ? p[1] : p[0] === "components" && p[1] === "schemas" ? p[2] : void 0;
-  function counts(changes, ofKind, keyOf) {
+  function counts(changes, ofKind, keyOf2) {
     const added = /* @__PURE__ */ new Set();
     const removed = /* @__PURE__ */ new Set();
     const changed = /* @__PURE__ */ new Set();
     for (const c of changes) {
-      for (const k of keyOf(c)) {
+      for (const k of keyOf2(c)) {
         if (ofKind(c) && c.kind === "added") added.add(k);
         else if (ofKind(c) && c.kind === "removed") removed.add(k);
         else changed.add(k);
@@ -6863,13 +6863,13 @@ ${end.comment}` : end.comment;
     const parts = [];
     if (added.size) parts.push(`${added.size} added`);
     if (removed.size) parts.push(`${removed.size} removed`);
-    const n = [...changed].filter((k) => !added.has(k) && !removed.has(k)).length;
-    if (n) parts.push(`${n} changed`);
+    const n2 = [...changed].filter((k) => !added.has(k) && !removed.has(k)).length;
+    if (n2) parts.push(`${n2} changed`);
     return parts.join(" \xB7 ");
   }
   function summary(changes) {
     if (!changes.length) return "No changes";
-    const eps = counts(changes, (c) => c.tag === "endpoint", (c) => c.affects.map((a) => a.endpoint));
+    const eps = counts(changes, (c) => c.tag === "endpoint", (c) => c.affects.map((a2) => a2.endpoint));
     const schemaKey = (c) => schemaOf(c.path) === void 0 ? [] : [schemaOf(c.path)];
     const sch = counts(changes, (c) => c.tag === "schema", schemaKey);
     const nb = changes.filter((c) => c.breaking).length;
@@ -6881,13 +6881,13 @@ ${end.comment}` : end.comment;
     for (const c of changes) {
       if (!c.affects.length) other.push({ c, text: c.text });
       const vias = /* @__PURE__ */ new Map();
-      for (const a of c.affects) {
-        if (!vias.has(a.endpoint)) vias.set(a.endpoint, []);
-        if (a.via) vias.get(a.endpoint).push(a.via);
+      for (const a2 of c.affects) {
+        if (!vias.has(a2.endpoint)) vias.set(a2.endpoint, []);
+        if (a2.via) vias.get(a2.endpoint).push(a2.via);
       }
-      for (const [key, v] of vias) {
+      for (const [key, v2] of vias) {
         if (!groups.has(key)) groups.set(key, { key, rows: [] });
-        groups.get(key).rows.push({ c, text: v.length ? `${v.join(", ")} \u203A ${c.text}` : c.text });
+        groups.get(key).rows.push({ c, text: v2.length ? `${v2.join(", ")} \u203A ${c.text}` : c.text });
       }
     }
     return [...groups.values(), ...other.length ? [{ key: "Other", rows: other }] : []];
@@ -6909,6 +6909,1181 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     return out.join("\n") + "\n";
   }
 
+  // src/oas/model.js
+  var TEMPLATES = ["3.0.3", "3.1.1", "3.2.0"];
+  var s = (doc, x) => ({ t: "str", doc, ...x });
+  var b = (doc, x) => ({ t: "bool", doc, ...x });
+  var n = (doc, x) => ({ t: "num", doc, ...x });
+  var i = (doc, x) => ({ t: "int", doc, ...x });
+  var a = (doc, x) => ({ t: "any", doc, ...x });
+  var o = (of, doc, x) => ({ t: "obj", of, doc, ...x });
+  var m = (of, doc, x) => ({ t: "map", of, doc, ...x });
+  var l = (of, doc, x) => ({ t: "list", of, doc, ...x });
+  var STATUS = ["200", "201", "204", "400", "401", "403", "404", "409", "422", "500", "default"];
+  var MEDIA = ["application/json", "application/xml", "text/plain", "multipart/form-data", "application/x-www-form-urlencoded", "application/octet-stream"];
+  var FORMATS = ["int32", "int64", "float", "double", "byte", "binary", "date", "date-time", "password", "email", "uri", "uuid"];
+  var content = (doc) => m("MediaType", doc, { keyHints: MEDIA });
+  var op = (name) => o("Operation", `The ${name.toUpperCase()} operation on this path.`);
+  var schemaRef = (doc, x) => o("Schema", doc, x);
+  var OBJECTS = {
+    OpenAPI: {
+      doc: "The root object of an OpenAPI document.",
+      fields: {
+        openapi: s("The OpenAPI Specification version this document uses.", { req: true, hints: TEMPLATES }),
+        $self: s("The URI that identifies this document, used as the base for relative references.", { since: 32 }),
+        info: o("Info", "Metadata about the API.", { req: true }),
+        jsonSchemaDialect: s("The default JSON Schema dialect URI for Schema Objects in this document.", { since: 31 }),
+        servers: l("Server", "The servers that host the API."),
+        paths: o("Paths", "The available paths and their operations.", { req: true, reqUntil: 31 }),
+        webhooks: m("PathItem", "Incoming requests the API consumer may receive, keyed by name.", { since: 31 }),
+        components: o("Components", "Reusable objects referenced from elsewhere in the document."),
+        security: l("SecurityRequirement", "Security requirements that apply to every operation by default."),
+        tags: l("Tag", "Tags used to group operations, with extra metadata."),
+        externalDocs: o("ExternalDocs", "A link to additional external documentation.")
+      }
+    },
+    Info: {
+      doc: "Metadata about the API.",
+      fields: {
+        title: s("The name of the API.", { req: true }),
+        summary: s("A short summary of the API.", { since: 31 }),
+        description: s("A longer description of the API; CommonMark is allowed."),
+        termsOfService: s("A URL to the terms of service of the API."),
+        contact: o("Contact", "Contact information for the API."),
+        license: o("License", "License information for the API."),
+        version: s("The version of this API document (not the OpenAPI version).", { req: true })
+      }
+    },
+    Contact: {
+      doc: "Contact information for the API.",
+      fields: {
+        name: s("The name of the contact person or organization."),
+        url: s("A URL pointing to the contact information."),
+        email: s("The email address of the contact.")
+      }
+    },
+    License: {
+      doc: "License information for the API.",
+      fields: {
+        name: s("The name of the license.", { req: true }),
+        identifier: s("An SPDX license expression for the API.", { since: 31 }),
+        url: s("A URL to the license text.")
+      }
+    },
+    Server: {
+      doc: "A server that hosts the API.",
+      fields: {
+        url: s("The server URL, which may contain {variables}.", { req: true }),
+        description: s("A description of the server."),
+        name: s("A short name for the server.", { since: 32 }),
+        variables: m("ServerVariable", "Values for the variables in the server URL.")
+      }
+    },
+    ServerVariable: {
+      doc: "A variable used in a server URL template.",
+      fields: {
+        enum: l("str", "The allowed values of the variable."),
+        default: s("The value used when no other value is supplied.", { req: true }),
+        description: s("A description of the variable.")
+      }
+    },
+    Paths: {
+      doc: "The available paths, each starting with a slash.",
+      fields: {},
+      patterns: [{ re: /^\//, t: "obj", of: "PathItem", doc: "The operations available on this path." }]
+    },
+    PathItem: {
+      doc: "The operations available on a single path.",
+      ref: true,
+      fields: {
+        summary: s("A short summary that applies to all operations on this path."),
+        description: s("A description that applies to all operations on this path."),
+        get: op("get"),
+        put: op("put"),
+        post: op("post"),
+        delete: op("delete"),
+        options: op("options"),
+        head: op("head"),
+        patch: op("patch"),
+        trace: op("trace"),
+        query: o("Operation", "The QUERY operation on this path, a safe request that carries a body.", { since: 32 }),
+        additionalOperations: m("Operation", "Operations for other HTTP methods, keyed by the method name in upper case.", { since: 32 }),
+        servers: l("Server", "Servers that override the global ones for this path."),
+        parameters: l("Parameter", "Parameters shared by all operations on this path.")
+      }
+    },
+    Operation: {
+      doc: "A single API operation on a path.",
+      fields: {
+        tags: l("str", "Tags used to group this operation."),
+        summary: s("A short summary of what the operation does."),
+        description: s("A longer explanation of the operation behavior."),
+        externalDocs: o("ExternalDocs", "A link to additional documentation for this operation."),
+        operationId: s("A unique identifier for the operation."),
+        parameters: l("Parameter", "Parameters accepted by this operation."),
+        requestBody: o("RequestBody", "The body this operation accepts."),
+        responses: o("Responses", "The possible responses, keyed by status code.", { req: true, reqUntil: 31 }),
+        callbacks: m("Callback", "Out-of-band callbacks related to this operation."),
+        deprecated: b("Marks the operation as deprecated."),
+        security: l("SecurityRequirement", "Security requirements that override the document default."),
+        servers: l("Server", "Servers that override the global ones for this operation.")
+      }
+    },
+    Parameter: {
+      doc: "A single operation parameter, identified by name and location.",
+      ref: true,
+      fields: {
+        name: s("The name of the parameter, case sensitive.", { req: true }),
+        in: s("Where the parameter is sent.", { req: true, enum: ["query", "header", "path", "cookie", ["querystring", 32]] }),
+        description: s("A description of the parameter."),
+        required: b("Whether the parameter is mandatory; path parameters must set it to true."),
+        deprecated: b("Marks the parameter as deprecated."),
+        allowEmptyValue: b("Allows sending a query parameter with an empty value."),
+        style: s("How the parameter value is serialized.", { enum: ["matrix", "label", "simple", "form", "spaceDelimited", "pipeDelimited", "deepObject", ["cookie", 32]] }),
+        explode: b("Whether arrays and objects produce a separate parameter per item."),
+        allowReserved: b("Whether reserved characters are sent without percent-encoding."),
+        schema: schemaRef("The schema of the parameter value."),
+        example: a("An example value of the parameter."),
+        examples: m("Example", "Named examples of the parameter value."),
+        content: content("The parameter representation, keyed by a single media type.")
+      }
+    },
+    RequestBody: {
+      doc: "The body of a request.",
+      ref: true,
+      fields: {
+        description: s("A description of the request body."),
+        content: content("The body content, keyed by media type."),
+        required: b("Whether the body is mandatory.")
+      }
+    },
+    MediaType: {
+      doc: "The schema and examples for one media type.",
+      ref: true,
+      fields: {
+        schema: schemaRef("The schema of the content."),
+        itemSchema: schemaRef("The schema of each item in a sequential media type such as JSON Lines.", { since: 32 }),
+        example: a("An example of the content."),
+        examples: m("Example", "Named examples of the content."),
+        encoding: m("Encoding", "Encoding of individual properties, keyed by property name."),
+        prefixEncoding: l("Encoding", "Encoding of the leading items of a multipart body, by position.", { since: 32 }),
+        itemEncoding: o("Encoding", "Encoding applied to every item of a multipart body.", { since: 32 })
+      }
+    },
+    Encoding: {
+      doc: "How a single property of a multipart or form body is encoded.",
+      fields: {
+        contentType: s("The content type of the property."),
+        headers: m("Header", "Extra headers for a multipart part."),
+        style: s("How the property value is serialized.", { enum: ["form", "spaceDelimited", "pipeDelimited", "deepObject"] }),
+        explode: b("Whether arrays and objects produce a separate value per item."),
+        allowReserved: b("Whether reserved characters are sent without percent-encoding."),
+        encoding: m("Encoding", "Encoding of nested properties, keyed by property name.", { since: 32 }),
+        prefixEncoding: l("Encoding", "Encoding of the leading nested items, by position.", { since: 32 }),
+        itemEncoding: o("Encoding", "Encoding applied to every nested item.", { since: 32 })
+      }
+    },
+    Responses: {
+      doc: "The possible responses of an operation, keyed by HTTP status code.",
+      fields: {
+        default: o("Response", "The response for any status code not listed explicitly.")
+      },
+      patterns: [{ re: /^[1-5](?:\d\d|XX)$/, t: "obj", of: "Response", doc: "The response for this HTTP status code.", keyHints: STATUS }]
+    },
+    Response: {
+      doc: "A single response of an operation.",
+      ref: true,
+      fields: {
+        summary: s("A short summary of the response.", { since: 32 }),
+        description: s("A description of the response.", { req: true, reqUntil: 32 }),
+        headers: m("Header", "Response headers, keyed by header name."),
+        content: content("The response body, keyed by media type."),
+        links: m("Link", "Links to other operations, keyed by name.")
+      }
+    },
+    Header: {
+      doc: "A header sent with a request or response.",
+      ref: true,
+      fields: {
+        description: s("A description of the header."),
+        required: b("Whether the header is mandatory."),
+        deprecated: b("Marks the header as deprecated."),
+        allowEmptyValue: b("Allows an empty header value."),
+        style: s("How the header value is serialized.", { enum: ["simple"] }),
+        explode: b("Whether arrays and objects produce a separate value per item."),
+        allowReserved: b("Whether reserved characters are sent without percent-encoding."),
+        schema: schemaRef("The schema of the header value."),
+        example: a("An example of the header value."),
+        examples: m("Example", "Named examples of the header value."),
+        content: content("The header representation, keyed by a single media type.")
+      }
+    },
+    Components: {
+      doc: "Reusable objects that other parts of the document reference.",
+      fields: {
+        schemas: m("Schema", "Reusable schemas, keyed by name."),
+        responses: m("Response", "Reusable responses, keyed by name."),
+        parameters: m("Parameter", "Reusable parameters, keyed by name."),
+        examples: m("Example", "Reusable examples, keyed by name."),
+        requestBodies: m("RequestBody", "Reusable request bodies, keyed by name."),
+        headers: m("Header", "Reusable headers, keyed by name."),
+        securitySchemes: m("SecurityScheme", "Reusable security schemes, keyed by name."),
+        links: m("Link", "Reusable links, keyed by name."),
+        callbacks: m("Callback", "Reusable callbacks, keyed by name."),
+        pathItems: m("PathItem", "Reusable path items, keyed by name.", { since: 31 }),
+        mediaTypes: m("MediaType", "Reusable media type objects, keyed by name.", { since: 32 })
+      }
+    },
+    Schema: {
+      doc: "A data type definition based on JSON Schema.",
+      ref: true,
+      fields: {
+        title: s("A short title for the schema."),
+        description: s("A description of the data."),
+        type: s("The data type.", { of: "str", enum: ["string", "number", "integer", "boolean", "array", "object", ["null", 31]], tFrom: [31, "str|list"] }),
+        format: s("A hint about the exact data format, such as int64 or date-time.", { hints: FORMATS }),
+        enum: l("any", "The fixed set of allowed values."),
+        const: a("The single allowed value.", { since: 31 }),
+        default: a("The value assumed when none is supplied."),
+        nullable: b("Allows null in addition to the declared type.", { until: 31 }),
+        multipleOf: n("The number must be a multiple of this value."),
+        maximum: n("The inclusive upper bound of a number."),
+        exclusiveMaximum: b("Makes maximum exclusive.", { tFrom: [31, "num"] }),
+        minimum: n("The inclusive lower bound of a number."),
+        exclusiveMinimum: b("Makes minimum exclusive.", { tFrom: [31, "num"] }),
+        maxLength: i("The maximum length of a string."),
+        minLength: i("The minimum length of a string."),
+        pattern: s("A regular expression the string must match."),
+        maxItems: i("The maximum number of array items."),
+        minItems: i("The minimum number of array items."),
+        uniqueItems: b("Requires all array items to be distinct."),
+        maxProperties: i("The maximum number of object properties."),
+        minProperties: i("The minimum number of object properties."),
+        required: l("str", "The names of properties that must be present."),
+        properties: m("Schema", "The schemas of the object properties, keyed by name."),
+        additionalProperties: { t: "bool|obj", of: "Schema", doc: "The schema for properties not listed, or false to forbid them." },
+        patternProperties: m("Schema", "Schemas for properties whose names match a regular expression.", { since: 31 }),
+        propertyNames: schemaRef("A schema every property name must match.", { since: 31 }),
+        unevaluatedProperties: { t: "bool|obj", of: "Schema", doc: "The schema for properties no other keyword evaluated.", since: 31 },
+        dependentRequired: a("Properties that become required when a given property is present.", { since: 31 }),
+        dependentSchemas: m("Schema", "Schemas that apply when a given property is present.", { since: 31 }),
+        items: schemaRef("The schema of the array items.", { tFrom: [31, "obj|bool"] }),
+        prefixItems: l("Schema", "Schemas for the leading array items, by position.", { since: 31 }),
+        unevaluatedItems: { t: "bool|obj", of: "Schema", doc: "The schema for array items no other keyword evaluated.", since: 31 },
+        contains: schemaRef("A schema at least one array item must match.", { since: 31 }),
+        minContains: i("The minimum number of items that match contains.", { since: 31 }),
+        maxContains: i("The maximum number of items that match contains.", { since: 31 }),
+        allOf: l("Schema", "The data must match all of these schemas."),
+        oneOf: l("Schema", "The data must match exactly one of these schemas."),
+        anyOf: l("Schema", "The data must match at least one of these schemas."),
+        not: schemaRef("The data must not match this schema."),
+        if: schemaRef("A condition schema that selects then or else.", { since: 31 }),
+        then: schemaRef("The schema applied when if matches.", { since: 31 }),
+        else: schemaRef("The schema applied when if does not match.", { since: 31 }),
+        discriminator: o("Discriminator", "Selects the matching oneOf/anyOf schema from a property value."),
+        readOnly: b("The property is only sent in responses."),
+        writeOnly: b("The property is only sent in requests."),
+        xml: o("XML", "Details for the XML representation."),
+        externalDocs: o("ExternalDocs", "A link to additional documentation for this schema."),
+        example: a("An example value of the schema."),
+        examples: l("any", "A list of example values of the schema.", { since: 31 }),
+        deprecated: b("Marks the schema as deprecated."),
+        contentMediaType: s("The media type of string content.", { since: 31 }),
+        contentEncoding: s("The encoding of string content, such as base64.", { since: 31 }),
+        contentSchema: schemaRef("The schema of the decoded string content.", { since: 31 }),
+        $id: s("The URI that identifies this schema.", { since: 31 }),
+        $schema: s("The JSON Schema dialect of this schema.", { since: 31 }),
+        $anchor: s("A plain-name anchor for referencing this schema.", { since: 31 }),
+        $dynamicAnchor: s("A dynamic anchor for extensible recursive schemas.", { since: 31 }),
+        $dynamicRef: s("A reference resolved through dynamic anchors.", { since: 31 }),
+        $defs: m("Schema", "Local schema definitions, keyed by name.", { since: 31 }),
+        $comment: s("A comment for schema authors, ignored by tools.", { since: 31 })
+      }
+    },
+    Discriminator: {
+      doc: "Tells which schema applies based on the value of one property.",
+      fields: {
+        propertyName: s("The property whose value selects the schema.", { req: true }),
+        mapping: m("str", "Maps property values to schema names or references."),
+        defaultMapping: s("The schema used when the property value has no mapping.", { since: 32 })
+      }
+    },
+    XML: {
+      doc: "Details for the XML representation of a schema.",
+      fields: {
+        nodeType: s("The kind of XML node this schema maps to.", { since: 32, enum: ["element", "attribute", "text", "cdata", "none"] }),
+        name: s("The element or attribute name."),
+        namespace: s("The absolute URI of the XML namespace."),
+        prefix: s("The namespace prefix."),
+        attribute: b("Writes the property as an attribute instead of an element."),
+        wrapped: b("Wraps array items in an extra element.")
+      }
+    },
+    Example: {
+      doc: "A named example value.",
+      ref: true,
+      fields: {
+        summary: s("A short summary of the example."),
+        description: s("A longer description of the example."),
+        value: a("The example value inline."),
+        dataValue: a("The example as data, before serialization.", { since: 32 }),
+        serializedValue: s("The example exactly as sent on the wire.", { since: 32 }),
+        externalValue: s("A URL to the example value.")
+      }
+    },
+    Link: {
+      doc: "A link from a response to another operation.",
+      ref: true,
+      fields: {
+        operationRef: s("A URI reference to the linked operation."),
+        operationId: s("The operationId of the linked operation."),
+        parameters: a("Parameter values for the linked operation, keyed by name."),
+        requestBody: a("The request body for the linked operation."),
+        description: s("A description of the link."),
+        server: o("Server", "A server that overrides the target operation servers.")
+      }
+    },
+    Callback: {
+      doc: "Requests the API may send back, keyed by a runtime URL expression.",
+      ref: true,
+      fields: {},
+      patterns: [{ re: /^/, t: "obj", of: "PathItem", doc: "The request sent to the URL given by this expression." }]
+    },
+    SecurityRequirement: {
+      doc: "The security schemes required, each mapped to its list of scopes.",
+      fields: {},
+      patterns: [{ re: /^/, t: "list", of: "str", doc: "The scopes required from this security scheme." }]
+    },
+    SecurityScheme: {
+      doc: "A security scheme the operations can use.",
+      ref: true,
+      fields: {
+        type: s("The kind of security scheme.", { req: true, enum: ["apiKey", "http", "oauth2", "openIdConnect", ["mutualTLS", 31]] }),
+        description: s("A description of the security scheme."),
+        name: s("The name of the header, query or cookie parameter for apiKey."),
+        in: s("Where the API key is sent.", { enum: ["query", "header", "cookie"] }),
+        scheme: s("The HTTP authorization scheme, such as bearer.", { hints: ["basic", "bearer", "digest"] }),
+        bearerFormat: s("A hint about the bearer token format, such as JWT."),
+        flows: o("OAuthFlows", "The OAuth flows the scheme supports."),
+        openIdConnectUrl: s("The OpenID Connect discovery URL."),
+        oauth2MetadataUrl: s("The OAuth 2.0 authorization server metadata URL.", { since: 32 }),
+        deprecated: b("Marks the security scheme as deprecated.", { since: 32 })
+      }
+    },
+    OAuthFlows: {
+      doc: "The OAuth flows a scheme supports.",
+      fields: {
+        implicit: o("OAuthFlow", "The implicit flow."),
+        password: o("OAuthFlow", "The resource owner password flow."),
+        clientCredentials: o("OAuthFlow", "The client credentials flow."),
+        authorizationCode: o("OAuthFlow", "The authorization code flow."),
+        deviceAuthorization: o("OAuthFlow", "The device authorization flow.", { since: 32 })
+      }
+    },
+    OAuthFlow: {
+      doc: "The settings of one OAuth flow.",
+      fields: {
+        authorizationUrl: s("The authorization endpoint URL."),
+        deviceAuthorizationUrl: s("The device authorization endpoint URL.", { since: 32 }),
+        tokenUrl: s("The token endpoint URL."),
+        refreshUrl: s("The URL for refreshing tokens."),
+        scopes: m("str", "The available scopes, each mapped to a short description.", { req: true })
+      }
+    },
+    Tag: {
+      doc: "Metadata for a tag used by operations.",
+      fields: {
+        name: s("The tag name.", { req: true }),
+        summary: s("A short summary of the tag.", { since: 32 }),
+        description: s("A description of the tag."),
+        externalDocs: o("ExternalDocs", "A link to additional documentation for this tag."),
+        parent: s("The name of the tag this one is nested under.", { since: 32 }),
+        kind: s("The category of the tag, such as nav or badge.", { since: 32, hints: ["nav", "badge", "audience"] })
+      }
+    },
+    ExternalDocs: {
+      doc: "A link to external documentation.",
+      fields: {
+        description: s("A description of the linked documentation."),
+        url: s("The URL of the documentation.", { req: true })
+      }
+    }
+  };
+  var REF = s("A reference to an object defined elsewhere.");
+  var EXT = a("Specification extension: a custom field that tools may use.");
+  function verOf(text) {
+    const mm = /(?:^['"]?|")openapi['"]?\s*:\s*['"]?3\.(\d+)/m.exec(text);
+    return mm ? 30 + Number(mm[1]) : void 0;
+  }
+  var active = (f, ver) => (!f.since || ver >= f.since) && (!f.until || ver < f.until);
+  var kindsOf = (f, ver) => (f.tFrom && ver >= f.tFrom[0] ? f.tFrom[1] : f.t).split("|");
+  var enumOf = (f, ver) => f.enum?.filter((e) => !Array.isArray(e) || active({ since: e[1], until: e[2] }, ver)).map((e) => Array.isArray(e) ? e[0] : e);
+  function member(type, key, ver) {
+    const obj = OBJECTS[type];
+    if (!obj) return void 0;
+    if (Object.hasOwn(obj.fields, key)) {
+      const f = obj.fields[key];
+      return active(f, ver) ? { spec: f, via: "field" } : { spec: f, via: "field", gated: true };
+    }
+    if (key === "$ref" && obj.ref) return { spec: REF, via: "field" };
+    if (key.startsWith("x-")) return { spec: EXT, via: "pattern" };
+    const p = obj.patterns?.find((p2) => p2.re.test(key));
+    return p ? { spec: p, via: "pattern" } : void 0;
+  }
+  var itemSpec = (f) => OBJECTS[f.of] ? { t: "obj", of: f.of, doc: OBJECTS[f.of].doc } : { t: f.of ?? "any", doc: f.doc, enum: f.enum };
+  var nodeOf = (spec, ver) => {
+    const kinds = kindsOf(spec, ver);
+    const kind = kinds.find((k) => k === "obj" || k === "map" || k === "list");
+    return kind ? { kind, type: spec.of, spec } : { kind: "prim", type: kinds[0], spec };
+  };
+  function typeAt(path, ver) {
+    let cur = { kind: "obj", type: "OpenAPI", spec: null };
+    for (const seg of path) {
+      if (cur.kind === "obj") {
+        const mm = member(cur.type, String(seg), ver);
+        if (!mm) return null;
+        cur = nodeOf(mm.spec, ver);
+      } else if (cur.kind === "map" || cur.kind === "list" && typeof seg === "number") {
+        cur = nodeOf(itemSpec(cur.spec), ver);
+      } else return null;
+    }
+    return cur;
+  }
+
+  // src/oas/ast.js
+  var isJson = (text) => /^\s*[{[]/.test(text);
+  function parse3(text) {
+    const lc = new LineCounter();
+    const doc = parseDocument(text, { lineCounter: lc });
+    return { doc, lc, ver: verOf(text), json: isJson(text), root: doc.contents };
+  }
+  function range(lc, [s2, e]) {
+    const a2 = lc.linePos(s2);
+    const b2 = lc.linePos(e);
+    return { startLine: a2.line, startCol: a2.col, endLine: b2.line, endCol: b2.col };
+  }
+  var head = (text, [s2, e]) => {
+    const eol = text.indexOf("\n", s2);
+    return [s2, eol < 0 ? e : Math.min(e, eol)];
+  };
+  var keyOf = (pair2) => isScalar(pair2.key) && pair2.key.value != null ? String(pair2.key.value) : null;
+  var pairOf = (map2, key) => isMap(map2) ? map2.items.find((p) => keyOf(p) === key) : void 0;
+  function formatJson(text) {
+    const big = text.replace(/"(?:[^"\\]|\\.)*"/g, '""').match(/(?<![\d.])-?\d+(?![\d.eE])/g)?.find((n2) => !Number.isSafeInteger(Number(n2)));
+    if (big) throw new Error(`Not formatted: ${big} is too large for a JavaScript number and would change`);
+    return JSON.stringify(JSON.parse(text), null, 2) + "\n";
+  }
+
+  // src/oas/context.js
+  var KEY = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s"'#{[\]][^#]*?)\s*:(?=\s|$)/;
+  var BLOCK = /(?::\s*|(?:^|\s)-\s+)[|>][-+0-9]*\s*(?:#.*)?$/;
+  function unq(k) {
+    if (k[0] === "'") return k.slice(1, -1).replace(/''/g, "'");
+    if (k[0] === '"') {
+      try {
+        return JSON.parse(k);
+      } catch {
+        return k.slice(1, -1);
+      }
+    }
+    return k.trimEnd();
+  }
+  function scan(lines) {
+    const out = [];
+    let block = -1;
+    for (const raw of lines) {
+      const ind = raw.search(/\S/);
+      if (block >= 0 && (ind < 0 || ind > block)) {
+        out.push(ind < 0 ? null : false);
+        continue;
+      }
+      block = -1;
+      if (ind < 0 || raw[ind] === "#") {
+        out.push(null);
+        continue;
+      }
+      const d = /^( *)(-(?: +|$))?/.exec(raw);
+      const dash = d[2] ? d[1].length : -1;
+      const rest = raw.slice(d[0].length);
+      const kc = dash >= 0 && !rest ? dash + 2 : d[0].length;
+      const k = KEY.exec(rest);
+      const key = k ? unq(k[1]) : null;
+      out.push({ dash, kc, key, hasVal: k ? /^\s*[^\s#]/.test(rest.slice(k[0].length)) : rest !== "" });
+      if (BLOCK.test(raw)) block = key != null ? kc : dash;
+    }
+    return out;
+  }
+  function itemIndex(info, j, d) {
+    let n2 = 0;
+    for (let i2 = j - 1; i2 >= 0; i2--) {
+      const L = info[i2];
+      if (!L) continue;
+      const col = L.dash >= 0 ? L.dash : L.kc;
+      if (col < d || col === d && L.dash < 0) break;
+      if (L.dash === d) n2++;
+    }
+    return n2;
+  }
+  function parents(info, i0, c, dash) {
+    const path = [];
+    let allowEq = false;
+    if (dash >= 0) {
+      path.push(itemIndex(info, i0, dash));
+      c = dash;
+      allowEq = true;
+    }
+    for (let j = i0 - 1; j >= 0 && (c > 0 || allowEq); j--) {
+      const L = info[j];
+      if (!L || L.kc > c) continue;
+      const parent = L.kc < c || allowEq && L.key != null && !L.hasVal;
+      if (parent) {
+        if (L.key == null) continue;
+        path.push(L.key);
+      } else if (L.dash < 0) continue;
+      if (L.dash >= 0) {
+        path.push(itemIndex(info, j, L.dash));
+        c = L.dash;
+        allowEq = true;
+      } else {
+        c = L.kc;
+        allowEq = false;
+      }
+    }
+    return path.reverse();
+  }
+  function siblings(info, i0, c, dash) {
+    const keys = /* @__PURE__ */ new Set();
+    if (dash < 0) {
+      for (let j = i0 - 1; j >= 0; j--) {
+        const L = info[j];
+        if (!L || L.kc > c) continue;
+        if (L.kc < c) break;
+        if (L.key != null) keys.add(L.key);
+        if (L.dash >= 0) break;
+      }
+    }
+    for (let j = i0 + 1; j < info.length; j++) {
+      const L = info[j];
+      if (!L || L.kc > c) continue;
+      if (L.kc < c || L.dash >= 0) break;
+      if (L.key != null) keys.add(L.key);
+    }
+    return keys;
+  }
+  function yamlCtx(text, line, col) {
+    const lines = text.split(/\r?\n/);
+    const info = scan(lines);
+    const i0 = line - 1;
+    const raw = lines[i0] ?? "";
+    if (info[i0] === false) return null;
+    const m2 = /^( *)(- +)?(.*)$/.exec(raw.slice(0, col - 1));
+    const dash = m2[2] ? m2[1].length : -1;
+    const c = m2[1].length + (m2[2]?.length ?? 0);
+    const k = KEY.exec(m2[3]);
+    const kv = k ? { position: "value", key: unq(k[1]), prefix: m2[3].slice(k[0].length).trimStart() } : { position: "key", key: info[i0]?.key ?? null, prefix: m2[3] };
+    return { path: parents(info, i0, c, dash), keysPresent: siblings(info, i0, c, dash), ...kv, indent: c };
+  }
+  var JSON_TOKEN = /"(?:[^"\\\n]|\\.)*"?|[{}[\]:,]|[^\s{}[\]:,"]+/g;
+  function jsonCtx(text, line, col) {
+    let off = 0;
+    for (let l2 = 1; l2 < line && off >= 0; l2++) off = text.indexOf("\n", off) + 1;
+    off += col - 1;
+    const stack = [{ kind: "arr", idx: 0, keys: /* @__PURE__ */ new Set(), expect: "value" }];
+    let snap = null;
+    const take = (top, prefix, inKey) => {
+      const position = top.kind === "obj" && (inKey || top.expect !== "value") ? "key" : "value";
+      snap = {
+        path: stack.slice(2).map((f) => f.key),
+        frame: top,
+        position,
+        key: position === "value" ? top.kind === "obj" ? top.pending : null : null,
+        prefix
+      };
+    };
+    JSON_TOKEN.lastIndex = 0;
+    for (let mt; mt = JSON_TOKEN.exec(text); ) {
+      const tok = mt[0];
+      const s2 = mt.index;
+      const e = s2 + tok.length;
+      const top = stack[stack.length - 1];
+      const open = tok[0] === '"' && (tok.length === 1 || tok[tok.length - 1] !== '"');
+      let inside = false;
+      if (!snap) {
+        if (s2 >= off) take(top, "", false);
+        else if (tok[0] === '"' && off < e + (open ? 1 : 0)) {
+          inside = true;
+          take(top, text.slice(s2, off), top.kind === "obj" && top.expect === "key");
+          if (snap.position === "key") snap.key = unqJson(tok);
+        } else if (!/^[{}[\]:,"]/.test(tok) && off <= e) {
+          inside = true;
+          take(top, text.slice(s2, off), top.kind === "obj" && top.expect === "key");
+        }
+      }
+      if (tok === "{" || tok === "[") {
+        stack.push({ kind: tok === "{" ? "obj" : "arr", key: top.kind === "obj" ? top.pending : top.idx, idx: 0, keys: /* @__PURE__ */ new Set(), expect: tok === "{" ? "key" : "value" });
+        top.expect = "comma";
+      } else if (tok === "}" || tok === "]") {
+        if (stack.length > 1 && stack.pop() === snap?.frame) break;
+      } else if (tok === ":") top.expect = "value";
+      else if (tok === ",") {
+        top.expect = top.kind === "obj" ? "key" : "value";
+        if (top.kind === "arr") top.idx++;
+      } else if (top.kind === "obj" && top.expect === "key") {
+        top.pending = unqJson(tok);
+        if (!inside) top.keys.add(top.pending);
+        top.expect = "colon";
+      } else top.expect = "comma";
+    }
+    if (!snap) take(stack[stack.length - 1], "", false);
+    return { path: snap.path, keysPresent: snap.frame.keys, position: snap.position, key: snap.key, prefix: snap.prefix, indent: 0 };
+  }
+  function unqJson(tok) {
+    try {
+      return JSON.parse(tok);
+    } catch {
+      return tok.replace(/^"|"$/g, "");
+    }
+  }
+  function contextAt(text, line, col) {
+    const json = isJson(text);
+    const ctx = json ? jsonCtx(text, line, col) : yamlCtx(text, line, col);
+    if (!ctx) return null;
+    const version = verOf(text) ?? 32;
+    const t = typeAt(ctx.path, version);
+    return { ...ctx, objectType: t?.kind === "obj" ? t.type : null, container: t && t.kind !== "obj" ? t : null, version, json };
+  }
+
+  // src/oas/complete.js
+  var lower = (s2) => s2.toLowerCase();
+  var strip = (p) => p.replace(/^["']/, "");
+  function insertKey(key, spec, ctx, rest, pad) {
+    if (ctx.json) return rest.includes(":") ? `"${key}"` : `"${key}": `;
+    const k = /^\d/.test(key) ? `'${key}'` : key;
+    if (rest.includes(":")) return k;
+    const t = kindsOf(spec, ctx.version)[0];
+    return t === "obj" || t === "map" ? `${k}:
+${pad}  ` : t === "list" ? `${k}:
+${pad}  - ` : `${k}: `;
+  }
+  function complete(text, line, col) {
+    const ctx = contextAt(text, line, col);
+    if (!ctx) return [];
+    const raw = text.split(/\r?\n/)[line - 1] ?? "";
+    const rest = raw.slice(col - 1);
+    const pad = " ".repeat(Math.max(0, ctx.indent - raw.search(/\S|$/)));
+    const pre = lower(strip(ctx.prefix));
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    const add = (label2, item2) => {
+      if (seen.has(label2) || !lower(label2).startsWith(pre)) return;
+      seen.add(label2);
+      out.push({ label: label2, ...item2 });
+    };
+    const ver = ctx.version;
+    if (ctx.position === "key") {
+      const obj = OBJECTS[ctx.objectType];
+      const keyItem = (key, spec, required) => {
+        if (ctx.keysPresent.has(key)) return;
+        add(key, { insertText: insertKey(key, spec, ctx, rest, pad), kind: "key", doc: spec.doc, ...required && { required: true }, sortText: (required ? "0" : "1") + key });
+      };
+      if (obj) {
+        for (const [key, f2] of Object.entries(obj.fields)) {
+          if (active(f2, ver)) keyItem(key, f2, f2.req && !(f2.reqUntil && ver >= f2.reqUntil));
+        }
+        for (const p of obj.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
+      } else if (ctx.container?.kind === "map") {
+        for (const key of ctx.container.spec.keyHints ?? []) keyItem(key, itemSpec(ctx.container.spec));
+      }
+      return out;
+    }
+    const f = ctx.objectType && ctx.key != null ? member(ctx.objectType, ctx.key, ver)?.spec : null;
+    if (!f || f === EXT) return out;
+    const values = enumOf(f, ver) ?? f.hints ?? (kindsOf(f, ver).includes("bool") ? ["true", "false"] : []);
+    const isStr = kindsOf(f, ver).includes("str");
+    for (const v2 of values) {
+      const ins = ctx.json ? isStr ? `"${v2}"` : v2 : isStr && /^(null|true|false)$/.test(v2) ? `'${v2}'` : v2;
+      add(v2, { insertText: (!ctx.json && raw[col - 2] === ":" ? " " : "") + ins, kind: "value", doc: f.doc, sortText: "1" + v2 });
+    }
+    return out;
+  }
+  var since = (v2) => `${Math.floor(v2 / 10)}.${v2 % 10}`;
+  var PRIM = { str: "string", num: "number", int: "integer", bool: "boolean", any: "any" };
+  var typeName = (t, of) => t === "obj" ? of : t === "map" ? `map of ${OBJECTS[of] ? of : PRIM[of]}` : t === "list" ? `list of ${OBJECTS[of] ? of : PRIM[of]}` : PRIM[t];
+  function fieldDoc(text, line, col) {
+    const raw = text.split(/\r?\n/)[line - 1] ?? "";
+    const re = /^( *(?:- +)?)("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s"'#{[\]][^#]*?)\s*:(?=\s|$)|"((?:[^"\\]|\\.)*)"\s*:/g;
+    let hit = null;
+    for (let mt; mt = re.exec(raw); ) {
+      const start = mt.index + (mt[1]?.length ?? 0);
+      const len = (mt[2] ?? `"${mt[3]}"`).length;
+      if (col - 1 >= start && col - 1 <= start + len) hit = { start, quoted: mt[3] != null };
+    }
+    if (!hit) return null;
+    const ctx = contextAt(text, line, hit.start + 1 + (hit.quoted ? 1 : 0));
+    if (!ctx || ctx.position !== "key" || ctx.key == null) return null;
+    const key = ctx.key;
+    const ver = ctx.version;
+    if (key.startsWith("x-")) return { title: key, doc: EXT.doc, type: "any", required: false };
+    if (ctx.container?.kind === "map") {
+      const it = itemSpec(ctx.container.spec);
+      return { title: key, doc: it.doc, type: typeName(it.t, it.of), required: false };
+    }
+    const mm = ctx.objectType && member(ctx.objectType, key, ver);
+    if (!mm) return null;
+    const f = mm.spec;
+    const note = [f.since && `Since OpenAPI ${since(f.since)}.`, f.until && `Removed in OpenAPI ${since(f.until)}.`].filter(Boolean).join(" ");
+    return {
+      title: key,
+      doc: note ? `${f.doc} ${note}` : f.doc,
+      type: kindsOf(f, ver).map((t) => typeName(t, f.of)).join(" or "),
+      required: !!f.req && !(f.reqUntil && ver >= f.reqUntil)
+    };
+  }
+
+  // src/oas/validate.js
+  var START = { startLine: 1, startCol: 1, endLine: 1, endCol: 2 };
+  var mark = (severity, message, where) => ({ severity, message, ...where });
+  var v = (n2) => `${Math.floor(n2 / 10)}.${n2 % 10}`;
+  function syntaxRule({ doc, lc }) {
+    const one = (severity) => (e) => mark(severity, e.message.split("\n")[0], range(lc, e.pos));
+    return [...doc.errors.map(one("error")), ...doc.warnings.map(one("warning"))];
+  }
+  function versionRule({ doc, lc, root }) {
+    if (doc.errors.length) return [];
+    const sw = pairOf(root, "swagger");
+    if (sw) return [mark("error", "Swagger 2.0 is not supported by the editor (OpenAPI 3.x only)", range(lc, sw.key.range))];
+    const p = pairOf(root, "openapi");
+    if (!p) return [mark("error", "Missing required 'openapi' field", START)];
+    const val = isScalar(p.value) ? String(p.value.value) : "";
+    const mm = /^3\.(\d+)\.\d+/.exec(val);
+    if (mm && Number(mm[1]) <= 2) return [];
+    const where = p.value?.range ? range(lc, p.value.range) : range(lc, p.key.range);
+    if (mm) return [mark("error", `OpenAPI ${val} is newer than this editor supports (up to 3.2)`, where)];
+    return [mark("error", `Invalid OpenAPI version '${val}'. Expected 3.0.x, 3.1.x or 3.2.x`, where)];
+  }
+  var NAMES2 = { str: "string", num: "number", int: "integer", bool: "boolean", map: "mapping", list: "list" };
+  function structureRule({ doc, lc, ver, root, text }) {
+    if (doc.errors.length || !ver || !isMap(root)) return [];
+    const out = [];
+    const at = (node) => range(lc, head(text, node.range));
+    const object = (map2, type, owner) => {
+      const obj = OBJECTS[type];
+      const hasRef = obj.ref && pairOf(map2, "$ref") && !(type === "Schema" && ver >= 31);
+      for (const pair2 of map2.items) {
+        const key = keyOf(pair2);
+        if (key == null || key.startsWith("x-") || key === "<<") continue;
+        const mm = member(type, key, ver);
+        if (!mm) {
+          if (!hasRef) out.push(mark("warning", `Unknown key '${key}' in ${type}`, range(lc, pair2.key.range)));
+          continue;
+        }
+        if (mm.gated) {
+          const msg = mm.spec.until && ver >= mm.spec.until ? `'${key}' was removed in OpenAPI ${v(mm.spec.until)}` : `'${key}' needs OpenAPI ${v(mm.spec.since)}+`;
+          out.push(mark("warning", msg, range(lc, pair2.key.range)));
+          continue;
+        }
+        value(pair2.value, mm.spec, range(lc, pair2.key.range));
+      }
+      if (hasRef) return;
+      for (const [key, f] of Object.entries(obj.fields)) {
+        if (f.req && active(f, ver) && !(f.reqUntil && ver >= f.reqUntil) && !pairOf(map2, key)) {
+          out.push(mark("error", `Missing required '${key}' in ${type}`, owner));
+        }
+      }
+    };
+    const value = (node, spec, owner) => {
+      if (!node || isAlias(node) || isScalar(node) && node.value === null) return;
+      const kinds = kindsOf(spec, ver);
+      if (kinds.includes("any")) return;
+      if (isMap(node)) {
+        if (kinds.includes("obj")) return object(node, spec.of, owner ?? at(node));
+        if (kinds.includes("map")) return node.items.forEach((p) => value(p.value, itemSpec(spec), p.key && range(lc, p.key.range)));
+      } else if (isSeq(node)) {
+        if (kinds.includes("list")) return node.items.forEach((it) => value(it, itemSpec(spec)));
+      } else if (isScalar(node)) {
+        const x = node.value;
+        const ok = typeof x === "string" ? kinds.includes("str") : typeof x === "number" ? kinds.includes("num") || kinds.includes("int") && Number.isInteger(x) : typeof x === "boolean" ? kinds.includes("bool") || ver >= 31 && spec.of === "Schema" : false;
+        if (ok) return scalar2(node, spec);
+        if (kinds.includes("str") && (typeof x === "number" || typeof x === "boolean")) return out.push(mark("warning", "Expected string; quote the value", at(node)));
+      }
+      const want = kinds.map((k) => k === "obj" ? `mapping (${spec.of})` : NAMES2[k]).join(" or ");
+      const found = isMap(node) ? "mapping" : isSeq(node) ? "list" : NAMES2[{ string: "str", number: "num", boolean: "bool" }[typeof node.value]] ?? typeof node.value;
+      out.push(mark("error", `Expected ${want}, found ${found}`, at(node)));
+    };
+    const scalar2 = (node, spec) => {
+      const allowed = enumOf(spec, ver);
+      const x = String(node.value);
+      if (!allowed || allowed.includes(x)) return;
+      const gated = spec.enum.find((e) => Array.isArray(e) && e[0] === x);
+      if (gated) out.push(mark("warning", gated[2] && ver >= gated[2] ? `'${x}' was removed in OpenAPI ${v(gated[2])}` : `'${x}' needs OpenAPI ${v(gated[1])}+`, at(node)));
+      else out.push(mark("error", `Invalid value '${x}'. Allowed: ${allowed.join(", ")}`, at(node)));
+    };
+    object(root, "OpenAPI", START);
+    return out;
+  }
+  var rules = [syntaxRule, versionRule, structureRule];
+  function validate(text) {
+    const ctx = { ...parse3(text), text };
+    return rules.flatMap((r) => r(ctx)).sort((a2, b2) => a2.startLine - b2.startLine || a2.startCol - b2.startCol);
+  }
+
+  // src/oas/outline.js
+  var METHODS2 = ["get", "put", "post", "delete", "options", "head", "patch", "trace", "query"];
+  function outline(text) {
+    const { root, lc } = parse3(text);
+    if (!isMap(root)) return [];
+    const line = (node2) => lc.linePos(node2.range[0]).line;
+    const str = (map2, key) => {
+      const v2 = pairOf(map2, key)?.value;
+      return isScalar(v2) && v2.value != null ? String(v2.value) : void 0;
+    };
+    const node = (label2, kind, at, extra) => ({ label: label2, kind, line: line(at), ...extra, children: extra?.children ?? [] });
+    const pairs2 = (map2) => isMap(map2) ? map2.items.filter((p) => keyOf(p) != null) : [];
+    const op2 = (p) => node(keyOf(p).toUpperCase(), "operation", p.key, { method: keyOf(p).toLowerCase(), ...str(p.value, "summary") && { detail: str(p.value, "summary") } });
+    const ops = (item2) => [
+      ...pairs2(item2).filter((p) => METHODS2.includes(keyOf(p))).map(op2),
+      ...pairs2(pairOf(item2, "additionalOperations")?.value).map(op2)
+    ];
+    const out = [];
+    for (const p of root.items) {
+      const key = keyOf(p);
+      const val = p.value;
+      if (key === "info") {
+        const detail = [str(val, "title"), str(val, "version")].filter(Boolean).join(" ");
+        out.push(node("Info", "info", p.key, detail ? { detail } : void 0));
+      } else if (key === "servers" && isSeq(val)) {
+        out.push(node("Servers", "servers", p.key, { children: val.items.filter(isMap).map((s2) => node(str(s2, "url") ?? "(no url)", "server", s2)) }));
+      } else if (key === "paths" || key === "webhooks") {
+        out.push(node(key === "paths" ? "Paths" : "Webhooks", key, p.key, { children: pairs2(val).map((q) => node(keyOf(q), "path", q.key, { children: ops(q.value) })) }));
+      } else if (key === "components") {
+        out.push(node("Components", "components", p.key, { children: pairs2(val).map((g) => node(keyOf(g), "group", g.key, { children: pairs2(g.value).map((c) => node(keyOf(c), "component", c.key)) })) }));
+      } else if (key === "tags" && isSeq(val)) {
+        out.push(node("Tags", "tags", p.key, { children: val.items.filter(isMap).map((t) => node(str(t, "name") ?? "(no name)", "tag", t)) }));
+      }
+    }
+    return out;
+  }
+
+  // src/oas/templates.js
+  function starter(ver) {
+    const minor = Number(ver.split(".")[1]);
+    const lines = [
+      `openapi: ${ver}`,
+      minor >= 2 && "$self: https://api.example.com/openapi.yaml",
+      "info:",
+      "  title: Example API",
+      minor >= 1 && "  summary: A starter API with one endpoint",
+      "  version: 1.0.0",
+      "servers:",
+      "  - url: https://api.example.com/v1",
+      "paths:",
+      "  /items:",
+      "    get:",
+      "      summary: List items",
+      "      operationId: listItems",
+      "      responses:",
+      "        '200':",
+      "          description: The items",
+      "          content:",
+      "            application/json:",
+      "              schema:",
+      "                type: array",
+      "                items:",
+      "                  $ref: '#/components/schemas/Item'",
+      "components:",
+      "  schemas:",
+      "    Item:",
+      "      type: object",
+      "      required: [id]",
+      "      properties:",
+      "        id:",
+      "          type: string",
+      "        note:",
+      ...minor >= 1 ? ["          type: [string, 'null']"] : ["          type: string", "          nullable: true"]
+    ];
+    return lines.filter((l2) => l2 !== false).join("\n") + "\n";
+  }
+
+  // src/editor.js
+  var store = {
+    get(k) {
+      try {
+        return localStorage.getItem(k);
+      } catch {
+        return null;
+      }
+    },
+    set(k, v2) {
+      try {
+        localStorage.setItem(k, v2);
+      } catch {
+      }
+    }
+  };
+  var md = (s2) => s2.replace(/[\\`*_{}[\]()#+\-.!|<>~]/g, "\\$&");
+  var specOf = (text) => text.match(/^\s*["']?openapi["']?\s*:\s*["']?([\w.-]+)/m)?.[1];
+  function initEditor({ $: $2, el: el2 }) {
+    let draft = null;
+    try {
+      draft = JSON.parse(store.get("sc.draft"));
+    } catch {
+    }
+    if (typeof draft?.text !== "string") draft = null;
+    let file = draft?.name ?? null;
+    let saved = draft ? null : starter(TEMPLATES.at(-1));
+    const model = monaco.editor.createModel(draft?.text ?? saved, "yaml", monaco.Uri.parse("inmemory://edit/spec.yaml"));
+    const editor = monaco.editor.create($2("edit-editor"), {
+      model,
+      theme: "swagger-compare",
+      automaticLayout: true,
+      minimap: { enabled: false },
+      quickSuggestions: { other: true, strings: true, comments: false },
+      wordBasedSuggestions: "off",
+      tabSize: 2,
+      insertSpaces: true,
+      detectIndentation: false,
+      fontFamily: "'JetBrains Mono', Consolas, monospace",
+      fontSize: 13,
+      lineHeight: 20,
+      fontLigatures: false,
+      scrollBeyondLastLine: false,
+      padding: { top: 10 },
+      renderLineHighlight: "line",
+      scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 }
+    });
+    const setMode = (m2) => {
+      document.body.classList.toggle("edit", m2 === "edit");
+      $2("edit").hidden = m2 !== "edit";
+      document.querySelectorAll("[data-mode]").forEach((b2) => b2.setAttribute("aria-pressed", String(b2.dataset.mode === m2)));
+      store.set("sc.mode", m2);
+      if (m2 === "edit") editor.layout();
+    };
+    document.querySelectorAll("[data-mode]").forEach((b2) => b2.addEventListener("click", () => setMode(b2.dataset.mode)));
+    const KIND = { key: "Property", value: "Value", snippet: "Snippet" };
+    monaco.languages.registerCompletionItemProvider("yaml", {
+      triggerCharacters: [" ", ":", "\n", "-"],
+      provideCompletionItems(m2, pos) {
+        if (m2 !== model) return;
+        const text = m2.getValue();
+        const ctx = contextAt(text, pos.lineNumber, pos.column);
+        if (!ctx) return;
+        const pre = ctx.prefix;
+        const closing = /^["']/.test(pre) && m2.getLineContent(pos.lineNumber)[pos.column - 1] === pre[0];
+        const range2 = new monaco.Range(pos.lineNumber, pos.column - pre.length, pos.lineNumber, pos.column + (closing ? 1 : 0));
+        const q = /^["']/.test(pre) ? pre[0] : "";
+        return {
+          suggestions: complete(text, pos.lineNumber, pos.column).map((c) => ({
+            label: c.label,
+            insertText: c.insertText,
+            filterText: q + c.label,
+            kind: monaco.languages.CompletionItemKind[KIND[c.kind]],
+            detail: c.required ? "required" : void 0,
+            documentation: c.doc,
+            sortText: c.sortText,
+            range: range2,
+            .../\n[ -]*$/.test(c.insertText) && { command: { id: "editor.action.triggerSuggest", title: "Suggest" } }
+          }))
+        };
+      }
+    });
+    monaco.languages.registerHoverProvider("yaml", {
+      provideHover(m2, pos) {
+        if (m2 !== model) return;
+        const d = fieldDoc(m2.getValue(), pos.lineNumber, pos.column);
+        if (!d) return;
+        return { contents: [{ value: `**${md(d.title)}** \xB7 ${d.type}${d.required ? " \xB7 required" : ""}` }, { value: md(d.doc) }] };
+      }
+    });
+    const tabs = document.querySelectorAll("[data-tab]");
+    const showTab = (name) => tabs.forEach((t) => {
+      t.setAttribute("aria-selected", String(t.dataset.tab === name));
+      $2(`tab-${t.dataset.tab}`).hidden = t.dataset.tab !== name;
+    });
+    tabs.forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+    const reveal = (line, col = 1) => {
+      editor.setPosition({ lineNumber: line, column: col });
+      editor.revealPositionInCenter({ lineNumber: line, column: col });
+      editor.focus();
+    };
+    let markers = [];
+    const renderProblems = () => {
+      const ul = $2("problems");
+      ul.replaceChildren(
+        ...markers.map((p) => {
+          const b2 = el2("button");
+          b2.type = "button";
+          b2.append(el2("span", `dot ${p.severity}`), el2("span", null, p.message), el2("span", "ln", `Ln ${p.startLine}`));
+          b2.addEventListener("click", () => reveal(p.startLine, p.startCol));
+          const li = el2("li");
+          li.append(b2);
+          return li;
+        })
+      );
+      if (!markers.length) ul.append(el2("li", "none", "No problems"));
+      const n2 = $2("n-problems");
+      n2.textContent = markers.length;
+      n2.classList.toggle("bad", markers.some((p) => p.severity === "error"));
+    };
+    let nodes = [];
+    const renderOutline = () => {
+      nodes = [];
+      const list = (items, depth) => {
+        const ul = el2("ul", "tree");
+        for (const it of items) {
+          const b2 = el2("button");
+          b2.type = "button";
+          b2.dataset.depth = depth;
+          b2.append(it.method ? el2("span", `method m-${it.method}`, it.label) : el2("span", null, it.label));
+          if (it.detail) b2.append(el2("span", "sub", it.detail));
+          b2.addEventListener("click", () => reveal(it.line));
+          nodes.push({ line: it.line, btn: b2 });
+          const li = el2("li");
+          li.append(b2);
+          if (it.children.length) li.append(list(it.children, depth + 1));
+          ul.append(li);
+        }
+        return ul;
+      };
+      $2("outline").replaceChildren(...list(outline(model.getValue()), 0).children);
+      markCurrent();
+    };
+    let cur = null;
+    const markCurrent = () => {
+      const line = editor.getPosition()?.lineNumber ?? 1;
+      const hit = nodes.findLast((n2) => n2.line <= line)?.btn ?? null;
+      if (hit === cur) return;
+      cur?.classList.remove("cur");
+      cur = hit;
+      if (cur) {
+        cur.classList.add("cur");
+        cur.scrollIntoView({ block: "nearest" });
+      }
+    };
+    editor.onDidChangeCursorPosition(markCurrent);
+    const head2 = () => {
+      $2("ed-file").textContent = file ?? "Untitled";
+      const v2 = specOf(model.getValue());
+      $2("ed-spec").textContent = v2 ? `OpenAPI ${v2}` : "";
+      $2("ed-spec").hidden = !v2;
+    };
+    const check = () => {
+      markers = validate(model.getValue());
+      const sev = { error: monaco.MarkerSeverity.Error, warning: monaco.MarkerSeverity.Warning };
+      monaco.editor.setModelMarkers(
+        model,
+        "oas",
+        markers.map((p) => ({ severity: sev[p.severity], message: p.message, startLineNumber: p.startLine, startColumn: p.startCol, endLineNumber: p.endLine, endColumn: p.endCol }))
+      );
+      renderProblems();
+      renderOutline();
+    };
+    let checkTimer, draftTimer;
+    const saveDraft = () => store.set("sc.draft", JSON.stringify({ text: model.getValue(), name: file }));
+    model.onDidChangeContent(() => {
+      head2();
+      clearTimeout(checkTimer);
+      checkTimer = setTimeout(check, 300);
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraft, 500);
+    });
+    const replace = (text) => {
+      editor.pushUndoStop();
+      editor.executeEdits("load", [{ range: model.getFullModelRange(), text }]);
+      editor.pushUndoStop();
+    };
+    const load = (text, name) => {
+      file = name;
+      saved = text;
+      replace(text);
+      head2();
+      saveDraft();
+    };
+    const ver = $2("new-ver");
+    ver.append(...TEMPLATES.map((v2) => el2("option", null, v2)));
+    ver.value = TEMPLATES.at(-1);
+    const discardOk = () => model.getValue() === saved || confirm("Replace the unsaved text?");
+    $2("ed-new").addEventListener("click", () => {
+      if (discardOk()) load(starter(ver.value), null);
+    });
+    const input = $2("edit-input");
+    $2("ed-open").addEventListener("click", () => {
+      input.value = "";
+      input.click();
+    });
+    input.addEventListener("change", async () => {
+      const f = input.files[0];
+      if (f) {
+        const text = await f.text();
+        if (discardOk()) load(text, f.name);
+      }
+    });
+    const node = $2("edit-editor");
+    const drop = el2("div", "drop", "Drop to open");
+    node.append(drop);
+    let dropTimer;
+    node.addEventListener(
+      "dragover",
+      (e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        drop.classList.add("on");
+        clearTimeout(dropTimer);
+        dropTimer = setTimeout(() => drop.classList.remove("on"), 120);
+      },
+      true
+    );
+    node.addEventListener(
+      "drop",
+      async (e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.remove("on");
+        const f = e.dataTransfer.files[0];
+        if (f) {
+          const text = await f.text();
+          if (discardOk()) load(text, f.name);
+        }
+      },
+      true
+    );
+    $2("ed-save").addEventListener("click", () => {
+      const text = model.getValue();
+      const a2 = el2("a");
+      a2.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+      a2.download = file ?? (isJson(text) ? "openapi.json" : "openapi.yaml");
+      a2.click();
+      setTimeout(() => URL.revokeObjectURL(a2.href), 1e3);
+      saved = text;
+    });
+    $2("ed-format").addEventListener("click", () => {
+      const text = model.getValue();
+      let out, why;
+      try {
+        if (isJson(text)) out = formatJson(text);
+        else {
+          const doc = parseDocument(text);
+          if (!doc.errors.length) out = doc.toString({ indent: 2, lineWidth: 0 });
+        }
+      } catch (e) {
+        why = e.message;
+      }
+      if (out == null) {
+        check();
+        if (why) {
+          markers.unshift({ severity: "error", message: why, startLine: 1, startCol: 1 });
+          renderProblems();
+        }
+        showTab("problems");
+        return;
+      }
+      if (out !== text) replace(out);
+    });
+    head2();
+    check();
+    if (store.get("sc.mode") === "edit") setMode("edit");
+  }
+
   // src/renderer.js
   var base = new URL("../vendor/monaco/", location.href).href;
   self.MonacoEnvironment = {
@@ -6925,27 +8100,27 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
   window.require(["vs/editor/editor.main"], init);
   var $ = (id) => document.getElementById(id);
   var el = (tag, cls, text) => {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
+    const n2 = document.createElement(tag);
+    if (cls) n2.className = cls;
+    if (text != null) n2.textContent = text;
+    return n2;
   };
   var GLYPH = { added: "+", removed: "\u2212", changed: "~" };
   var SIDE = { left: "Original", right: "Modified" };
   var ROUTE = /\b(GET|PUT|POST|DELETE|OPTIONS|HEAD|PATCH|TRACE) (\/\S*)/;
   function specLabel(text) {
-    const m = text.match(/^\s*["']?(swagger|openapi)["']?\s*:\s*["']?([\w.-]+)/m);
-    return m ? `${m[1] === "swagger" ? "Swagger" : "OpenAPI"} ${m[2]}` : text.trim() ? "Not a spec?" : "";
+    const m2 = text.match(/^\s*["']?(swagger|openapi)["']?\s*:\s*["']?([\w.-]+)/m);
+    return m2 ? `${m2[1] === "swagger" ? "Swagger" : "OpenAPI"} ${m2[2]}` : text.trim() ? "Not a spec?" : "";
   }
   function richText(text, cls = "text") {
     const span = el("span", cls);
-    const m = text.match(ROUTE);
-    if (!m) return span.textContent = text, span;
+    const m2 = text.match(ROUTE);
+    if (!m2) return span.textContent = text, span;
     span.append(
-      text.slice(0, m.index),
-      el("span", `method m-${m[1].toLowerCase()}`, m[1]),
-      el("span", "route", m[2]),
-      text.slice(m.index + m[0].length)
+      text.slice(0, m2.index),
+      el("span", `method m-${m2[1].toLowerCase()}`, m2[1]),
+      el("span", "route", m2[2]),
+      text.slice(m2.index + m2[0].length)
     );
     return span;
   }
@@ -7032,15 +8207,15 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     let groups = [];
     const renderMeta = () => {
       for (const side of ["left", "right"]) {
-        const m = meta[side];
+        const m2 = meta[side];
         const t = $(`title-${side}`);
-        t.textContent = [m?.title, m?.version && `v${m.version.replace(/^v/i, "")}`].filter(Boolean).join(" \xB7 ");
+        t.textContent = [m2?.title, m2?.version && `v${m2.version.replace(/^v/i, "")}`].filter(Boolean).join(" \xB7 ");
         t.title = t.textContent;
         t.hidden = !t.textContent;
       }
-      const v = $("versions");
-      v.textContent = v.title = heading(meta);
-      v.hidden = !v.textContent;
+      const v2 = $("versions");
+      v2.textContent = v2.title = heading(meta);
+      v2.hidden = !v2.textContent;
     };
     const refreshHead = (side) => {
       const text = models[side].getValue();
@@ -7050,9 +8225,9 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       spec.hidden = !spec.textContent;
       spec.classList.toggle("bad", spec.textContent === "Not a spec?");
     };
-    const load = (side, text, name, m = null) => {
+    const load = (side, text, name, m2 = null) => {
       files[side] = name;
-      meta[side] = m;
+      meta[side] = m2;
       renderMeta();
       const ed = editors[side];
       ed.pushUndoStop();
@@ -7103,8 +8278,8 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     const input = $("file-input");
     let openSide = "left";
     document.querySelectorAll("[data-open]").forEach(
-      (b) => b.addEventListener("click", () => {
-        openSide = b.dataset.open;
+      (b2) => b2.addEventListener("click", () => {
+        openSide = b2.dataset.open;
         input.value = "";
         input.click();
       })
@@ -7113,13 +8288,13 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       const file = input.files[0];
       if (file) load(openSide, await file.text(), file.name);
     });
-    document.querySelectorAll("[data-clear]").forEach((b) => b.addEventListener("click", () => load(b.dataset.clear, "", null)));
+    document.querySelectorAll("[data-clear]").forEach((b2) => b2.addEventListener("click", () => load(b2.dataset.clear, "", null)));
     $("swap").addEventListener("click", () => {
-      const [l, r] = [models.left.getValue(), models.right.getValue()];
+      const [l2, r] = [models.left.getValue(), models.right.getValue()];
       const [fl, fr] = [files.left, files.right];
       const [ml, mr] = [meta.left, meta.right];
       load("left", r, fr, mr);
-      load("right", l, fl, ml);
+      load("right", l2, fl, ml);
     });
     const hl = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
     const flash = { left: editors.left.createDecorationsCollection(), right: editors.right.createDecorationsCollection() };
@@ -7170,22 +8345,22 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       p.append(...text);
       state.append(p);
       if (action) {
-        const b = el("button", "show-line", action.label);
-        b.addEventListener("click", action.run);
-        state.append(b);
+        const b2 = el("button", "show-line", action.label);
+        b2.addEventListener("click", action.run);
+        state.append(b2);
       }
     };
     const filtering = () => !!(hidden.size || tagsOn.size || breakOnly || $("search").value.trim());
     const renderHead = (g, vis) => {
-      const n = { added: 0, removed: 0, changed: 0 };
+      const n2 = { added: 0, removed: 0, changed: 0 };
       const tags = [];
       for (const r of vis) {
-        n[r.c.kind]++;
+        n2[r.c.kind]++;
         if (!tags.includes(r.c.tag)) tags.push(r.c.tag);
       }
       const mini = el("span", "gmini");
-      for (const k in n) if (n[k]) mini.append(el("span", k, GLYPH[k] + n[k]));
-      const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
+      for (const k in n2) if (n2[k]) mini.append(el("span", k, GLYPH[k] + n2[k]));
+      const said = Object.keys(n2).filter((k) => n2[k]).map((k) => `${n2[k]} ${k}`);
       const nb = vis.filter((r) => r.c.breaking).length;
       if (nb) said.push(`${nb} breaking`);
       g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}`);
@@ -7222,8 +8397,8 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     };
     const updatePos = () => {
       const vis = rows.filter((r) => r.show);
-      const i = vis.findIndex((r) => r.btn === selected);
-      $("pos").textContent = `${i < 0 ? "\u2013" : i + 1} / ${vis.length}`;
+      const i2 = vis.findIndex((r) => r.btn === selected);
+      $("pos").textContent = `${i2 < 0 ? "\u2013" : i2 + 1} / ${vis.length}`;
       $("prev").disabled = $("next").disabled = !vis.length;
     };
     const toggleGroup = (g) => {
@@ -7235,13 +8410,13 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     const nav = (dir) => {
       const vis = rows.filter((r) => r.show);
       if (!vis.length) return;
-      const i = vis.findIndex((r) => r.btn === selected);
-      const t = i < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i + dir + vis.length) % vis.length];
+      const i2 = vis.findIndex((r) => r.btn === selected);
+      const t = i2 < 0 ? vis[dir > 0 ? 0 : vis.length - 1] : vis[(i2 + dir + vis.length) % vis.length];
       open.add(t.g.where);
       applyFilters();
       select(t.btn, false);
     };
-    const keyOf = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join("/")}`;
+    const keyOf2 = (c) => `${c.kind}|${c.where}|${c.text}|${c.path.join("/")}`;
     let selected = null;
     let selKey = null;
     const expanded = /* @__PURE__ */ new Set();
@@ -7257,15 +8432,15 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       result = null;
       $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = $("toolbar").hidden = $("summary").hidden = true;
       $("total").textContent = "";
-      const [l, r] = [models.left.getValue(), models.right.getValue()];
-      const res = l.trim() || r.trim() ? compare(l, r) : null;
-      for (const [side, text] of [["left", l], ["right", r]]) {
+      const [l2, r] = [models.left.getValue(), models.right.getValue()];
+      const res = l2.trim() || r.trim() ? compare(l2, r) : null;
+      for (const [side, text] of [["left", l2], ["right", r]]) {
         if (!text.trim()) meta[side] = null;
         else if (res.meta[side]) meta[side] = res.meta[side];
       }
       renderMeta();
-      if (!l.trim() || !r.trim()) {
-        const missing = !l.trim() && !r.trim() ? "both specs" : !l.trim() ? "the original spec" : "the modified spec";
+      if (!l2.trim() || !r.trim()) {
+        const missing = !l2.trim() && !r.trim() ? "both specs" : !l2.trim() ? "the original spec" : "the modified spec";
         showState("idle", "Two specs, one list of changes", [`Paste or drop ${missing}. Changes appear here as you type.`]);
         return;
       }
@@ -7285,10 +8460,10 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       state.hidden = true;
       const counts2 = { added: 0, removed: 0, changed: 0 };
       for (const c of res.changes) counts2[c.kind]++;
-      const index = new Map(res.changes.map((c, i) => [c, i]));
+      const index = new Map(res.changes.map((c, i2) => [c, i2]));
       const entries = view === "endpoints" ? byEndpoint(res.changes).flatMap((g) => g.rows.map((row) => ({ key: g.key, ...row }))) : res.changes.map((c) => ({ key: c.where, c, text: c.text }));
       const byKey = /* @__PURE__ */ new Map();
-      entries.forEach(({ key, c, text }, n) => {
+      entries.forEach(({ key, c, text }, n2) => {
         let g = byKey.get(key);
         if (!g) {
           g = { where: key, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [] };
@@ -7303,12 +8478,12 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
         }
         const li = el("li");
         li._change = c;
-        const hits = c.affects.flatMap((a) => [a.endpoint, a.via ?? ""]);
+        const hits = c.affects.flatMap((a2) => [a2.endpoint, a2.via ?? ""]);
         li._haystack = [c.tag, c.text, c.where, c.path.join(" "), ...c.details ?? [], c.breaking ? "breaking" : "", ...hits].join(" ").toLowerCase();
-        const b = el("button", `item ${c.kind}${c.breaking ? " breaking" : ""}`);
-        b.title = `${c.path.join(" \u203A ")}
+        const b2 = el("button", `item ${c.kind}${c.breaking ? " breaking" : ""}`);
+        b2.title = `${c.path.join(" \u203A ")}
 ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
-        b.dataset.i = index.get(c);
+        b2.dataset.i = index.get(c);
         const body = el("div");
         if (c.breaking) {
           const w = el("span", "warn", "\u26A0");
@@ -7317,29 +8492,29 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
           body.append(w);
         }
         body.append(el("span", c.tag === "refactor" ? "tag tag-refactor" : "tag", c.tag), el("span", "text", text));
-        b.append(el("span", "glyph", GLYPH[c.kind]), body);
-        b.addEventListener("click", () => select(b, true));
-        li.append(b);
+        b2.append(el("span", "glyph", GLYPH[c.kind]), body);
+        b2.addEventListener("click", () => select(b2, true));
+        li.append(b2);
         if (c.details) {
-          const isOpen = expanded.has(keyOf(c));
+          const isOpen = expanded.has(keyOf2(c));
           const tog = el("button", "tog");
           tog.type = "button";
           tog.setAttribute("aria-expanded", String(isOpen));
-          tog.setAttribute("aria-controls", `det-${n}`);
+          tog.setAttribute("aria-controls", `det-${n2}`);
           tog.append(el("span", "chev"), `Details (${c.details.length})`);
           const d = el("div", "details");
-          d.id = `det-${n}`;
+          d.id = `det-${n2}`;
           d.hidden = !isOpen;
           d.append(...c.details.map((t) => el("div", "detail", t)));
           tog.addEventListener("click", () => {
             d.hidden = !d.hidden;
             tog.setAttribute("aria-expanded", String(!d.hidden));
-            expanded[d.hidden ? "delete" : "add"](keyOf(c));
+            expanded[d.hidden ? "delete" : "add"](keyOf2(c));
           });
           li.append(tog, d);
         }
         g.ol.append(li);
-        const row = { li, btn: b, c, g, show: true };
+        const row = { li, btn: b2, c, g, show: true };
         rows.push(row);
         g.rows.push(row);
       });
@@ -7354,18 +8529,18 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
       for (const t of tagsOn) if (!tagCount.has(t)) tagCount.set(t, 0);
       const toggleAll = $("toggle-all");
       $("tagbar").replaceChildren(
-        ...[...tagCount].sort((a, b) => b[1] - a[1]).map(([t, n]) => {
+        ...[...tagCount].sort((a2, b2) => b2[1] - a2[1]).map(([t, n2]) => {
           const chip = el("button", "tchip", `${t} `);
           chip.type = "button";
           chip.dataset.tag = t;
           chip.setAttribute("aria-pressed", String(tagsOn.has(t)));
-          chip.append(el("b", null, n));
+          chip.append(el("b", null, n2));
           return chip;
         }),
         toggleAll
       );
       $("filters").hidden = $("search-wrap").hidden = $("nav").hidden = $("tagbar").hidden = $("toolbar").hidden = $("summary").hidden = false;
-      const want = selKey && (rows.find((r2) => r2.g.where === selKey.where && keyOf(r2.c) === selKey.key) ?? rows.find((r2) => keyOf(r2.c) === selKey.key));
+      const want = selKey && (rows.find((r2) => r2.g.where === selKey.where && keyOf2(r2.c) === selKey.key) ?? rows.find((r2) => keyOf2(r2.c) === selKey.key));
       if (want && openSelected) open.add(want.g.where);
       applyFilters();
       if (selKey) {
@@ -7378,9 +8553,9 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
       }
       list.scrollTop = lastScroll;
     }
-    const setView = (v) => {
-      view = v;
-      document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    const setView = (v2) => {
+      view = v2;
+      document.querySelectorAll("[data-view]").forEach((b2) => b2.setAttribute("aria-pressed", String(b2.dataset.view === v2)));
       run(true);
       if (selected) selected.scrollIntoView({ block: "center" });
       else list.scrollTop = 0;
@@ -7402,28 +8577,28 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
     };
     let copyTimer;
     $("copy").addEventListener("click", async () => {
-      const b = $("copy");
+      const b2 = $("copy");
       if (!result) return;
       const ok = await copyText(markdown(result));
-      b.focus();
-      b.textContent = ok ? "Copied" : "Copy failed";
+      b2.focus();
+      b2.textContent = ok ? "Copied" : "Copy failed";
       clearTimeout(copyTimer);
-      copyTimer = setTimeout(() => b.textContent = "Copy report", 1500);
+      copyTimer = setTimeout(() => b2.textContent = "Copy report", 1500);
     });
-    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => view !== b.dataset.view && setView(b.dataset.view)));
+    document.querySelectorAll("[data-view]").forEach((b2) => b2.addEventListener("click", () => view !== b2.dataset.view && setView(b2.dataset.view)));
     $("breaking").addEventListener("click", () => {
       breakOnly = !breakOnly;
       $("breaking").setAttribute("aria-pressed", String(breakOnly));
       applyFilters();
     });
-    const select = (b, focusEditor) => {
+    const select = (b2, focusEditor) => {
       selected?.classList.remove("sel");
-      selected = b;
-      const row = rows.find((r) => r.btn === b);
-      selKey = { where: row.g.where, key: keyOf(row.c) };
-      b.classList.add("sel");
-      b.scrollIntoView({ block: "nearest" });
-      const c = b.parentElement._change;
+      selected = b2;
+      const row = rows.find((r) => r.btn === b2);
+      selKey = { where: row.g.where, key: keyOf2(row.c) };
+      b2.classList.add("sel");
+      b2.scrollIntoView({ block: "nearest" });
+      const c = b2.parentElement._change;
       const ed = editors[c.side];
       ed.setPosition({ lineNumber: c.line, column: 1 });
       showHl(c, true);
@@ -7433,10 +8608,10 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
     list.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       e.preventDefault();
-      const btns = [...list.querySelectorAll(".ghead, .item")].filter((b) => b.offsetParent);
-      const a = document.activeElement;
-      const i = btns.indexOf(a.closest(".ghead") ?? a.closest("li")?.querySelector(".item"));
-      const next = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
+      const btns = [...list.querySelectorAll(".ghead, .item")].filter((b2) => b2.offsetParent);
+      const a2 = document.activeElement;
+      const i2 = btns.indexOf(a2.closest(".ghead") ?? a2.closest("li")?.querySelector(".item"));
+      const next = btns[Math.max(0, Math.min(btns.length - 1, i2 + (e.key === "ArrowDown" ? 1 : -1)))];
       if (!next) return;
       next.focus();
       if (next.classList.contains("item")) select(next, false);
@@ -7451,7 +8626,7 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
     document.addEventListener(
       "keydown",
       (e) => {
-        if (e.key === "F8" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (e.key === "F8" && !document.body.classList.contains("edit") && !e.ctrlKey && !e.altKey && !e.metaKey) {
           e.preventDefault();
           e.stopPropagation();
           nav(e.shiftKey ? -1 : 1);
@@ -7476,5 +8651,6 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
       })
     );
     $("search").addEventListener("input", applyFilters);
+    initEditor({ $, el });
   }
 })();

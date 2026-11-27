@@ -59,6 +59,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   user-select: none;
 }
 .titlebar button { -webkit-app-region: no-drag; }
+#mode { margin-left: auto; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; }
 .mark { width: 20px; height: 20px; stroke-width: 2.2; }
 .mark path:first-child { stroke: var(--removed); }
@@ -68,7 +69,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  max-width: calc(100vw - 480px);
+  max-width: calc(100vw - 640px); /* clears the brand on the left and the mode toggle + window buttons on the right */
   white-space: pre;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,7 +88,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   gap: 10px;
   padding: 0 10px 10px;
 }
-.diff, .changes {
+.diff, .changes, .edwrap, .side {
   min-height: 0;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -95,6 +96,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   overflow: hidden;
 }
 .diff { display: flex; flex-direction: column; }
+body.edit .diff, body.edit .changes { display: none; }
 
 .panes {
   position: relative;
@@ -392,6 +394,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
   text-align: center;
   font: 600 10.5px/1.3 var(--mono);
   color: var(--ink);
+  background: var(--faint);
   vertical-align: 1px;
 }
 .m-get { background: var(--get); }
@@ -399,9 +402,39 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .m-put { background: var(--put); }
 .m-patch { background: var(--patch); }
 .m-delete { background: var(--delete); color: #fff; }
-.m-head, .m-options, .m-trace { background: var(--head); color: #fff; }
+.m-head, .m-options, .m-trace, .m-query { background: var(--head); color: #fff; }
 .route { font-family: var(--mono); font-size: 12px; }
 .none { padding: 24px; text-align: center; color: var(--muted); }
+
+/* Edit mode; section.edit, since body.edit carries the same class name */
+section.edit { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) 380px; gap: 10px; min-height: 0; }
+section.edit[hidden] { display: none; }
+.edwrap { display: flex; flex-direction: column; }
+.edbar { display: flex; align-items: center; gap: 6px; height: 52px; flex: none; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.edbar .tbtn { margin-left: 0; min-width: 0; }
+.edbar .pane-file { margin-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.edbar .spec { margin-left: auto; }
+.edbar .spec[hidden] { display: none; }
+#new-ver { height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--ink); color: var(--muted); font: 500 12px var(--mono); }
+#edit-editor { flex: 1; min-height: 0; position: relative; }
+.side { display: flex; flex-direction: column; }
+.tabs { flex: none; align-self: flex-start; margin: 12px 12px 6px; }
+.tabs button[aria-selected="true"] { color: var(--text); background: var(--raised); }
+.tabs b { margin-left: 4px; font: 500 10px/1 var(--mono); color: var(--faint); }
+.tabs b.bad { color: var(--removed); }
+.tabpane { flex: 1; min-height: 0; overflow: auto; padding-bottom: 8px; }
+.tabpane[hidden] { display: none; }
+.tree { margin: 0; padding: 0; list-style: none; }
+.tree button { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 12px; text-align: left; overflow-wrap: anywhere; }
+.tree button:hover, .tree button.cur { background: var(--raised); }
+.tree [data-depth="1"] { padding-left: 28px; }
+.tree [data-depth="2"] { padding-left: 44px; }
+.tree .method { flex: none; min-width: 46px; margin-right: 0; font-size: 9.5px; }
+.tree .sub { color: var(--faint); font-size: 12px; }
+.tree .ln { margin-left: auto; flex: none; font: 400 11px var(--mono); color: var(--faint); }
+.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--focus); }
+.dot.error { background: var(--removed); }
+.dot.warning { background: var(--changed); }
 
 /* selected change in the editors; z-index keeps it above the diff's green/red line backgrounds */
 .monaco-editor .cdr.hl { background: rgba(141, 180, 255, .14); box-shadow: inset 0 0 0 1px rgba(141, 180, 255, .25); z-index: 1; }

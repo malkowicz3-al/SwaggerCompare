@@ -1,5 +1,6 @@
 import { compare } from './compare.js';
 import { heading, summary, byEndpoint, markdown } from './report.js';
+import { initEditor } from './editor.js';
 
 const base = new URL('../vendor/monaco/', location.href).href;
 // under file:// (SwaggerCompare.bat) a worker can't load file URLs; throwing here makes Monaco
@@ -602,7 +603,7 @@ function init() {
   document.addEventListener(
     'keydown',
     (e) => {
-      if (e.key === 'F8' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      if (e.key === 'F8' && !document.body.classList.contains('edit') && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
         e.stopPropagation();
         nav(e.shiftKey ? -1 : 1);
@@ -629,4 +630,5 @@ function init() {
     }),
   );
   $('search').addEventListener('input', applyFilters);
+  initEditor({ $, el });
 }
