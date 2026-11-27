@@ -15,7 +15,7 @@ src/report.js           ES module, pure, no DOM: heading(meta), summary(changes)
 src/gen/renderer.js     esbuild output (committed): renderer + compare + report + yaml as one IIFE
 vendor/                 Monaco core + YAML highlighting and used font weights, copied from node_modules by scripts/vendor.mjs (committed)
 scripts/build-web.mjs   builds dist/SwaggerCompare-web.zip with the repo-root layout (bat, src/, vendor/)
-SwaggerCompare.bat      opens src/index.html in `msedge --app`, falls back to the default browser; CRLF, `-text` in .gitattributes
+SwaggerCompare.bat      checks the app files exist (else explains: extract the zip), opens src/index.html in `msedge --app` or `chrome --app`, else the default browser with a note; needs no Node; CRLF, `-text` in .gitattributes
 src/compare.js          ES module, pure, no DOM: compare(leftText, rightText) -> result (see below)
 test/compare.test.js    node:test + node:assert; test/report.test.js for report.js
 test/fixtures/          swagger2-old.yaml, swagger2-new.yaml, openapi3-old.yaml, openapi3-new.json
