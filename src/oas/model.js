@@ -452,3 +452,6 @@ export function typeAt(path, ver) {
   }
   return cur;
 }
+
+// the components section a $ref in an object of this type points into
+export const refKind = (type, ver) => Object.entries(OBJECTS.Components.fields).find(([, f]) => f.of === type && active(f, ver))?.[0];

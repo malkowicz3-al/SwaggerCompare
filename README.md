@@ -105,14 +105,21 @@ Switch the title bar toggle to **Edit** to write or fix a single OpenAPI spec. T
 </p>
 
 - **Completion (Ctrl+Space, or as you type).** Suggests the keys allowed at the cursor, with required ones first and keys already present left out. It also suggests values: enums such as `in:` and `type:`, `true`/`false`, `openapi:` versions, status codes under `responses` and media types under `content`.
+- **`$ref` completion.** After `$ref:` it lists the components of the kind that fits the spot, for example only `#/components/parameters/…` in a parameter list. You can type part of the name, without the `#/components/…` prefix. `$ref` itself is suggested as a key wherever a reference is allowed.
+- **Go to definition.** Ctrl+click a `$ref` value, or press F12 on it, to jump to its target. Hover over a `$ref` to see a summary: a schema's title, description, type and first properties, or a parameter's `in` and `required`.
+- **Snippets (YAML).** Suggested next to the keys: `path` under `paths`, `operation` in a path (only methods not used yet), `response` under `responses`, `schema` under `components.schemas`, and `parameter: query`, `parameter: path` and `parameter: header` in a parameter list. Tab moves between the placeholders.
 - **Hover.** Point at a key to see what it is, its type, whether it is required, and since which version it exists.
-- **Live problems.** YAML/JSON syntax errors, a missing or unsupported `openapi` version, unknown keys, wrong types, invalid enum values and missing required fields are underlined and listed under **Problems**, with a count on the tab. Click a problem to jump to it.
+- **Live problems.** YAML/JSON syntax errors, a missing or unsupported `openapi` version, unknown keys, wrong types, invalid enum values and missing required fields are underlined and listed under **Problems**, with a count on the tab. Click a problem to jump to it. These checks also run:
+  - **errors:** a `$ref` that points nowhere, a path parameter that is missing, not `required: true` or not in the path, a duplicate parameter in one list, a duplicate `operationId`, a security scheme that is not defined, and a server variable `{x}` without `variables.x`;
+  - **warnings:** a `$ref` to the wrong kind of component, such as a schema used as a parameter;
+  - **notes (info):** a component that nothing uses, and an operation tag missing from the top-level `tags` list (only when that list exists). Notes are not counted on the tab.
+- **Compare with…** opens Compare mode with the version as opened or last saved on the left and the current text on the right. If nothing changed since then, only the right side is replaced. Ctrl+Z in a pane brings back what was there.
 - **Version-aware.** A key from another version is flagged: `nullable` was removed in 3.1, `webhooks` needs 3.1. 3.1 adds `webhooks`, `jsonSchemaDialect`, `type` lists with `null` and the JSON Schema keywords (`const`, `examples`, `$defs`, `prefixItems`…). 3.2 adds the `query` method and `additionalOperations`, `in: querystring`, `itemSchema`, tag `summary`/`parent`/`kind`, `$self`, `components.mediaTypes` and the OAuth device flow.
 - **Outline.** Info, servers, paths with their methods, webhooks, components and tags. Click to jump; the node at the cursor is highlighted.
 - **New / Open / Save / Format.** New starts from a small valid template for the chosen version (it asks first if you have unsaved changes). Open takes a file (or drop one on the editor). Save downloads the spec. Format reindents YAML with 2 spaces or pretty-prints JSON; it refuses while the document has syntax errors. Ctrl+Z undoes each of them.
 - **Your draft stays.** The text is kept in the browser's local storage and comes back next time, together with the last mode.
 
-**Limits.** Completion reads YAML by indentation, so flow style (`{a: 1}`) and multi-line scalars get no suggestions. Swagger 2.0 can be compared but not edited.
+**Limits.** Completion reads YAML by indentation, so flow style (`{a: 1}`) and multi-line scalars get no suggestions. `$ref`s to other files are ignored: they are not followed, checked or offered. There are no snippets in JSON. Swagger 2.0 can be compared but not edited.
 
 ## Try it in a minute
 

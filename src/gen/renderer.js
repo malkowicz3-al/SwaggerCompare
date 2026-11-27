@@ -832,13 +832,13 @@
   };
 
   // node_modules/yaml/browser/dist/stringify/stringifyComment.js
-  var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
+  var stringifyComment = (str2) => str2.replace(/^(?!$)(?: $)?/gm, "#");
   function indentComment(comment, indent) {
     if (/^\n+$/.test(comment))
       return comment.substring(1);
     return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
   }
-  var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
+  var lineComment = (str2, indent, comment) => str2.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str2.endsWith(" ") ? "" : " ") + comment;
 
   // node_modules/yaml/browser/dist/stringify/foldFlowLines.js
   var FOLD_FLOW = "flow";
@@ -973,16 +973,16 @@ ${indent}${text.slice(fold + 1, end2)}`;
     lineWidth: ctx.options.lineWidth,
     minContentWidth: ctx.options.minContentWidth
   });
-  var containsDocumentMarker = (str) => /^(%|---|\.\.\.)/m.test(str);
-  function lineLengthOverLimit(str, lineWidth, indentLength) {
+  var containsDocumentMarker = (str2) => /^(%|---|\.\.\.)/m.test(str2);
+  function lineLengthOverLimit(str2, lineWidth, indentLength) {
     if (!lineWidth || lineWidth < 0)
       return false;
     const limit = lineWidth - indentLength;
-    const strLen = str.length;
+    const strLen = str2.length;
     if (strLen <= limit)
       return false;
     for (let i2 = 0, start = 0; i2 < strLen; ++i2) {
-      if (str[i2] === "\n") {
+      if (str2[i2] === "\n") {
         if (i2 - start > limit)
           return true;
         start = i2 + 1;
@@ -999,11 +999,11 @@ ${indent}${text.slice(fold + 1, end2)}`;
     const { implicitKey } = ctx;
     const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
     const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
-    let str = "";
+    let str2 = "";
     let start = 0;
     for (let i2 = 0, ch = json[i2]; ch; ch = json[++i2]) {
       if (ch === " " && json[i2 + 1] === "\\" && json[i2 + 2] === "n") {
-        str += json.slice(start, i2) + "\\ ";
+        str2 += json.slice(start, i2) + "\\ ";
         i2 += 1;
         start = i2;
         ch = "\\";
@@ -1012,38 +1012,38 @@ ${indent}${text.slice(fold + 1, end2)}`;
         switch (json[i2 + 1]) {
           case "u":
             {
-              str += json.slice(start, i2);
+              str2 += json.slice(start, i2);
               const code = json.substr(i2 + 2, 4);
               switch (code) {
                 case "0000":
-                  str += "\\0";
+                  str2 += "\\0";
                   break;
                 case "0007":
-                  str += "\\a";
+                  str2 += "\\a";
                   break;
                 case "000b":
-                  str += "\\v";
+                  str2 += "\\v";
                   break;
                 case "001b":
-                  str += "\\e";
+                  str2 += "\\e";
                   break;
                 case "0085":
-                  str += "\\N";
+                  str2 += "\\N";
                   break;
                 case "00a0":
-                  str += "\\_";
+                  str2 += "\\_";
                   break;
                 case "2028":
-                  str += "\\L";
+                  str2 += "\\L";
                   break;
                 case "2029":
-                  str += "\\P";
+                  str2 += "\\P";
                   break;
                 default:
                   if (code.substr(0, 2) === "00")
-                    str += "\\x" + code.substr(2);
+                    str2 += "\\x" + code.substr(2);
                   else
-                    str += json.substr(i2, 6);
+                    str2 += json.substr(i2, 6);
               }
               i2 += 5;
               start = i2 + 1;
@@ -1053,14 +1053,14 @@ ${indent}${text.slice(fold + 1, end2)}`;
             if (implicitKey || json[i2 + 2] === '"' || json.length < minMultiLineLength) {
               i2 += 1;
             } else {
-              str += json.slice(start, i2) + "\n\n";
+              str2 += json.slice(start, i2) + "\n\n";
               while (json[i2 + 2] === "\\" && json[i2 + 3] === "n" && json[i2 + 4] !== '"') {
-                str += "\n";
+                str2 += "\n";
                 i2 += 2;
               }
-              str += indent;
+              str2 += indent;
               if (json[i2 + 2] === " ")
-                str += "\\";
+                str2 += "\\";
               i2 += 1;
               start = i2 + 1;
             }
@@ -1069,8 +1069,8 @@ ${indent}${text.slice(fold + 1, end2)}`;
             i2 += 1;
         }
     }
-    str = start ? str + json.slice(start) : json;
-    return implicitKey ? str : foldFlowLines(str, indent, FOLD_QUOTED, getFoldOptions(ctx, false));
+    str2 = start ? str2 + json.slice(start) : json;
+    return implicitKey ? str2 : foldFlowLines(str2, indent, FOLD_QUOTED, getFoldOptions(ctx, false));
   }
   function singleQuotedString(value, ctx) {
     if (ctx.options.singleQuote === false || ctx.implicitKey && value.includes("\n") || /[ \t]\n|\n[ \t]/.test(value))
@@ -1198,15 +1198,15 @@ ${indent}${start}${value}${end}`;
         return quotedString(value, ctx);
       }
     }
-    const str = value.replace(/\n+/g, `$&
+    const str2 = value.replace(/\n+/g, `$&
 ${indent}`);
     if (actualString) {
-      const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
+      const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str2);
       const { compat, tags } = ctx.doc.schema;
       if (tags.some(test) || compat?.some(test))
         return quotedString(value, ctx);
     }
-    return implicitKey ? str : foldFlowLines(str, indent, FOLD_FLOW, getFoldOptions(ctx, false));
+    return implicitKey ? str2 : foldFlowLines(str2, indent, FOLD_FLOW, getFoldOptions(ctx, false));
   }
   function stringifyString(item2, ctx, onComment, onChompKeep) {
     const { implicitKey, inFlow } = ctx;
@@ -1348,11 +1348,11 @@ ${indent}`);
     const props = stringifyProps(node, tagObj, ctx);
     if (props.length > 0)
       ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
-    const str = typeof tagObj.stringify === "function" ? tagObj.stringify(node, ctx, onComment, onChompKeep) : isScalar(node) ? stringifyString(node, ctx, onComment, onChompKeep) : node.toString(ctx, onComment, onChompKeep);
+    const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node, ctx, onComment, onChompKeep) : isScalar(node) ? stringifyString(node, ctx, onComment, onChompKeep) : node.toString(ctx, onComment, onChompKeep);
     if (!props)
-      return str;
-    return isScalar(node) || str[0] === "{" || str[0] === "[" ? `${props} ${str}` : `${props}
-${ctx.indent}${str}`;
+      return str2;
+    return isScalar(node) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
+${ctx.indent}${str2}`;
   }
 
   // node_modules/yaml/browser/dist/stringify/stringifyPair.js
@@ -1376,8 +1376,8 @@ ${ctx.indent}${str}`;
     });
     let keyCommentDone = false;
     let chompKeep = false;
-    let str = stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
-    if (!explicitKey && !ctx.inFlow && str.length > 1024) {
+    let str2 = stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+    if (!explicitKey && !ctx.inFlow && str2.length > 1024) {
       if (simpleKeys)
         throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
       explicitKey = true;
@@ -1386,27 +1386,27 @@ ${ctx.indent}${str}`;
       if (allNullValues || value == null) {
         if (keyCommentDone && onComment)
           onComment();
-        return str === "" ? "?" : explicitKey ? `? ${str}` : str;
+        return str2 === "" ? "?" : explicitKey ? `? ${str2}` : str2;
       }
     } else if (allNullValues && !simpleKeys || value == null && explicitKey) {
-      str = `? ${str}`;
+      str2 = `? ${str2}`;
       if (keyComment && !keyCommentDone) {
-        str += lineComment(str, ctx.indent, commentString(keyComment));
+        str2 += lineComment(str2, ctx.indent, commentString(keyComment));
       } else if (chompKeep && onChompKeep)
         onChompKeep();
-      return str;
+      return str2;
     }
     if (keyCommentDone)
       keyComment = null;
     if (explicitKey) {
       if (keyComment)
-        str += lineComment(str, ctx.indent, commentString(keyComment));
-      str = `? ${str}
+        str2 += lineComment(str2, ctx.indent, commentString(keyComment));
+      str2 = `? ${str2}
 ${indent}:`;
     } else {
-      str = `${str}:`;
+      str2 = `${str2}:`;
       if (keyComment)
-        str += lineComment(str, ctx.indent, commentString(keyComment));
+        str2 += lineComment(str2, ctx.indent, commentString(keyComment));
     }
     let vsb, vcb, valueComment;
     if (isNode(value)) {
@@ -1422,7 +1422,7 @@ ${indent}:`;
     }
     ctx.implicitKey = false;
     if (!explicitKey && !keyComment && isScalar(value))
-      ctx.indentAtStart = str.length + 1;
+      ctx.indentAtStart = str2.length + 1;
     chompKeep = false;
     if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && isSeq(value) && !value.flow && !value.tag && !value.anchor) {
       ctx.indent = ctx.indent.substring(2);
@@ -1466,16 +1466,16 @@ ${ctx.indent}`;
     } else if (valueStr === "" || valueStr[0] === "\n") {
       ws = "";
     }
-    str += ws + valueStr;
+    str2 += ws + valueStr;
     if (ctx.inFlow) {
       if (valueCommentDone && onComment)
         onComment();
     } else if (valueComment && !valueCommentDone) {
-      str += lineComment(str, ctx.indent, commentString(valueComment));
+      str2 += lineComment(str2, ctx.indent, commentString(valueComment));
     } else if (chompKeep && onChompKeep) {
       onChompKeep();
     }
-    return str;
+    return str2;
   }
 
   // node_modules/yaml/browser/dist/log.js
@@ -1646,31 +1646,31 @@ ${ctx.indent}`;
         }
       }
       chompKeep = false;
-      let str2 = stringify(item2, itemCtx, () => comment2 = null, () => chompKeep = true);
+      let str3 = stringify(item2, itemCtx, () => comment2 = null, () => chompKeep = true);
       if (comment2)
-        str2 += lineComment(str2, itemIndent, commentString(comment2));
+        str3 += lineComment(str3, itemIndent, commentString(comment2));
       if (chompKeep && comment2)
         chompKeep = false;
-      lines.push(blockItemPrefix + str2);
+      lines.push(blockItemPrefix + str3);
     }
-    let str;
+    let str2;
     if (lines.length === 0) {
-      str = flowChars.start + flowChars.end;
+      str2 = flowChars.start + flowChars.end;
     } else {
-      str = lines[0];
+      str2 = lines[0];
       for (let i2 = 1; i2 < lines.length; ++i2) {
         const line = lines[i2];
-        str += line ? `
+        str2 += line ? `
 ${indent}${line}` : "\n";
       }
     }
     if (comment) {
-      str += "\n" + indentComment(commentString(comment), indent);
+      str2 += "\n" + indentComment(commentString(comment), indent);
       if (onComment)
         onComment();
     } else if (chompKeep && onChompKeep)
       onChompKeep();
-    return str;
+    return str2;
   }
   function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
     const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
@@ -1713,21 +1713,21 @@ ${indent}${line}` : "\n";
       }
       if (comment)
         reqNewline = true;
-      let str = stringify(item2, itemCtx, () => comment = null);
-      reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
+      let str2 = stringify(item2, itemCtx, () => comment = null);
+      reqNewline || (reqNewline = lines.length > linesAtValue || str2.includes("\n"));
       if (i2 < items.length - 1) {
-        str += ",";
+        str2 += ",";
       } else if (ctx.options.trailingComma) {
         if (ctx.options.lineWidth > 0) {
-          reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
+          reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str2.length + 2) > ctx.options.lineWidth);
         }
         if (reqNewline) {
-          str += ",";
+          str2 += ",";
         }
       }
       if (comment)
-        str += lineComment(str, itemIndent, commentString(comment));
-      lines.push(str);
+        str2 += lineComment(str2, itemIndent, commentString(comment));
+      lines.push(str2);
       linesAtValue = lines.length;
     }
     const { start, end } = flowChars;
@@ -1739,11 +1739,11 @@ ${indent}${line}` : "\n";
         reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
       }
       if (reqNewline) {
-        let str = start;
+        let str2 = start;
         for (const line of lines)
-          str += line ? `
+          str2 += line ? `
 ${indentStep}${indent}${line}` : "\n";
-        return `${str}
+        return `${str2}
 ${indent}${end}`;
       } else {
         return `${start}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
@@ -1787,7 +1787,7 @@ ${indent}${end}`;
     static from(schema4, obj, ctx) {
       const { keepUndefined, replacer } = ctx;
       const map2 = new this(schema4);
-      const add = (key, value) => {
+      const add2 = (key, value) => {
         if (typeof replacer === "function")
           value = replacer.call(obj, key, value);
         else if (Array.isArray(replacer) && !replacer.includes(key))
@@ -1797,10 +1797,10 @@ ${indent}${end}`;
       };
       if (obj instanceof Map) {
         for (const [key, value] of obj)
-          add(key, value);
+          add2(key, value);
       } else if (obj && typeof obj === "object") {
         for (const key of Object.keys(obj))
-          add(key, obj[key]);
+          add2(key, obj[key]);
       }
       if (typeof schema4.sortMapEntries === "function") {
         map2.items.sort(schema4.sortMapEntries);
@@ -2027,7 +2027,7 @@ ${indent}${end}`;
     identify: (value) => typeof value === "string",
     default: true,
     tag: "tag:yaml.org,2002:str",
-    resolve: (str) => str,
+    resolve: (str2) => str2,
     stringify(item2, ctx, onComment, onChompKeep) {
       ctx = Object.assign({ actualString: true }, ctx);
       return stringifyString(item2, ctx, onComment, onChompKeep);
@@ -2051,7 +2051,7 @@ ${indent}${end}`;
     default: true,
     tag: "tag:yaml.org,2002:bool",
     test: /^(?:[Tt]rue|TRUE|[Ff]alse|FALSE)$/,
-    resolve: (str) => new Scalar(str[0] === "t" || str[0] === "T"),
+    resolve: (str2) => new Scalar(str2[0] === "t" || str2[0] === "T"),
     stringify({ source, value }, ctx) {
       if (source && boolTag.test.test(source)) {
         const sv = source[0] === "t" || source[0] === "T";
@@ -2089,7 +2089,7 @@ ${indent}${end}`;
     default: true,
     tag: "tag:yaml.org,2002:float",
     test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-    resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+    resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
     stringify: stringifyNumber
   };
   var floatExp = {
@@ -2098,7 +2098,7 @@ ${indent}${end}`;
     tag: "tag:yaml.org,2002:float",
     format: "EXP",
     test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
-    resolve: (str) => parseFloat(str),
+    resolve: (str2) => parseFloat(str2),
     stringify(node) {
       const num = Number(node.value);
       return isFinite(num) ? num.toExponential() : stringifyNumber(node);
@@ -2109,11 +2109,11 @@ ${indent}${end}`;
     default: true,
     tag: "tag:yaml.org,2002:float",
     test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
-    resolve(str) {
-      const node = new Scalar(parseFloat(str));
-      const dot = str.indexOf(".");
-      if (dot !== -1 && str[str.length - 1] === "0")
-        node.minFractionDigits = str.length - dot - 1;
+    resolve(str2) {
+      const node = new Scalar(parseFloat(str2));
+      const dot = str2.indexOf(".");
+      if (dot !== -1 && str2[str2.length - 1] === "0")
+        node.minFractionDigits = str2.length - dot - 1;
       return node;
     },
     stringify: stringifyNumber
@@ -2121,7 +2121,7 @@ ${indent}${end}`;
 
   // node_modules/yaml/browser/dist/schema/core/int.js
   var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
-  var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
+  var intResolve = (str2, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2.substring(offset), radix);
   function intStringify(node, radix, prefix) {
     const { value } = node;
     if (intIdentify(value) && value >= 0)
@@ -2134,7 +2134,7 @@ ${indent}${end}`;
     tag: "tag:yaml.org,2002:int",
     format: "OCT",
     test: /^0o[0-7]+$/,
-    resolve: (str, _onError, opt) => intResolve(str, 2, 8, opt),
+    resolve: (str2, _onError, opt) => intResolve(str2, 2, 8, opt),
     stringify: (node) => intStringify(node, 8, "0o")
   };
   var int = {
@@ -2142,7 +2142,7 @@ ${indent}${end}`;
     default: true,
     tag: "tag:yaml.org,2002:int",
     test: /^[-+]?[0-9]+$/,
-    resolve: (str, _onError, opt) => intResolve(str, 0, 10, opt),
+    resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
     stringify: stringifyNumber
   };
   var intHex = {
@@ -2151,7 +2151,7 @@ ${indent}${end}`;
     tag: "tag:yaml.org,2002:int",
     format: "HEX",
     test: /^0x[0-9a-fA-F]+$/,
-    resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
+    resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
     stringify: (node) => intStringify(node, 16, "0x")
   };
 
@@ -2180,7 +2180,7 @@ ${indent}${end}`;
       identify: (value) => typeof value === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
-      resolve: (str) => str,
+      resolve: (str2) => str2,
       stringify: stringifyJSON
     },
     {
@@ -2197,7 +2197,7 @@ ${indent}${end}`;
       default: true,
       tag: "tag:yaml.org,2002:bool",
       test: /^true$|^false$/,
-      resolve: (str) => str === "true",
+      resolve: (str2) => str2 === "true",
       stringify: stringifyJSON
     },
     {
@@ -2205,7 +2205,7 @@ ${indent}${end}`;
       default: true,
       tag: "tag:yaml.org,2002:int",
       test: /^-?(?:0|[1-9][0-9]*)$/,
-      resolve: (str, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str, 10),
+      resolve: (str2, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2, 10),
       stringify: ({ value }) => intIdentify2(value) ? value.toString() : JSON.stringify(value)
     },
     {
@@ -2213,7 +2213,7 @@ ${indent}${end}`;
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?$/,
-      resolve: (str) => parseFloat(str),
+      resolve: (str2) => parseFloat(str2),
       stringify: stringifyJSON
     }
   ];
@@ -2221,9 +2221,9 @@ ${indent}${end}`;
     default: true,
     tag: "",
     test: /^/,
-    resolve(str, onError) {
-      onError(`Unresolved plain scalar ${JSON.stringify(str)}`);
-      return str;
+    resolve(str2, onError) {
+      onError(`Unresolved plain scalar ${JSON.stringify(str2)}`);
+      return str2;
     }
   };
   var schema2 = [map, seq].concat(jsonScalars, jsonError);
@@ -2244,10 +2244,10 @@ ${indent}${end}`;
      */
     resolve(src, onError) {
       if (typeof atob === "function") {
-        const str = atob(src.replace(/[\n\r]/g, ""));
-        const buffer = new Uint8Array(str.length);
-        for (let i2 = 0; i2 < str.length; ++i2)
-          buffer[i2] = str.charCodeAt(i2);
+        const str2 = atob(src.replace(/[\n\r]/g, ""));
+        const buffer = new Uint8Array(str2.length);
+        for (let i2 = 0; i2 < str2.length; ++i2)
+          buffer[i2] = str2.charCodeAt(i2);
         return buffer;
       } else {
         onError("This environment does not support reading binary tags; either Buffer or atob is required");
@@ -2258,26 +2258,26 @@ ${indent}${end}`;
       if (!value)
         return "";
       const buf = value;
-      let str;
+      let str2;
       if (typeof btoa === "function") {
         let s2 = "";
         for (let i2 = 0; i2 < buf.length; ++i2)
           s2 += String.fromCharCode(buf[i2]);
-        str = btoa(s2);
+        str2 = btoa(s2);
       } else {
         throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
       }
       type ?? (type = Scalar.BLOCK_LITERAL);
       if (type !== Scalar.QUOTE_DOUBLE) {
         const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
-        const n2 = Math.ceil(str.length / lineWidth);
+        const n2 = Math.ceil(str2.length / lineWidth);
         const lines = new Array(n2);
         for (let i2 = 0, o2 = 0; i2 < n2; ++i2, o2 += lineWidth) {
-          lines[i2] = str.substr(o2, lineWidth);
+          lines[i2] = str2.substr(o2, lineWidth);
         }
-        str = lines.join(type === Scalar.BLOCK_LITERAL ? "\n" : " ");
+        str2 = lines.join(type === Scalar.BLOCK_LITERAL ? "\n" : " ");
       }
-      return stringifyString({ comment, type, value: str }, ctx, onComment, onChompKeep);
+      return stringifyString({ comment, type, value: str2 }, ctx, onComment, onChompKeep);
     }
   };
 
@@ -2443,7 +2443,7 @@ ${cn.comment}` : item2.comment;
     default: true,
     tag: "tag:yaml.org,2002:float",
     test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-    resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+    resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
     stringify: stringifyNumber
   };
   var floatExp2 = {
@@ -2452,7 +2452,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:float",
     format: "EXP",
     test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
-    resolve: (str) => parseFloat(str.replace(/_/g, "")),
+    resolve: (str2) => parseFloat(str2.replace(/_/g, "")),
     stringify(node) {
       const num = Number(node.value);
       return isFinite(num) ? num.toExponential() : stringifyNumber(node);
@@ -2463,11 +2463,11 @@ ${cn.comment}` : item2.comment;
     default: true,
     tag: "tag:yaml.org,2002:float",
     test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
-    resolve(str) {
-      const node = new Scalar(parseFloat(str.replace(/_/g, "")));
-      const dot = str.indexOf(".");
+    resolve(str2) {
+      const node = new Scalar(parseFloat(str2.replace(/_/g, "")));
+      const dot = str2.indexOf(".");
       if (dot !== -1) {
-        const f = str.substring(dot + 1).replace(/_/g, "");
+        const f = str2.substring(dot + 1).replace(/_/g, "");
         if (f[f.length - 1] === "0")
           node.minFractionDigits = f.length;
       }
@@ -2478,34 +2478,34 @@ ${cn.comment}` : item2.comment;
 
   // node_modules/yaml/browser/dist/schema/yaml-1.1/int.js
   var intIdentify3 = (value) => typeof value === "bigint" || Number.isInteger(value);
-  function intResolve2(str, offset, radix, { intAsBigInt }) {
-    const sign = str[0];
+  function intResolve2(str2, offset, radix, { intAsBigInt }) {
+    const sign = str2[0];
     if (sign === "-" || sign === "+")
       offset += 1;
-    str = str.substring(offset).replace(/_/g, "");
+    str2 = str2.substring(offset).replace(/_/g, "");
     if (intAsBigInt) {
       switch (radix) {
         case 2:
-          str = `0b${str}`;
+          str2 = `0b${str2}`;
           break;
         case 8:
-          str = `0o${str}`;
+          str2 = `0o${str2}`;
           break;
         case 16:
-          str = `0x${str}`;
+          str2 = `0x${str2}`;
           break;
       }
-      const n3 = BigInt(str);
+      const n3 = BigInt(str2);
       return sign === "-" ? BigInt(-1) * n3 : n3;
     }
-    const n2 = parseInt(str, radix);
+    const n2 = parseInt(str2, radix);
     return sign === "-" ? -1 * n2 : n2;
   }
   function intStringify2(node, radix, prefix) {
     const { value } = node;
     if (intIdentify3(value)) {
-      const str = value.toString(radix);
-      return value < 0 ? "-" + prefix + str.substr(1) : prefix + str;
+      const str2 = value.toString(radix);
+      return value < 0 ? "-" + prefix + str2.substr(1) : prefix + str2;
     }
     return stringifyNumber(node);
   }
@@ -2515,7 +2515,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:int",
     format: "BIN",
     test: /^[-+]?0b[0-1_]+$/,
-    resolve: (str, _onError, opt) => intResolve2(str, 2, 2, opt),
+    resolve: (str2, _onError, opt) => intResolve2(str2, 2, 2, opt),
     stringify: (node) => intStringify2(node, 2, "0b")
   };
   var intOct2 = {
@@ -2524,7 +2524,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:int",
     format: "OCT",
     test: /^[-+]?0[0-7_]+$/,
-    resolve: (str, _onError, opt) => intResolve2(str, 1, 8, opt),
+    resolve: (str2, _onError, opt) => intResolve2(str2, 1, 8, opt),
     stringify: (node) => intStringify2(node, 8, "0")
   };
   var int2 = {
@@ -2532,7 +2532,7 @@ ${cn.comment}` : item2.comment;
     default: true,
     tag: "tag:yaml.org,2002:int",
     test: /^[-+]?[0-9][0-9_]*$/,
-    resolve: (str, _onError, opt) => intResolve2(str, 0, 10, opt),
+    resolve: (str2, _onError, opt) => intResolve2(str2, 0, 10, opt),
     stringify: stringifyNumber
   };
   var intHex2 = {
@@ -2541,7 +2541,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:int",
     format: "HEX",
     test: /^[-+]?0x[0-9a-fA-F_]+$/,
-    resolve: (str, _onError, opt) => intResolve2(str, 2, 16, opt),
+    resolve: (str2, _onError, opt) => intResolve2(str2, 2, 16, opt),
     stringify: (node) => intStringify2(node, 16, "0x")
   };
 
@@ -2625,9 +2625,9 @@ ${cn.comment}` : item2.comment;
   };
 
   // node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
-  function parseSexagesimal(str, asBigInt) {
-    const sign = str[0];
-    const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
+  function parseSexagesimal(str2, asBigInt) {
+    const sign = str2[0];
+    const parts = sign === "-" || sign === "+" ? str2.substring(1) : str2;
     const num = (n2) => asBigInt ? BigInt(n2) : Number(n2);
     const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
     return sign === "-" ? num(-1) * res : res;
@@ -2664,7 +2664,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:int",
     format: "TIME",
     test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+$/,
-    resolve: (str, _onError, { intAsBigInt }) => parseSexagesimal(str, intAsBigInt),
+    resolve: (str2, _onError, { intAsBigInt }) => parseSexagesimal(str2, intAsBigInt),
     stringify: stringifySexagesimal
   };
   var floatTime = {
@@ -2673,7 +2673,7 @@ ${cn.comment}` : item2.comment;
     tag: "tag:yaml.org,2002:float",
     format: "TIME",
     test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*$/,
-    resolve: (str) => parseSexagesimal(str, false),
+    resolve: (str2) => parseSexagesimal(str2, false),
     stringify: stringifySexagesimal
   };
   var timestamp = {
@@ -2684,8 +2684,8 @@ ${cn.comment}` : item2.comment;
     // may be omitted altogether, resulting in a date format. In such a case, the time part is
     // assumed to be 00:00:00Z (start of day, UTC).
     test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
-    resolve(str) {
-      const match = str.match(timestamp.test);
+    resolve(str2) {
+      const match = str2.match(timestamp.test);
       if (!match)
         throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
       const [, year, month, day, hour, minute, second] = match.map(Number);
@@ -6289,7 +6289,7 @@ ${end.comment}` : end.comment;
       while (off > from && /\s/.test(text[off])) off--;
       return { start: lc.linePos(from).line, end: lc.linePos(off).line };
     };
-    const keyAt = ([s2, e]) => {
+    const keyAt2 = ([s2, e]) => {
       const { line, col } = lc.linePos(s2);
       return { line, from: col, to: col + e - s2 };
     };
@@ -6298,14 +6298,14 @@ ${end.comment}` : end.comment;
         for (const p of node.items) {
           if (!isScalar(p.key)) continue;
           const sub = [...path, String(p.key.value)];
-          index.set(JSON.stringify(sub), { ...span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]), key: keyAt(p.key.range) });
+          index.set(JSON.stringify(sub), { ...span(p.key.range[0], p.value?.range?.[1] ?? p.key.range[1], p.key.range[1]), key: keyAt2(p.key.range) });
           visit3(p.value, sub);
         }
       } else if (isSeq(node)) {
         node.items.forEach((item2, i2) => {
           const sub = [...path, i2];
           const name = isMap(item2) ? item2.items.find((q) => isScalar(q.key) && q.key.value === "name")?.value : item2;
-          if (item2?.range) index.set(JSON.stringify(sub), { ...span(item2.range[0], item2.range[1], item2.range[1]), ...isScalar(name) && { key: keyAt(name.range) } });
+          if (item2?.range) index.set(JSON.stringify(sub), { ...span(item2.range[0], item2.range[1], item2.range[1]), ...isScalar(name) && { key: keyAt2(name.range) } });
           visit3(item2, sub);
         });
       }
@@ -6399,8 +6399,8 @@ ${end.comment}` : end.comment;
       } else parts.push(P[j]);
     }
     if (asObject) return { where: parts.join("."), rest: [] };
-    const cut = lastPair ?? 1;
-    return { where: parts.slice(0, cut).join("."), rest: parts.slice(cut) };
+    const cut2 = lastPair ?? 1;
+    return { where: parts.slice(0, cut2).join("."), rest: parts.slice(cut2) };
   }
   var tagOf = (p) => [...p].map(String).reverse().find((s2) => !/^\d+$/.test(s2)) ?? "other";
   function emit(kind, text, ctx, tag = tagOf(ctx.path), where = locate(ctx).where, vals) {
@@ -6773,14 +6773,14 @@ ${end.comment}` : end.comment;
     const props = (obj) => isPlain(obj.properties) ? obj.properties : {};
     const lProps = props(lObj);
     const rProps = props(rObj);
-    const at = (n2, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n2)], pl, pr });
+    const at2 = (n2, pl, pr) => ({ ...ctx, path: [...ctx.path, "required", String(n2)], pl, pr });
     rArr.forEach((n2, i2) => {
-      if (!ls.has(n2) && rArr.indexOf(n2) === i2) emit("changed", `${nm(n2)}: now required`, at(n2, [...ctx.pl, "required"], [...ctx.pr, "required", i2]), "required", where);
+      if (!ls.has(n2) && rArr.indexOf(n2) === i2) emit("changed", `${nm(n2)}: now required`, at2(n2, [...ctx.pl, "required"], [...ctx.pr, "required", i2]), "required", where);
     });
     for (const n2 of ls) {
       if (rs.has(n2) || has(lProps, n2) && !has(rProps, n2)) continue;
       const pr = has(rProps, n2) ? [...ctx.pr, "properties", n2] : [...ctx.pr, "required"];
-      emit("changed", `${nm(n2)}: no longer required`, at(n2, [...ctx.pl, "required", lArr.indexOf(n2)], pr), "required", where);
+      emit("changed", `${nm(n2)}: no longer required`, at2(n2, [...ctx.pl, "required", lArr.indexOf(n2)], pr), "required", where);
     }
   }
   function usage(data) {
@@ -7349,6 +7349,7 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     }
     return cur;
   }
+  var refKind = (type, ver) => Object.entries(OBJECTS.Components.fields).find(([, f]) => f.of === type && active(f, ver))?.[0];
 
   // src/oas/ast.js
   var isJson = (text) => /^\s*[{[]/.test(text);
@@ -7368,6 +7369,31 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
   };
   var keyOf = (pair2) => isScalar(pair2.key) && pair2.key.value != null ? String(pair2.key.value) : null;
   var pairOf = (map2, key) => isMap(map2) ? map2.items.find((p) => keyOf(p) === key) : void 0;
+  function lookup(root, segs) {
+    let node = root;
+    let pair2;
+    for (const seg of segs) {
+      if (isMap(node)) {
+        pair2 = pairOf(node, seg);
+        if (!pair2) return void 0;
+        node = pair2.value;
+      } else if (isSeq(node) && /^\d+$/.test(seg) && node.items[Number(seg)]) {
+        pair2 = void 0;
+        node = node.items[Number(seg)];
+      } else return void 0;
+    }
+    return { pair: pair2, node };
+  }
+  function deref(root, node) {
+    for (let hop = 0; hop <= 10; hop++) {
+      const ref = pairOf(node, "$ref")?.value;
+      if (!isScalar(ref) || typeof ref.value !== "string") return node;
+      const segs = pointer(ref.value);
+      node = segs && lookup(root, segs)?.node;
+      if (!node) return void 0;
+    }
+    return void 0;
+  }
   function formatJson(text) {
     const big = text.replace(/"(?:[^"\\]|\\.)*"/g, '""').match(/(?<![\d.])-?\d+(?![\d.eE])/g)?.find((n2) => !Number.isSafeInteger(Number(n2)));
     if (big) throw new Error(`Not formatted: ${big} is too large for a JavaScript number and would change`);
@@ -7553,215 +7579,52 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
     return { ...ctx, objectType: t?.kind === "obj" ? t.type : null, container: t && t.kind !== "obj" ? t : null, version, json };
   }
 
-  // src/oas/complete.js
-  var lower = (s2) => s2.toLowerCase();
-  var strip = (p) => p.replace(/^["']/, "");
-  function insertKey(key, spec, ctx, rest, pad) {
-    if (ctx.json) return rest.includes(":") ? `"${key}"` : `"${key}": `;
-    const k = /^\d/.test(key) ? `'${key}'` : key;
-    if (rest.includes(":")) return k;
-    const t = kindsOf(spec, ctx.version)[0];
-    return t === "obj" || t === "map" ? `${k}:
-${pad}  ` : t === "list" ? `${k}:
-${pad}  - ` : `${k}: `;
-  }
-  function complete(text, line, col) {
-    const ctx = contextAt(text, line, col);
-    if (!ctx) return [];
+  // src/oas/refs.js
+  function refAt(text, line, col) {
     const raw = text.split(/\r?\n/)[line - 1] ?? "";
-    const rest = raw.slice(col - 1);
-    const pad = " ".repeat(Math.max(0, ctx.indent - raw.search(/\S|$/)));
-    const pre = lower(strip(ctx.prefix));
-    const out = [];
-    const seen = /* @__PURE__ */ new Set();
-    const add = (label2, item2) => {
-      if (seen.has(label2) || !lower(label2).startsWith(pre)) return;
-      seen.add(label2);
-      out.push({ label: label2, ...item2 });
-    };
-    const ver = ctx.version;
-    if (ctx.position === "key") {
-      const obj = OBJECTS[ctx.objectType];
-      const keyItem = (key, spec, required) => {
-        if (ctx.keysPresent.has(key)) return;
-        add(key, { insertText: insertKey(key, spec, ctx, rest, pad), kind: "key", doc: spec.doc, ...required && { required: true }, sortText: (required ? "0" : "1") + key });
-      };
-      if (obj) {
-        for (const [key, f2] of Object.entries(obj.fields)) {
-          if (active(f2, ver)) keyItem(key, f2, f2.req && !(f2.reqUntil && ver >= f2.reqUntil));
-        }
-        for (const p of obj.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
-      } else if (ctx.container?.kind === "map") {
-        for (const key of ctx.container.spec.keyHints ?? []) keyItem(key, itemSpec(ctx.container.spec));
-      }
-      return out;
-    }
-    const f = ctx.objectType && ctx.key != null ? member(ctx.objectType, ctx.key, ver)?.spec : null;
-    if (!f || f === EXT) return out;
-    const values = enumOf(f, ver) ?? f.hints ?? (kindsOf(f, ver).includes("bool") ? ["true", "false"] : []);
-    const isStr = kindsOf(f, ver).includes("str");
-    for (const v2 of values) {
-      const ins = ctx.json ? isStr ? `"${v2}"` : v2 : isStr && /^(null|true|false)$/.test(v2) ? `'${v2}'` : v2;
-      add(v2, { insertText: (!ctx.json && raw[col - 2] === ":" ? " " : "") + ins, kind: "value", doc: f.doc, sortText: "1" + v2 });
-    }
-    return out;
-  }
-  var since = (v2) => `${Math.floor(v2 / 10)}.${v2 % 10}`;
-  var PRIM = { str: "string", num: "number", int: "integer", bool: "boolean", any: "any" };
-  var typeName = (t, of) => t === "obj" ? of : t === "map" ? `map of ${OBJECTS[of] ? of : PRIM[of]}` : t === "list" ? `list of ${OBJECTS[of] ? of : PRIM[of]}` : PRIM[t];
-  function fieldDoc(text, line, col) {
-    const raw = text.split(/\r?\n/)[line - 1] ?? "";
-    const re = /^( *(?:- +)?)("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s"'#{[\]][^#]*?)\s*:(?=\s|$)|"((?:[^"\\]|\\.)*)"\s*:/g;
-    let hit = null;
+    const re = /(["']?)\$ref\1\s*:\s*(["'])?(#[^"'\s,}]*)\2?/g;
     for (let mt; mt = re.exec(raw); ) {
-      const start = mt.index + (mt[1]?.length ?? 0);
-      const len = (mt[2] ?? `"${mt[3]}"`).length;
-      if (col - 1 >= start && col - 1 <= start + len) hit = { start, quoted: mt[3] != null };
+      const from = mt.index + mt[0].indexOf("#") + 1;
+      const to = from + mt[3].length;
+      if (from <= col && col <= to) return { ref: mt[3], from, to };
     }
-    if (!hit) return null;
-    const ctx = contextAt(text, line, hit.start + 1 + (hit.quoted ? 1 : 0));
-    if (!ctx || ctx.position !== "key" || ctx.key == null) return null;
-    const key = ctx.key;
-    const ver = ctx.version;
-    if (key.startsWith("x-")) return { title: key, doc: EXT.doc, type: "any", required: false };
-    if (ctx.container?.kind === "map") {
-      const it = itemSpec(ctx.container.spec);
-      return { title: key, doc: it.doc, type: typeName(it.t, it.of), required: false };
-    }
-    const mm = ctx.objectType && member(ctx.objectType, key, ver);
-    if (!mm) return null;
-    const f = mm.spec;
-    const note = [f.since && `Since OpenAPI ${since(f.since)}.`, f.until && `Removed in OpenAPI ${since(f.until)}.`].filter(Boolean).join(" ");
-    return {
-      title: key,
-      doc: note ? `${f.doc} ${note}` : f.doc,
-      type: kindsOf(f, ver).map((t) => typeName(t, f.of)).join(" or "),
-      required: !!f.req && !(f.reqUntil && ver >= f.reqUntil)
-    };
+    return null;
   }
-
-  // src/oas/validate.js
-  var START = { startLine: 1, startCol: 1, endLine: 1, endCol: 2 };
-  var mark = (severity, message, where) => ({ severity, message, ...where });
-  var v = (n2) => `${Math.floor(n2 / 10)}.${n2 % 10}`;
-  function syntaxRule({ doc, lc }) {
-    const one = (severity) => (e) => mark(severity, e.message.split("\n")[0], range(lc, e.pos));
-    return [...doc.errors.map(one("error")), ...doc.warnings.map(one("warning"))];
+  function targets(root, kind) {
+    const sec = pairOf(pairOf(root, "components")?.value, kind)?.value;
+    return isMap(sec) ? sec.items.map(keyOf).filter((k) => k != null) : [];
   }
-  function versionRule({ doc, lc, root }) {
-    if (doc.errors.length) return [];
-    const sw = pairOf(root, "swagger");
-    if (sw) return [mark("error", "Swagger 2.0 is not supported by the editor (OpenAPI 3.x only)", range(lc, sw.key.range))];
-    const p = pairOf(root, "openapi");
-    if (!p) return [mark("error", "Missing required 'openapi' field", START)];
-    const val = isScalar(p.value) ? String(p.value.value) : "";
-    const mm = /^3\.(\d+)\.\d+/.exec(val);
-    if (mm && Number(mm[1]) <= 2) return [];
-    const where = p.value?.range ? range(lc, p.value.range) : range(lc, p.key.range);
-    if (mm) return [mark("error", `OpenAPI ${val} is newer than this editor supports (up to 3.2)`, where)];
-    return [mark("error", `Invalid OpenAPI version '${val}'. Expected 3.0.x, 3.1.x or 3.2.x`, where)];
+  var resolveAt = (text, line, col) => {
+    const hit = refAt(text, line, col);
+    const segs = hit && pointer(hit.ref);
+    if (!segs) return null;
+    const p = parse3(text);
+    return { hit, segs, p, found: lookup(p.root, segs) };
+  };
+  function definitionAt(text, line, col) {
+    const r = resolveAt(text, line, col);
+    if (!r?.found) return null;
+    const pos = r.p.lc.linePos((r.found.pair?.key ?? r.found.node).range[0]);
+    return { line: pos.line, col: pos.col };
   }
-  var NAMES2 = { str: "string", num: "number", int: "integer", bool: "boolean", map: "mapping", list: "list" };
-  function structureRule({ doc, lc, ver, root, text }) {
-    if (doc.errors.length || !ver || !isMap(root)) return [];
-    const out = [];
-    const at = (node) => range(lc, head(text, node.range));
-    const object = (map2, type, owner) => {
-      const obj = OBJECTS[type];
-      const hasRef = obj.ref && pairOf(map2, "$ref") && !(type === "Schema" && ver >= 31);
-      for (const pair2 of map2.items) {
-        const key = keyOf(pair2);
-        if (key == null || key.startsWith("x-") || key === "<<") continue;
-        const mm = member(type, key, ver);
-        if (!mm) {
-          if (!hasRef) out.push(mark("warning", `Unknown key '${key}' in ${type}`, range(lc, pair2.key.range)));
-          continue;
-        }
-        if (mm.gated) {
-          const msg = mm.spec.until && ver >= mm.spec.until ? `'${key}' was removed in OpenAPI ${v(mm.spec.until)}` : `'${key}' needs OpenAPI ${v(mm.spec.since)}+`;
-          out.push(mark("warning", msg, range(lc, pair2.key.range)));
-          continue;
-        }
-        value(pair2.value, mm.spec, range(lc, pair2.key.range));
-      }
-      if (hasRef) return;
-      for (const [key, f] of Object.entries(obj.fields)) {
-        if (f.req && active(f, ver) && !(f.reqUntil && ver >= f.reqUntil) && !pairOf(map2, key)) {
-          out.push(mark("error", `Missing required '${key}' in ${type}`, owner));
-        }
-      }
-    };
-    const value = (node, spec, owner) => {
-      if (!node || isAlias(node) || isScalar(node) && node.value === null) return;
-      const kinds = kindsOf(spec, ver);
-      if (kinds.includes("any")) return;
-      if (isMap(node)) {
-        if (kinds.includes("obj")) return object(node, spec.of, owner ?? at(node));
-        if (kinds.includes("map")) return node.items.forEach((p) => value(p.value, itemSpec(spec), p.key && range(lc, p.key.range)));
-      } else if (isSeq(node)) {
-        if (kinds.includes("list")) return node.items.forEach((it) => value(it, itemSpec(spec)));
-      } else if (isScalar(node)) {
-        const x = node.value;
-        const ok = typeof x === "string" ? kinds.includes("str") : typeof x === "number" ? kinds.includes("num") || kinds.includes("int") && Number.isInteger(x) : typeof x === "boolean" ? kinds.includes("bool") || ver >= 31 && spec.of === "Schema" : false;
-        if (ok) return scalar2(node, spec);
-        if (kinds.includes("str") && (typeof x === "number" || typeof x === "boolean")) return out.push(mark("warning", "Expected string; quote the value", at(node)));
-      }
-      const want = kinds.map((k) => k === "obj" ? `mapping (${spec.of})` : NAMES2[k]).join(" or ");
-      const found = isMap(node) ? "mapping" : isSeq(node) ? "list" : NAMES2[{ string: "str", number: "num", boolean: "bool" }[typeof node.value]] ?? typeof node.value;
-      out.push(mark("error", `Expected ${want}, found ${found}`, at(node)));
-    };
-    const scalar2 = (node, spec) => {
-      const allowed = enumOf(spec, ver);
-      const x = String(node.value);
-      if (!allowed || allowed.includes(x)) return;
-      const gated = spec.enum.find((e) => Array.isArray(e) && e[0] === x);
-      if (gated) out.push(mark("warning", gated[2] && ver >= gated[2] ? `'${x}' was removed in OpenAPI ${v(gated[2])}` : `'${x}' needs OpenAPI ${v(gated[1])}+`, at(node)));
-      else out.push(mark("error", `Invalid value '${x}'. Allowed: ${allowed.join(", ")}`, at(node)));
-    };
-    object(root, "OpenAPI", START);
-    return out;
-  }
-  var rules = [syntaxRule, versionRule, structureRule];
-  function validate(text) {
-    const ctx = { ...parse3(text), text };
-    return rules.flatMap((r) => r(ctx)).sort((a2, b2) => a2.startLine - b2.startLine || a2.startCol - b2.startCol);
-  }
-
-  // src/oas/outline.js
-  var METHODS2 = ["get", "put", "post", "delete", "options", "head", "patch", "trace", "query"];
-  function outline(text) {
-    const { root, lc } = parse3(text);
-    if (!isMap(root)) return [];
-    const line = (node2) => lc.linePos(node2.range[0]).line;
-    const str = (map2, key) => {
-      const v2 = pairOf(map2, key)?.value;
-      return isScalar(v2) && v2.value != null ? String(v2.value) : void 0;
-    };
-    const node = (label2, kind, at, extra) => ({ label: label2, kind, line: line(at), ...extra, children: extra?.children ?? [] });
-    const pairs2 = (map2) => isMap(map2) ? map2.items.filter((p) => keyOf(p) != null) : [];
-    const op2 = (p) => node(keyOf(p).toUpperCase(), "operation", p.key, { method: keyOf(p).toLowerCase(), ...str(p.value, "summary") && { detail: str(p.value, "summary") } });
-    const ops = (item2) => [
-      ...pairs2(item2).filter((p) => METHODS2.includes(keyOf(p))).map(op2),
-      ...pairs2(pairOf(item2, "additionalOperations")?.value).map(op2)
-    ];
-    const out = [];
-    for (const p of root.items) {
-      const key = keyOf(p);
-      const val = p.value;
-      if (key === "info") {
-        const detail = [str(val, "title"), str(val, "version")].filter(Boolean).join(" ");
-        out.push(node("Info", "info", p.key, detail ? { detail } : void 0));
-      } else if (key === "servers" && isSeq(val)) {
-        out.push(node("Servers", "servers", p.key, { children: val.items.filter(isMap).map((s2) => node(str(s2, "url") ?? "(no url)", "server", s2)) }));
-      } else if (key === "paths" || key === "webhooks") {
-        out.push(node(key === "paths" ? "Paths" : "Webhooks", key, p.key, { children: pairs2(val).map((q) => node(keyOf(q), "path", q.key, { children: ops(q.value) })) }));
-      } else if (key === "components") {
-        out.push(node("Components", "components", p.key, { children: pairs2(val).map((g) => node(keyOf(g), "group", g.key, { children: pairs2(g.value).map((c) => node(keyOf(c), "component", c.key)) })) }));
-      } else if (key === "tags" && isSeq(val)) {
-        out.push(node("Tags", "tags", p.key, { children: val.items.filter(isMap).map((t) => node(str(t, "name") ?? "(no name)", "tag", t)) }));
-      }
-    }
-    return out;
+  var cut = (s2, n2 = 120) => (s2 = s2.replace(/\s*\n\s*/g, " ").trim(), s2.length > n2 ? s2.slice(0, n2 - 1) + "\u2026" : s2);
+  var typeOf = (s2) => s2 && typeof s2 === "object" ? [s2.type].flat().filter(Boolean).join(" | ") || (typeof s2.$ref === "string" ? s2.$ref.split("/").pop() : "") : "";
+  function refHover(text, line, col) {
+    const r = resolveAt(text, line, col);
+    const node = r?.found && deref(r.p.root, r.found.node);
+    if (!node) return null;
+    const v2 = node.toJS(r.p.doc);
+    const kind = r.segs[0] === "components" ? r.segs[1] : r.segs[0];
+    const o2 = v2 && typeof v2 === "object" ? v2 : {};
+    const str2 = (x) => typeof x === "string" ? x : "";
+    let rows;
+    if (kind === "schemas") {
+      const props = o2.properties && typeof o2.properties === "object" ? Object.entries(o2.properties).slice(0, 5) : [];
+      rows = [str2(o2.title), cut(str2(o2.description)), typeOf(o2) && `type: ${typeOf(o2)}`, ...props.map(([k, p]) => `${k}: ${typeOf(p) || "any"}`)];
+    } else if (kind === "parameters") {
+      rows = [o2.in && `in: ${o2.in}`, o2.required === true && "required: true"];
+    } else rows = [cut(str2(o2.summary) || str2(o2.description))];
+    return { title: r.segs.at(-1), kind, rows: rows.filter(Boolean), from: r.hit.from, to: r.hit.to };
   }
 
   // src/oas/templates.js
@@ -7803,6 +7666,457 @@ ${pad}  - ` : `${k}: `;
     ];
     return lines.filter((l2) => l2 !== false).join("\n") + "\n";
   }
+  var SNIPPETS = [
+    { label: "path", doc: "A path with a GET operation.", lines: ["/${1:items}:", "  get:", "    summary: ${2:List items}", "    operationId: ${3:listItems}", "    responses:", "      '200':", "        description: ${4:OK}"] },
+    // the method choice is filled in by complete.js with the methods still free
+    { label: "operation", doc: "An operation with a summary, an operationId and a response.", lines: ["${1|METHODS|}:", "  summary: ${2:Summary}", "  operationId: ${3:operationId}", "  responses:", "    '200':", "      description: ${4:OK}"] },
+    { label: "parameter: query", doc: "A query parameter.", lines: ["name: ${1:limit}", "in: query", "schema:", "  type: ${2:integer}"] },
+    { label: "parameter: path", doc: "A path parameter.", lines: ["name: ${1:id}", "in: path", "required: true", "schema:", "  type: ${2:string}"] },
+    { label: "parameter: header", doc: "A header parameter.", lines: ["name: ${1:X-Request-Id}", "in: header", "schema:", "  type: ${2:string}"] },
+    { label: "response", doc: "A response with a JSON body.", lines: ["'${1:200}':", "  description: ${2:OK}", "  content:", "    application/json:", "      schema:", "        type: ${3:object}"] },
+    { label: "schema", doc: "An object schema with one required property.", lines: ["${1:Name}:", "  type: object", "  required: [${2:id}]", "  properties:", "    ${2:id}:", "      type: ${3:string}"] }
+  ];
+
+  // src/oas/complete.js
+  var lower = (s2) => s2.toLowerCase();
+  var strip = (p) => p.replace(/^["']/, "");
+  function insertKey(key, spec, ctx, rest, pad) {
+    if (ctx.json) return rest.includes(":") ? `"${key}"` : `"${key}": `;
+    const k = /^\d/.test(key) ? `'${key}'` : key;
+    if (rest.includes(":")) return k;
+    const t = kindsOf(spec, ctx.version)[0];
+    return t === "obj" || t === "map" ? `${k}:
+${pad}  ` : t === "list" ? `${k}:
+${pad}  - ` : `${k}: `;
+  }
+  function render(lines, pad, dashed) {
+    return (dashed ? lines.map((l2, i2) => (i2 ? "  " : "- ") + l2) : lines).join("\n" + pad);
+  }
+  var snippet = (label2) => SNIPPETS.find((s2) => s2.label === label2);
+  var PARAMS = ["parameter: query", "parameter: path", "parameter: header"];
+  function snippetsFor(ctx, raw, col) {
+    const t = ctx.objectType;
+    if (t === "Paths") return [snippet("path")];
+    if (t === "Responses") return [snippet("response")];
+    if (t === "PathItem") {
+      const free = ["get", "post", "put", "patch", "delete", ...ctx.version >= 32 ? ["query"] : []].filter((m2) => !ctx.keysPresent.has(m2));
+      if (!free.length) return [];
+      const s2 = snippet("operation");
+      return [{ ...s2, lines: [s2.lines[0].replace("METHODS", free.join(",")), ...s2.lines.slice(1)] }];
+    }
+    if (ctx.path.length === 2 && ctx.path[0] === "components" && ctx.path[1] === "schemas") return [snippet("schema")];
+    if (t === "Parameter" && !ctx.keysPresent.size && /^\s*- +[\w"']*$/.test(raw.slice(0, col - 1))) return PARAMS.map(snippet);
+    if (ctx.container?.kind === "list" && ctx.container.type === "Parameter") return PARAMS.map((l2) => ({ ...snippet(l2), dashed: true }));
+    return [];
+  }
+  function complete(text, line, col) {
+    const ctx = contextAt(text, line, col);
+    if (!ctx) return [];
+    const raw = text.split(/\r?\n/)[line - 1] ?? "";
+    const rest = raw.slice(col - 1);
+    const pad = " ".repeat(Math.max(0, ctx.indent - raw.search(/\S|$/)));
+    const pre = lower(strip(ctx.prefix));
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    const add2 = (label2, item2) => {
+      if (seen.has(label2) || !lower(label2).startsWith(pre)) return;
+      seen.add(label2);
+      out.push({ label: label2, ...item2 });
+    };
+    const ver = ctx.version;
+    if (ctx.position === "key") {
+      const obj = OBJECTS[ctx.objectType];
+      const keyItem = (key, spec, required) => {
+        if (ctx.keysPresent.has(key)) return;
+        add2(key, { insertText: insertKey(key, spec, ctx, rest, pad), kind: "key", doc: spec.doc, ...required && { required: true }, sortText: (required ? "0" : "1") + key });
+      };
+      if (obj) {
+        for (const [key, f2] of Object.entries(obj.fields)) {
+          if (active(f2, ver)) keyItem(key, f2, f2.req && !(f2.reqUntil && ver >= f2.reqUntil));
+        }
+        for (const p of obj.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
+        if (obj.ref && !ctx.keysPresent.has("$ref")) {
+          add2("$ref", { insertText: insertKey("$ref", member(ctx.objectType, "$ref", ver).spec, ctx, rest, pad), kind: "key", doc: "A reference to a component.", sortText: "1$ref", retrigger: true });
+        }
+      } else if (ctx.container?.kind === "map") {
+        for (const key of ctx.container.spec.keyHints ?? []) keyItem(key, itemSpec(ctx.container.spec));
+      }
+      if (!ctx.json && !rest.trim()) {
+        for (const s2 of snippetsFor(ctx, raw, col)) {
+          add2(s2.label, { insertText: render(s2.lines, pad, s2.dashed), kind: "snippet", snippet: true, doc: s2.doc, sortText: "2" + s2.label });
+        }
+      }
+      return out;
+    }
+    const kind = ctx.key === "$ref" && refKind(ctx.objectType, ver);
+    if (kind) {
+      const lines = text.split(/\r?\n/);
+      if (!ctx.json) lines[line - 1] = "";
+      const s2 = ctx.json ? -1 : lines.findIndex((l2) => /^components\s*:/.test(l2));
+      const e = s2 < 0 ? -1 : lines.findIndex((l2, i2) => i2 > s2 && /^[^\s#]/.test(l2));
+      const src = s2 < 0 ? lines : lines.slice(s2, e < 0 ? void 0 : e);
+      const sp = !ctx.json && raw[col - 2] === ":" ? " " : "";
+      for (const name of targets(parse3(src.join("\n")).root, kind)) {
+        const label2 = `#/components/${kind}/${name.replace(/~/g, "~0").replace(/\//g, "~1")}`;
+        if (seen.has(label2) || !lower(label2).includes(pre)) continue;
+        seen.add(label2);
+        out.push({ label: label2, insertText: sp + (ctx.json ? JSON.stringify(label2) : `'${label2.replace(/'/g, "''")}'`), kind: "value", doc: `The ${kind} component '${name}'.`, sortText: "1" + label2 });
+      }
+      return out;
+    }
+    const f = ctx.objectType && ctx.key != null ? member(ctx.objectType, ctx.key, ver)?.spec : null;
+    if (!f || f === EXT) return out;
+    const values = enumOf(f, ver) ?? f.hints ?? (kindsOf(f, ver).includes("bool") ? ["true", "false"] : []);
+    const isStr = kindsOf(f, ver).includes("str");
+    for (const v2 of values) {
+      const ins = ctx.json ? isStr ? `"${v2}"` : v2 : isStr && /^(null|true|false)$/.test(v2) ? `'${v2}'` : v2;
+      add2(v2, { insertText: (!ctx.json && raw[col - 2] === ":" ? " " : "") + ins, kind: "value", doc: f.doc, sortText: "1" + v2 });
+    }
+    return out;
+  }
+  var since = (v2) => `${Math.floor(v2 / 10)}.${v2 % 10}`;
+  var PRIM = { str: "string", num: "number", int: "integer", bool: "boolean", any: "any" };
+  var typeName = (t, of) => t === "obj" ? of : t === "map" ? `map of ${OBJECTS[of] ? of : PRIM[of]}` : t === "list" ? `list of ${OBJECTS[of] ? of : PRIM[of]}` : PRIM[t];
+  function fieldDoc(text, line, col) {
+    const raw = text.split(/\r?\n/)[line - 1] ?? "";
+    const re = /^( *(?:- +)?)("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s"'#{[\]][^#]*?)\s*:(?=\s|$)|"((?:[^"\\]|\\.)*)"\s*:/g;
+    let hit = null;
+    for (let mt; mt = re.exec(raw); ) {
+      const start = mt.index + (mt[1]?.length ?? 0);
+      const len = (mt[2] ?? `"${mt[3]}"`).length;
+      if (col - 1 >= start && col - 1 <= start + len) hit = { start, quoted: mt[3] != null };
+    }
+    if (!hit) return null;
+    const ctx = contextAt(text, line, hit.start + 1 + (hit.quoted ? 1 : 0));
+    if (!ctx || ctx.position !== "key" || ctx.key == null) return null;
+    const key = ctx.key;
+    const ver = ctx.version;
+    if (key.startsWith("x-")) return { title: key, doc: EXT.doc, type: "any", required: false };
+    if (ctx.container?.kind === "map") {
+      const it = itemSpec(ctx.container.spec);
+      return { title: key, doc: it.doc, type: typeName(it.t, it.of), required: false };
+    }
+    const mm = ctx.objectType && member(ctx.objectType, key, ver);
+    if (!mm) return null;
+    const f = mm.spec;
+    const note = [f.since && `Since OpenAPI ${since(f.since)}.`, f.until && `Removed in OpenAPI ${since(f.until)}.`].filter(Boolean).join(" ");
+    return {
+      title: key,
+      doc: note ? `${f.doc} ${note}` : f.doc,
+      type: kindsOf(f, ver).map((t) => typeName(t, f.of)).join(" or "),
+      required: !!f.req && !(f.reqUntil && ver >= f.reqUntil)
+    };
+  }
+
+  // src/oas/outline.js
+  var METHODS2 = ["get", "put", "post", "delete", "options", "head", "patch", "trace", "query"];
+  function outline(text) {
+    const { root, lc } = parse3(text);
+    if (!isMap(root)) return [];
+    const line = (node2) => lc.linePos(node2.range[0]).line;
+    const str2 = (map2, key) => {
+      const v2 = pairOf(map2, key)?.value;
+      return isScalar(v2) && v2.value != null ? String(v2.value) : void 0;
+    };
+    const node = (label2, kind, at2, extra) => ({ label: label2, kind, line: line(at2), ...extra, children: extra?.children ?? [] });
+    const pairs2 = (map2) => isMap(map2) ? map2.items.filter((p) => keyOf(p) != null) : [];
+    const op2 = (p) => node(keyOf(p).toUpperCase(), "operation", p.key, { method: keyOf(p).toLowerCase(), ...str2(p.value, "summary") && { detail: str2(p.value, "summary") } });
+    const ops = (item2) => [
+      ...pairs2(item2).filter((p) => METHODS2.includes(keyOf(p))).map(op2),
+      ...pairs2(pairOf(item2, "additionalOperations")?.value).map(op2)
+    ];
+    const out = [];
+    for (const p of root.items) {
+      const key = keyOf(p);
+      const val = p.value;
+      if (key === "info") {
+        const detail = [str2(val, "title"), str2(val, "version")].filter(Boolean).join(" ");
+        out.push(node("Info", "info", p.key, detail ? { detail } : void 0));
+      } else if (key === "servers" && isSeq(val)) {
+        out.push(node("Servers", "servers", p.key, { children: val.items.filter(isMap).map((s2) => node(str2(s2, "url") ?? "(no url)", "server", s2)) }));
+      } else if (key === "paths" || key === "webhooks") {
+        out.push(node(key === "paths" ? "Paths" : "Webhooks", key, p.key, { children: pairs2(val).map((q) => node(keyOf(q), "path", q.key, { children: ops(q.value) })) }));
+      } else if (key === "components") {
+        out.push(node("Components", "components", p.key, { children: pairs2(val).map((g) => node(keyOf(g), "group", g.key, { children: pairs2(g.value).map((c) => node(keyOf(c), "component", c.key)) })) }));
+      } else if (key === "tags" && isSeq(val)) {
+        out.push(node("Tags", "tags", p.key, { children: val.items.filter(isMap).map((t) => node(str2(t, "name") ?? "(no name)", "tag", t)) }));
+      }
+    }
+    return out;
+  }
+
+  // src/oas/validate.js
+  var START = { startLine: 1, startCol: 1, endLine: 1, endCol: 2 };
+  var mark = (severity, message, where) => ({ severity, message, ...where });
+  var v = (n2) => `${Math.floor(n2 / 10)}.${n2 % 10}`;
+  function syntaxRule({ doc, lc }) {
+    const one = (severity) => (e) => mark(severity, e.message.split("\n")[0], range(lc, e.pos));
+    return [...doc.errors.map(one("error")), ...doc.warnings.map(one("warning"))];
+  }
+  function versionRule({ doc, lc, root }) {
+    if (doc.errors.length) return [];
+    const sw = pairOf(root, "swagger");
+    if (sw) return [mark("error", "Swagger 2.0 is not supported by the editor (OpenAPI 3.x only)", range(lc, sw.key.range))];
+    const p = pairOf(root, "openapi");
+    if (!p) return [mark("error", "Missing required 'openapi' field", START)];
+    const val = isScalar(p.value) ? String(p.value.value) : "";
+    const mm = /^3\.(\d+)\.\d+/.exec(val);
+    if (mm && Number(mm[1]) <= 2) return [];
+    const where = p.value?.range ? range(lc, p.value.range) : range(lc, p.key.range);
+    if (mm) return [mark("error", `OpenAPI ${val} is newer than this editor supports (up to 3.2)`, where)];
+    return [mark("error", `Invalid OpenAPI version '${val}'. Expected 3.0.x, 3.1.x or 3.2.x`, where)];
+  }
+  var NAMES2 = { str: "string", num: "number", int: "integer", bool: "boolean", map: "mapping", list: "list" };
+  function structureRule({ doc, lc, ver, root, text }) {
+    if (doc.errors.length || !ver || !isMap(root)) return [];
+    const out = [];
+    const at2 = (node) => range(lc, head(text, node.range));
+    const object = (map2, type, owner) => {
+      const obj = OBJECTS[type];
+      const hasRef = obj.ref && pairOf(map2, "$ref") && !(type === "Schema" && ver >= 31);
+      for (const pair2 of map2.items) {
+        const key = keyOf(pair2);
+        if (key == null || key.startsWith("x-") || key === "<<") continue;
+        const mm = member(type, key, ver);
+        if (!mm) {
+          if (!hasRef) out.push(mark("warning", `Unknown key '${key}' in ${type}`, range(lc, pair2.key.range)));
+          continue;
+        }
+        if (mm.gated) {
+          const msg = mm.spec.until && ver >= mm.spec.until ? `'${key}' was removed in OpenAPI ${v(mm.spec.until)}` : `'${key}' needs OpenAPI ${v(mm.spec.since)}+`;
+          out.push(mark("warning", msg, range(lc, pair2.key.range)));
+          continue;
+        }
+        value(pair2.value, mm.spec, range(lc, pair2.key.range));
+      }
+      if (hasRef) return;
+      for (const [key, f] of Object.entries(obj.fields)) {
+        if (f.req && active(f, ver) && !(f.reqUntil && ver >= f.reqUntil) && !pairOf(map2, key)) {
+          out.push(mark("error", `Missing required '${key}' in ${type}`, owner));
+        }
+      }
+    };
+    const value = (node, spec, owner) => {
+      if (!node || isAlias(node) || isScalar(node) && node.value === null) return;
+      const kinds = kindsOf(spec, ver);
+      if (kinds.includes("any")) return;
+      if (isMap(node)) {
+        if (kinds.includes("obj")) return object(node, spec.of, owner ?? at2(node));
+        if (kinds.includes("map")) return node.items.forEach((p) => value(p.value, itemSpec(spec), p.key && range(lc, p.key.range)));
+      } else if (isSeq(node)) {
+        if (kinds.includes("list")) return node.items.forEach((it) => value(it, itemSpec(spec)));
+      } else if (isScalar(node)) {
+        const x = node.value;
+        const ok = typeof x === "string" ? kinds.includes("str") : typeof x === "number" ? kinds.includes("num") || kinds.includes("int") && Number.isInteger(x) : typeof x === "boolean" ? kinds.includes("bool") || ver >= 31 && spec.of === "Schema" : false;
+        if (ok) return scalar2(node, spec);
+        if (kinds.includes("str") && (typeof x === "number" || typeof x === "boolean")) return out.push(mark("warning", "Expected string; quote the value", at2(node)));
+      }
+      const want = kinds.map((k) => k === "obj" ? `mapping (${spec.of})` : NAMES2[k]).join(" or ");
+      const found = isMap(node) ? "mapping" : isSeq(node) ? "list" : NAMES2[{ string: "str", number: "num", boolean: "bool" }[typeof node.value]] ?? typeof node.value;
+      out.push(mark("error", `Expected ${want}, found ${found}`, at2(node)));
+    };
+    const scalar2 = (node, spec) => {
+      const allowed = enumOf(spec, ver);
+      const x = String(node.value);
+      if (!allowed || allowed.includes(x)) return;
+      const gated = spec.enum.find((e) => Array.isArray(e) && e[0] === x);
+      if (gated) out.push(mark("warning", gated[2] && ver >= gated[2] ? `'${x}' was removed in OpenAPI ${v(gated[2])}` : `'${x}' needs OpenAPI ${v(gated[1])}+`, at2(node)));
+      else out.push(mark("error", `Invalid value '${x}'. Allowed: ${allowed.join(", ")}`, at2(node)));
+    };
+    object(root, "OpenAPI", START);
+    return out;
+  }
+  var at = (ctx, node) => range(ctx.lc, head(ctx.text, node.range));
+  var keyAt = (ctx, pair2) => range(ctx.lc, pair2.key.range);
+  var str = (map2, key) => {
+    const val = pairOf(map2, key)?.value;
+    return isScalar(val) && typeof val.value === "string" ? val.value : void 0;
+  };
+  var compOf2 = (segs) => segs?.[0] === "components" && segs.length >= 3 ? `${segs[1]}/${segs[2]}` : null;
+  var add = (map2, key, x) => (map2.get(key) ?? map2.set(key, []).get(key)).push(x);
+  function collect({ doc, ver, root }) {
+    if (doc.errors.length || !ver || !isMap(root)) return null;
+    const sem = { sites: [], ops: [], items: [], servers: [], secUses: [], mapping: [], discs: /* @__PURE__ */ new Set(), alias: false };
+    const walk2 = (node, path) => {
+      if (isAlias(node)) sem.alias = true;
+      if (isSeq(node)) return node.items.forEach((it, i2) => walk2(it, [...path, i2]));
+      if (!isMap(node)) return;
+      const t = typeAt(path, ver);
+      if (!t || t.kind === "prim") return;
+      if (t.kind !== "obj") {
+        for (const p of node.items) {
+          if (keyOf(p) === "<<") sem.alias = true;
+          else if (keyOf(p) != null) walk2(p.value, [...path, keyOf(p)]);
+        }
+        return;
+      }
+      const type = t.type;
+      if (type === "Operation") sem.ops.push(node);
+      else if (type === "PathItem" && path.length === 2 && path[0] === "paths") sem.items.push({ node, key: path[1] });
+      else if (type === "Server") sem.servers.push(node);
+      else if (type === "SecurityRequirement") sem.secUses.push(...node.items.filter((p) => keyOf(p) != null));
+      else if (type === "Discriminator") {
+        const mp = pairOf(node, "mapping")?.value;
+        if (isMap(mp)) {
+          for (const p of mp.items) if (isScalar(p.value) && typeof p.value.value === "string") sem.mapping.push({ value: p.value.value, path });
+        }
+        const dm = str(node, "defaultMapping");
+        if (dm != null) sem.mapping.push({ value: dm, path });
+        if (path.length === 4) sem.discs.add(compOf2(path));
+      }
+      for (const p of node.items) {
+        const key = keyOf(p);
+        if (key === "<<") sem.alias = true;
+        if (key == null || key === "<<") continue;
+        const spec = member(type, key, ver)?.spec;
+        if (!spec || spec.t === "any") continue;
+        if (key === "$ref") {
+          if (isScalar(p.value) && typeof p.value.value === "string") sem.sites.push({ node: p.value, path, type });
+        } else walk2(p.value, [...path, key]);
+      }
+    };
+    walk2(root, []);
+    return sem;
+  }
+  var semOf = (ctx) => ctx.sem ??= collect(ctx);
+  var plainOf = (ctx) => semOf(ctx)?.alias ? null : semOf(ctx);
+  function refRule(ctx) {
+    const sem = semOf(ctx);
+    if (!sem) return [];
+    const out = [];
+    for (const s2 of sem.sites) {
+      const ref = s2.node.value;
+      const segs = pointer(ref);
+      if (!segs) continue;
+      if (!lookup(ctx.root, segs)) {
+        out.push(mark("error", `Unresolved reference '${ref}'`, at(ctx, s2.node)));
+        continue;
+      }
+      const want = refKind(s2.type, ctx.ver);
+      if (want && segs.length === 3 && segs[0] === "components" && segs[1] !== want && Object.hasOwn(OBJECTS.Components.fields, segs[1])) {
+        out.push(mark("warning", `Expected a reference to components/${want}, but this points to components/${segs[1]}`, at(ctx, s2.node)));
+      }
+    }
+    return out;
+  }
+  function pathParamRule(ctx) {
+    const sem = plainOf(ctx);
+    if (!sem) return [];
+    const out = [];
+    const err = (message, where) => out.push(mark("error", message, where));
+    const params = (seq2) => (isSeq(seq2) ? seq2.items : []).flatMap((it) => {
+      const n2 = deref(ctx.root, it);
+      const name = isMap(n2) ? str(n2, "name") : void 0;
+      if (name == null) return [];
+      const where = pairOf(it, "$ref") ? at(ctx, it) : at(ctx, pairOf(n2, "name").value);
+      return [{ name, in: str(n2, "in"), required: pairOf(n2, "required")?.value?.value, where }];
+    });
+    for (const { node, key } of sem.items) {
+      const names = [...key.matchAll(/\{([^}]+)\}/g)].map((mt) => mt[1]);
+      const check = (list) => {
+        const seen = /* @__PURE__ */ new Map();
+        for (const p of list) {
+          add(seen, `${p.in}:${p.name}`, p);
+          if (p.in !== "path") continue;
+          if (!names.includes(p.name)) err(`Path parameter '${p.name}' is not in the path '${key}'`, p.where);
+          if (p.required !== true) err(`Path parameter '${p.name}' must have required: true`, p.where);
+        }
+        for (const dup of seen.values()) if (dup.length > 1) for (const p of dup) err(`Duplicate parameter '${p.name}' (in ${p.in})`, p.where);
+      };
+      const opaque = (seq2) => isSeq(seq2) && seq2.items.some((it) => pairOf(it, "$ref") && !isMap(deref(ctx.root, it)));
+      const sharedOpaque = opaque(pairOf(node, "parameters")?.value);
+      const shared = params(pairOf(node, "parameters")?.value);
+      check(shared);
+      const extra = pairOf(node, "additionalOperations")?.value;
+      const ops = [...node.items.filter((p) => METHODS2.includes(keyOf(p))), ...isMap(extra) ? extra.items : []].filter((p) => isMap(p.value));
+      for (const op2 of ops) {
+        const own = params(pairOf(op2.value, "parameters")?.value);
+        check(own);
+        if (sharedOpaque || opaque(pairOf(op2.value, "parameters")?.value)) continue;
+        const merged = new Map([...shared, ...own].map((p) => [`${p.in}:${p.name}`, p]));
+        for (const n2 of names) if (!merged.has(`path:${n2}`)) err(`Path '{${n2}}' has no 'in: path' parameter named '${n2}'`, keyAt(ctx, op2));
+      }
+    }
+    return out;
+  }
+  function operationIdRule(ctx) {
+    const sem = semOf(ctx);
+    if (!sem) return [];
+    const ids = /* @__PURE__ */ new Map();
+    for (const op2 of sem.ops) {
+      const val = pairOf(op2, "operationId")?.value;
+      if (isScalar(val) && val.value != null) add(ids, String(val.value), val);
+    }
+    return [...ids].flatMap(([id, nodes]) => nodes.length > 1 ? nodes.map((n2) => mark("error", `Duplicate operationId '${id}'`, at(ctx, n2))) : []);
+  }
+  function securityRule(ctx) {
+    const sem = plainOf(ctx);
+    if (!sem) return [];
+    const defined = new Set(targets(ctx.root, "securitySchemes"));
+    const uri = (k) => ctx.ver >= 32 && /[#/]/.test(k);
+    return sem.secUses.filter((p) => !defined.has(keyOf(p)) && !uri(keyOf(p))).map((p) => mark("error", `Security scheme '${keyOf(p)}' is not defined in components.securitySchemes`, keyAt(ctx, p)));
+  }
+  function tagRule(ctx) {
+    const sem = semOf(ctx);
+    const tags = pairOf(ctx.root, "tags")?.value;
+    if (!sem || !tags) return [];
+    const declared = new Set(isSeq(tags) ? tags.items.map((t) => str(t, "name")) : []);
+    const out = [];
+    for (const op2 of sem.ops) {
+      const list = pairOf(op2, "tags")?.value;
+      for (const t of isSeq(list) ? list.items : []) {
+        if (isScalar(t) && typeof t.value === "string" && !declared.has(t.value)) out.push(mark("info", `Tag '${t.value}' is used but not declared in tags`, at(ctx, t)));
+      }
+    }
+    return out;
+  }
+  function serverVarRule(ctx) {
+    const sem = plainOf(ctx);
+    if (!sem) return [];
+    const out = [];
+    for (const s2 of sem.servers) {
+      const url = pairOf(s2, "url")?.value;
+      if (!isScalar(url) || typeof url.value !== "string") continue;
+      const vars = pairOf(s2, "variables")?.value;
+      for (const x of new Set([...url.value.matchAll(/\{([^}]+)\}/g)].map((mt) => mt[1]))) {
+        if (!pairOf(vars, x)) out.push(mark("error", `Server variable '{${x}}' is not defined in 'variables'`, at(ctx, url)));
+      }
+    }
+    return out;
+  }
+  function unusedRule(ctx) {
+    const sem = semOf(ctx);
+    if (!sem) return [];
+    const defined = /* @__PURE__ */ new Map();
+    const comps = pairOf(ctx.root, "components")?.value;
+    for (const g of isMap(comps) ? comps.items : []) {
+      if (!Object.hasOwn(OBJECTS.Components.fields, keyOf(g)) || !isMap(g.value)) continue;
+      for (const p of g.value.items) if (keyOf(p) != null) defined.set(`${keyOf(g)}/${keyOf(p)}`, p);
+    }
+    const edges = /* @__PURE__ */ new Map();
+    const edge = (owner, target) => target && add(edges, owner, target);
+    for (const s2 of sem.sites) {
+      const target = compOf2(pointer(s2.node.value));
+      edge(compOf2(s2.path), target);
+      if (s2.path.length === 5 && s2.path[3] === "allOf" && sem.discs.has(target)) edge(target, compOf2(s2.path));
+    }
+    for (const p of sem.secUses) edge(null, `securitySchemes/${keyOf(p)}`);
+    for (const mp of sem.mapping) edge(compOf2(mp.path), mp.value.startsWith("#") ? compOf2(pointer(mp.value)) : `schemas/${mp.value}`);
+    const reached = /* @__PURE__ */ new Set();
+    const queue = [...edges.get(null) ?? []];
+    while (queue.length) {
+      const c = queue.pop();
+      if (reached.has(c)) continue;
+      reached.add(c);
+      queue.push(...edges.get(c) ?? []);
+    }
+    return [...defined].filter(([c]) => !reached.has(c)).map(([c, p]) => mark("info", `Component '${c}' is never referenced`, keyAt(ctx, p)));
+  }
+  var rules = [syntaxRule, versionRule, structureRule, refRule, pathParamRule, operationIdRule, securityRule, tagRule, serverVarRule, unusedRule];
+  function validate(text) {
+    const ctx = { ...parse3(text), text };
+    return rules.flatMap((r) => r(ctx)).sort((a2, b2) => a2.startLine - b2.startLine || a2.startCol - b2.startCol);
+  }
 
   // src/editor.js
   var store = {
@@ -7822,7 +8136,7 @@ ${pad}  - ` : `${k}: `;
   };
   var md = (s2) => s2.replace(/[\\`*_{}[\]()#+\-.!|<>~]/g, "\\$&");
   var specOf = (text) => text.match(/^\s*["']?openapi["']?\s*:\s*["']?([\w.-]+)/m)?.[1];
-  function initEditor({ $: $2, el: el2 }) {
+  function initEditor({ $: $2, el: el2, compareWith }) {
     let draft = null;
     try {
       draft = JSON.parse(store.get("sc.draft"));
@@ -7861,7 +8175,7 @@ ${pad}  - ` : `${k}: `;
     document.querySelectorAll("[data-mode]").forEach((b2) => b2.addEventListener("click", () => setMode(b2.dataset.mode)));
     const KIND = { key: "Property", value: "Value", snippet: "Snippet" };
     monaco.languages.registerCompletionItemProvider("yaml", {
-      triggerCharacters: [" ", ":", "\n", "-"],
+      triggerCharacters: [" ", ":", "\n", "-", "/"],
       provideCompletionItems(m2, pos) {
         if (m2 !== model) return;
         const text = m2.getValue();
@@ -7881,7 +8195,8 @@ ${pad}  - ` : `${k}: `;
             documentation: c.doc,
             sortText: c.sortText,
             range: range2,
-            .../\n[ -]*$/.test(c.insertText) && { command: { id: "editor.action.triggerSuggest", title: "Suggest" } }
+            ...c.snippet && { insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet },
+            ...(c.retrigger || /\n[ -]*$/.test(c.insertText)) && { command: { id: "editor.action.triggerSuggest", title: "Suggest" } }
           }))
         };
       }
@@ -7889,9 +8204,23 @@ ${pad}  - ` : `${k}: `;
     monaco.languages.registerHoverProvider("yaml", {
       provideHover(m2, pos) {
         if (m2 !== model) return;
+        const r = refHover(m2.getValue(), pos.lineNumber, pos.column);
+        if (r) {
+          return {
+            range: new monaco.Range(pos.lineNumber, r.from, pos.lineNumber, r.to),
+            contents: [{ value: `**${md(r.title)}** \xB7 ${md(r.kind)}` }, ...r.rows.length ? [{ value: r.rows.map(md).join("  \n") }] : []]
+          };
+        }
         const d = fieldDoc(m2.getValue(), pos.lineNumber, pos.column);
         if (!d) return;
         return { contents: [{ value: `**${md(d.title)}** \xB7 ${d.type}${d.required ? " \xB7 required" : ""}` }, { value: md(d.doc) }] };
+      }
+    });
+    monaco.languages.registerDefinitionProvider("yaml", {
+      provideDefinition(m2, pos) {
+        if (m2 !== model) return;
+        const d = definitionAt(m2.getValue(), pos.lineNumber, pos.column);
+        return d && { uri: m2.uri, range: new monaco.Range(d.line, d.col, d.line, d.col) };
       }
     });
     const tabs = document.querySelectorAll("[data-tab]");
@@ -7921,7 +8250,7 @@ ${pad}  - ` : `${k}: `;
       );
       if (!markers.length) ul.append(el2("li", "none", "No problems"));
       const n2 = $2("n-problems");
-      n2.textContent = markers.length;
+      n2.textContent = markers.filter((p) => p.severity !== "info").length;
       n2.classList.toggle("bad", markers.some((p) => p.severity === "error"));
     };
     let nodes = [];
@@ -7968,7 +8297,7 @@ ${pad}  - ` : `${k}: `;
     };
     const check = () => {
       markers = validate(model.getValue());
-      const sev = { error: monaco.MarkerSeverity.Error, warning: monaco.MarkerSeverity.Warning };
+      const sev = { error: monaco.MarkerSeverity.Error, warning: monaco.MarkerSeverity.Warning, info: monaco.MarkerSeverity.Info };
       monaco.editor.setModelMarkers(
         model,
         "oas",
@@ -8078,6 +8407,11 @@ ${pad}  - ` : `${k}: `;
         return;
       }
       if (out !== text) replace(out);
+    });
+    $2("ed-compare").addEventListener("click", () => {
+      const text = model.getValue();
+      compareWith({ original: saved != null && saved !== text ? saved : null, originalName: file ? file + " (saved)" : "Baseline", modified: text, modifiedName: file });
+      setMode("compare");
     });
     head2();
     check();
@@ -8651,6 +8985,10 @@ ${SIDE[c.side]}, line ${c.line}${c.breaking ? "\nBreaking change" : ""}`;
       })
     );
     $("search").addEventListener("input", applyFilters);
-    initEditor({ $, el });
+    const compareWith = ({ original, originalName, modified, modifiedName }) => {
+      if (original != null) load("left", original, originalName);
+      load("right", modified, modifiedName);
+    };
+    initEditor({ $, el, compareWith });
   }
 })();

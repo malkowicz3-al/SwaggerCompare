@@ -50,6 +50,12 @@ paths:
           description: The order
     delete:
       summary: Cancel an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "204":
           description: Cancelled

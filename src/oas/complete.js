@@ -1,5 +1,8 @@
-import { OBJECTS, active, kindsOf, member, enumOf, itemSpec, EXT } from './model.js';
+import { OBJECTS, active, kindsOf, member, enumOf, itemSpec, refKind, EXT } from './model.js';
 import { contextAt } from './context.js';
+import { parse } from './ast.js';
+import { targets } from './refs.js';
+import { SNIPPETS } from './templates.js';
 
 const lower = (s) => s.toLowerCase();
 const strip = (p) => p.replace(/^["']/, '');
@@ -13,7 +16,32 @@ function insertKey(key, spec, ctx, rest, pad) {
   return t === 'obj' || t === 'map' ? `${k}:\n${pad}  ` : t === 'list' ? `${k}:\n${pad}  - ` : `${k}: `;
 }
 
-// -> [{label, insertText, kind: 'key'|'value'|'snippet', doc, required?, sortText}]
+// a snippet's insertText; pad as in insertKey; dashed adds the `- ` of a new list item
+export function render(lines, pad, dashed) {
+  return (dashed ? lines.map((l, i) => (i ? '  ' : '- ') + l) : lines).join('\n' + pad);
+}
+
+const snippet = (label) => SNIPPETS.find((s) => s.label === label);
+const PARAMS = ['parameter: query', 'parameter: path', 'parameter: header'];
+
+// the snippets that fit a key position
+function snippetsFor(ctx, raw, col) {
+  const t = ctx.objectType;
+  if (t === 'Paths') return [snippet('path')];
+  if (t === 'Responses') return [snippet('response')];
+  if (t === 'PathItem') {
+    const free = ['get', 'post', 'put', 'patch', 'delete', ...(ctx.version >= 32 ? ['query'] : [])].filter((m) => !ctx.keysPresent.has(m));
+    if (!free.length) return [];
+    const s = snippet('operation');
+    return [{ ...s, lines: [s.lines[0].replace('METHODS', free.join(',')), ...s.lines.slice(1)] }];
+  }
+  if (ctx.path.length === 2 && ctx.path[0] === 'components' && ctx.path[1] === 'schemas') return [snippet('schema')];
+  if (t === 'Parameter' && !ctx.keysPresent.size && /^\s*- +[\w"']*$/.test(raw.slice(0, col - 1))) return PARAMS.map(snippet);
+  if (ctx.container?.kind === 'list' && ctx.container.type === 'Parameter') return PARAMS.map((l) => ({ ...snippet(l), dashed: true }));
+  return [];
+}
+
+// -> [{label, insertText, kind: 'key'|'value'|'snippet', doc, required?, sortText, snippet?, retrigger?}]
 export function complete(text, line, col) {
   const ctx = contextAt(text, line, col);
   if (!ctx) return [];
@@ -40,8 +68,36 @@ export function complete(text, line, col) {
         if (active(f, ver)) keyItem(key, f, f.req && !(f.reqUntil && ver >= f.reqUntil));
       }
       for (const p of obj.patterns ?? []) for (const key of p.keyHints ?? []) keyItem(key, p);
+      if (obj.ref && !ctx.keysPresent.has('$ref')) {
+        add('$ref', { insertText: insertKey('$ref', member(ctx.objectType, '$ref', ver).spec, ctx, rest, pad), kind: 'key', doc: 'A reference to a component.', sortText: '1$ref', retrigger: true });
+      }
     } else if (ctx.container?.kind === 'map') {
       for (const key of ctx.container.spec.keyHints ?? []) keyItem(key, itemSpec(ctx.container.spec));
+    }
+    // a snippet on a line that already has text after the cursor would mangle it
+    if (!ctx.json && !rest.trim()) {
+      for (const s of snippetsFor(ctx, raw, col)) {
+        add(s.label, { insertText: render(s.lines, pad, s.dashed), kind: 'snippet', snippet: true, doc: s.doc, sortText: '2' + s.label });
+      }
+    }
+    return out;
+  }
+  const kind = ctx.key === '$ref' && refKind(ctx.objectType, ver);
+  if (kind) {
+    // the YAML line being typed may hold an unclosed quote that would swallow the rest of the document
+    const lines = text.split(/\r?\n/);
+    if (!ctx.json) lines[line - 1] = '';
+    // a full parse costs ~30 ms on 3k lines, so YAML parses only the top-level components block
+    // shortcut: JSON and a YAML root without a block `components:` line still parse the whole text; fine until JSON specs get big
+    const s = ctx.json ? -1 : lines.findIndex((l) => /^components\s*:/.test(l));
+    const e = s < 0 ? -1 : lines.findIndex((l, i) => i > s && /^[^\s#]/.test(l));
+    const src = s < 0 ? lines : lines.slice(s, e < 0 ? undefined : e);
+    const sp = !ctx.json && raw[col - 2] === ':' ? ' ' : '';
+    for (const name of targets(parse(src.join('\n')).root, kind)) {
+      const label = `#/components/${kind}/${name.replace(/~/g, '~0').replace(/\//g, '~1')}`;
+      if (seen.has(label) || !lower(label).includes(pre)) continue;
+      seen.add(label);
+      out.push({ label, insertText: sp + (ctx.json ? JSON.stringify(label) : `'${label.replace(/'/g, "''")}'`), kind: 'value', doc: `The ${kind} component '${name}'.`, sortText: '1' + label });
     }
     return out;
   }

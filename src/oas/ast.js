@@ -1,5 +1,6 @@
-import { parseDocument, LineCounter, isMap, isScalar } from 'yaml';
+import { parseDocument, LineCounter, isMap, isSeq, isScalar } from 'yaml';
 import { verOf } from './model.js';
+import { pointer } from '../compare.js';
 
 export const isJson = (text) => /^\s*[{[]/.test(text);
 
@@ -25,6 +26,35 @@ export const head = (text, [s, e]) => {
 export const keyOf = (pair) => (isScalar(pair.key) && pair.key.value != null ? String(pair.key.value) : null);
 
 export const pairOf = (map, key) => (isMap(map) ? map.items.find((p) => keyOf(p) === key) : undefined);
+
+// the node at a JSON pointer's segments -> {pair?, node} | undefined; pair is the last map entry on the way
+export function lookup(root, segs) {
+  let node = root;
+  let pair;
+  for (const seg of segs) {
+    if (isMap(node)) {
+      pair = pairOf(node, seg);
+      if (!pair) return undefined;
+      node = pair.value;
+    } else if (isSeq(node) && /^\d+$/.test(seg) && node.items[Number(seg)]) {
+      pair = undefined;
+      node = node.items[Number(seg)];
+    } else return undefined;
+  }
+  return { pair, node };
+}
+
+// a map holding a local string $ref -> its target node (chains followed, at most 10 hops); undefined if unresolved
+export function deref(root, node) {
+  for (let hop = 0; hop <= 10; hop++) {
+    const ref = pairOf(node, '$ref')?.value;
+    if (!isScalar(ref) || typeof ref.value !== 'string') return node;
+    const segs = pointer(ref.value);
+    node = segs && lookup(root, segs)?.node;
+    if (!node) return undefined;
+  }
+  return undefined;
+}
 
 // JSON.parse rounds integers beyond 2^53 (int64 limits, ids), so refuse rather than change them
 export function formatJson(text) {

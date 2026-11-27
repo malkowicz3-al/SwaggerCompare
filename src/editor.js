@@ -3,6 +3,7 @@
 import { parseDocument } from 'yaml';
 import { complete, fieldDoc } from './oas/complete.js';
 import { contextAt } from './oas/context.js';
+import { definitionAt, refHover } from './oas/refs.js';
 import { validate } from './oas/validate.js';
 import { outline } from './oas/outline.js';
 import { starter } from './oas/templates.js';
@@ -28,7 +29,7 @@ const store = {
 const md = (s) => s.replace(/[\\`*_{}[\]()#+\-.!|<>~]/g, '\\$&');
 const specOf = (text) => text.match(/^\s*["']?openapi["']?\s*:\s*["']?([\w.-]+)/m)?.[1];
 
-export function initEditor({ $, el }) {
+export function initEditor({ $, el, compareWith }) {
   let draft = null;
   try {
     draft = JSON.parse(store.get('sc.draft'));
@@ -71,7 +72,7 @@ export function initEditor({ $, el }) {
   // Providers: registered for every yaml model, so they ignore the compare editors' models
   const KIND = { key: 'Property', value: 'Value', snippet: 'Snippet' };
   monaco.languages.registerCompletionItemProvider('yaml', {
-    triggerCharacters: [' ', ':', '\n', '-'],
+    triggerCharacters: [' ', ':', '\n', '-', '/'],
     provideCompletionItems(m, pos) {
       if (m !== model) return;
       const text = m.getValue();
@@ -92,7 +93,8 @@ export function initEditor({ $, el }) {
           documentation: c.doc,
           sortText: c.sortText,
           range,
-          ...(/\n[ -]*$/.test(c.insertText) && { command: { id: 'editor.action.triggerSuggest', title: 'Suggest' } }),
+          ...(c.snippet && { insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet }),
+          ...((c.retrigger || /\n[ -]*$/.test(c.insertText)) && { command: { id: 'editor.action.triggerSuggest', title: 'Suggest' } }),
         })),
       };
     },
@@ -100,9 +102,24 @@ export function initEditor({ $, el }) {
   monaco.languages.registerHoverProvider('yaml', {
     provideHover(m, pos) {
       if (m !== model) return;
+      const r = refHover(m.getValue(), pos.lineNumber, pos.column);
+      if (r) {
+        return {
+          range: new monaco.Range(pos.lineNumber, r.from, pos.lineNumber, r.to),
+          contents: [{ value: `**${md(r.title)}** · ${md(r.kind)}` }, ...(r.rows.length ? [{ value: r.rows.map(md).join('  \n') }] : [])],
+        };
+      }
       const d = fieldDoc(m.getValue(), pos.lineNumber, pos.column);
       if (!d) return;
       return { contents: [{ value: `**${md(d.title)}** · ${d.type}${d.required ? ' · required' : ''}` }, { value: md(d.doc) }] };
+    },
+  });
+
+  monaco.languages.registerDefinitionProvider('yaml', {
+    provideDefinition(m, pos) {
+      if (m !== model) return;
+      const d = definitionAt(m.getValue(), pos.lineNumber, pos.column);
+      return d && { uri: m.uri, range: new monaco.Range(d.line, d.col, d.line, d.col) };
     },
   });
 
@@ -138,7 +155,7 @@ export function initEditor({ $, el }) {
     );
     if (!markers.length) ul.append(el('li', 'none', 'No problems'));
     const n = $('n-problems');
-    n.textContent = markers.length;
+    n.textContent = markers.filter((p) => p.severity !== 'info').length;
     n.classList.toggle('bad', markers.some((p) => p.severity === 'error'));
   };
 
@@ -188,7 +205,7 @@ export function initEditor({ $, el }) {
   };
   const check = () => {
     markers = validate(model.getValue());
-    const sev = { error: monaco.MarkerSeverity.Error, warning: monaco.MarkerSeverity.Warning };
+    const sev = { error: monaco.MarkerSeverity.Error, warning: monaco.MarkerSeverity.Warning, info: monaco.MarkerSeverity.Info };
     monaco.editor.setModelMarkers(
       model,
       'oas',
@@ -306,6 +323,12 @@ export function initEditor({ $, el }) {
       return;
     }
     if (out !== text) replace(out);
+  });
+
+  $('ed-compare').addEventListener('click', () => {
+    const text = model.getValue();
+    compareWith({ original: saved != null && saved !== text ? saved : null, originalName: file ? file + ' (saved)' : 'Baseline', modified: text, modifiedName: file });
+    setMode('compare');
   });
 
   head();

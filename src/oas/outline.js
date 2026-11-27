@@ -1,7 +1,7 @@
 import { isMap, isSeq, isScalar } from 'yaml';
 import { parse, keyOf, pairOf } from './ast.js';
 
-const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
+export const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace', 'query'];
 
 // -> [{label, kind, line, detail?, method?, children}]; works on partly broken documents
 export function outline(text) {

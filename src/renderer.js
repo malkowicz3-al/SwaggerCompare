@@ -630,5 +630,9 @@ function init() {
     }),
   );
   $('search').addEventListener('input', applyFilters);
-  initEditor({ $, el });
+  const compareWith = ({ original, originalName, modified, modifiedName }) => {
+    if (original != null) load('left', original, originalName);
+    load('right', modified, modifiedName);
+  };
+  initEditor({ $, el, compareWith });
 }

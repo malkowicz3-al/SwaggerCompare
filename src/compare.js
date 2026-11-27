@@ -370,7 +370,7 @@ function walkObject(l, r, ctx) {
 const pureRef = (v) => isPlain(v) && typeof v.$ref === 'string' && Object.keys(v).length === 1;
 
 // local JSON pointer "#/a/b~1c" → ['a', 'b/c']; undefined for external refs
-function pointer(ref) {
+export function pointer(ref) {
   if (!ref.startsWith('#/')) return undefined;
   return ref
     .slice(2)

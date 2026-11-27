@@ -53,6 +53,12 @@ paths:
           description: The order
     patch:
       summary: Update an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Updated
