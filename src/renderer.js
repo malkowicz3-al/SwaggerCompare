@@ -128,7 +128,7 @@ function init() {
   let view = 'objects'; // or 'endpoints'
   const meta = { left: null, right: null }; // last good {title, version} per side, so a parse error doesn't flicker it
   let rows = []; // {li, btn, c, g, show}, in list order; in the endpoint view a change can have several rows
-  let groups = []; // {where, li, head, ol, rows, used}
+  let groups = []; // {where, li, head, ol, rows}
 
   const renderMeta = () => {
     for (const side of ['left', 'right']) {
@@ -309,15 +309,8 @@ function init() {
     const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
     const nb = vis.filter((r) => r.c.breaking).length;
     if (nb) said.push(`${nb} breaking`);
-    const usedIn = g.used.length ? `; used in: ${g.used.join(', ')}` : '';
-    g.head.setAttribute('aria-label', `${g.where}, ${vis.length} change${vis.length === 1 ? '' : 's'}: ${said.join(', ')}${usedIn}`);
+    g.head.setAttribute('aria-label', `${g.where}, ${vis.length} change${vis.length === 1 ? '' : 's'}: ${said.join(', ')}`);
     g.head.replaceChildren(el('span', 'chev'), richText(g.where, 'gwhere'), el('span', 'gcount', vis.length), mini, el('span', 'gtags', tags.join(' · ')));
-    if (g.used.length) {
-      const more = g.used.length > 4 ? ` (+${g.used.length - 4})` : '';
-      const used = el('span', 'gused', `Used in: ${g.used.slice(0, 4).join(', ')}${more}`);
-      used.title = g.used.join('\n');
-      g.head.append(used);
-    }
   };
 
   const applyFilters = () => {
@@ -435,7 +428,7 @@ function init() {
     entries.forEach(({ key, c, text }, n) => {
       let g = byKey.get(key);
       if (!g) {
-        g = { where: key, li: el('li', 'group'), head: el('button', 'ghead'), ol: el('ol', 'gitems'), rows: [], used: [] };
+        g = { where: key, li: el('li', 'group'), head: el('button', 'ghead'), ol: el('ol', 'gitems'), rows: [] };
         g.head.type = 'button';
         g.ol.id = `grp-${groups.length}`;
         g.head.setAttribute('aria-controls', g.ol.id);
@@ -445,8 +438,6 @@ function init() {
         groups.push(g);
         list.append(g.li);
       }
-      // a component change lists the endpoints using it; an endpoint's own changes have no `via`
-      if (view === 'objects') for (const a of c.affects) if (a.via && !g.used.includes(a.endpoint)) g.used.push(a.endpoint);
       const li = el('li');
       li._change = c;
       const hits = c.affects.flatMap((a) => [a.endpoint, a.via ?? '']);

@@ -7188,15 +7188,8 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       const said = Object.keys(n).filter((k) => n[k]).map((k) => `${n[k]} ${k}`);
       const nb = vis.filter((r) => r.c.breaking).length;
       if (nb) said.push(`${nb} breaking`);
-      const usedIn = g.used.length ? `; used in: ${g.used.join(", ")}` : "";
-      g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}${usedIn}`);
+      g.head.setAttribute("aria-label", `${g.where}, ${vis.length} change${vis.length === 1 ? "" : "s"}: ${said.join(", ")}`);
       g.head.replaceChildren(el("span", "chev"), richText(g.where, "gwhere"), el("span", "gcount", vis.length), mini, el("span", "gtags", tags.join(" \xB7 ")));
-      if (g.used.length) {
-        const more = g.used.length > 4 ? ` (+${g.used.length - 4})` : "";
-        const used = el("span", "gused", `Used in: ${g.used.slice(0, 4).join(", ")}${more}`);
-        used.title = g.used.join("\n");
-        g.head.append(used);
-      }
     };
     const applyFilters = () => {
       const q = $("search").value.trim().toLowerCase();
@@ -7298,7 +7291,7 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
       entries.forEach(({ key, c, text }, n) => {
         let g = byKey.get(key);
         if (!g) {
-          g = { where: key, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [], used: [] };
+          g = { where: key, li: el("li", "group"), head: el("button", "ghead"), ol: el("ol", "gitems"), rows: [] };
           g.head.type = "button";
           g.ol.id = `grp-${groups.length}`;
           g.head.setAttribute("aria-controls", g.ol.id);
@@ -7307,9 +7300,6 @@ The ${res.error.side} spec can't be parsed: line ${res.error.line}: ${res.error.
           byKey.set(key, g);
           groups.push(g);
           list.append(g.li);
-        }
-        if (view === "objects") {
-          for (const a of c.affects) if (a.via && !g.used.includes(a.endpoint)) g.used.push(a.endpoint);
         }
         const li = el("li");
         li._change = c;
